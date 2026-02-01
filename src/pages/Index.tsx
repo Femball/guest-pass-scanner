@@ -6,29 +6,33 @@ import ValidationResult from '@/components/ValidationResult';
 import { useReservationValidator } from '@/hooks/useReservationValidator';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-
 const Index = () => {
   const [isScanning, setIsScanning] = useState(true);
-  const { isValid, clientName, message, isLoading, validateQRCode, reset } = useReservationValidator();
-
+  const {
+    isValid,
+    clientName,
+    message,
+    isLoading,
+    validateQRCode,
+    reset
+  } = useReservationValidator();
   const handleScan = async (qrCode: string) => {
     setIsScanning(false);
     await validateQRCode(qrCode);
   };
-
   const handleReset = () => {
     reset();
     setIsScanning(true);
   };
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
+  return <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <motion.header 
-        className="px-6 py-4 flex items-center justify-between border-b border-border"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <motion.header className="px-6 py-4 flex items-center justify-between border-b border-border" initial={{
+      opacity: 0,
+      y: -20
+    }} animate={{
+      opacity: 1,
+      y: 0
+    }}>
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-primary/10">
             <Shield className="w-6 h-6 text-primary" />
@@ -47,23 +51,22 @@ const Index = () => {
       </motion.header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6">
-        {isLoading ? (
-          <motion.div
-            className="flex flex-col items-center gap-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
+      <main className="flex-1 flex flex-col items-center justify-center p-6 bg-black">
+        {isLoading ? <motion.div className="flex flex-col items-center gap-4" initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }}>
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-muted-foreground">Vérification en cours...</p>
-          </motion.div>
-        ) : isValid === null ? (
-          <>
-            <motion.div
-              className="text-center mb-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
+          </motion.div> : isValid === null ? <>
+            <motion.div className="text-center mb-8" initial={{
+          opacity: 0,
+          y: 20
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }}>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
                 <QrCode className="w-4 h-4" />
                 <span className="text-sm font-medium">Scanner actif</span>
@@ -78,27 +81,20 @@ const Index = () => {
 
             <QRScanner onScan={handleScan} isScanning={isScanning} />
 
-            <motion.p
-              className="mt-8 text-sm text-muted-foreground text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
+            <motion.p className="mt-8 text-sm text-muted-foreground text-center" initial={{
+          opacity: 0
+        }} animate={{
+          opacity: 1
+        }} transition={{
+          delay: 0.5
+        }}>
               Le résultat s'affichera automatiquement
             </motion.p>
-          </>
-        ) : null}
+          </> : null}
       </main>
 
       {/* Validation overlay */}
-      <ValidationResult
-        isValid={isValid}
-        clientName={clientName}
-        message={message}
-        onReset={handleReset}
-      />
-    </div>
-  );
+      <ValidationResult isValid={isValid} clientName={clientName} message={message} onReset={handleReset} />
+    </div>;
 };
-
 export default Index;
