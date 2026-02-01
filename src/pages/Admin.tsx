@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Download, QrCode } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import AdminPasswordGate from '@/components/AdminPasswordGate';
 
 interface Reservation {
   id: string;
@@ -19,12 +20,13 @@ interface Reservation {
   created_at: string;
 }
 
-const Admin = () => {
+const AdminContent = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null);
 
   const fetchReservations = async () => {
     const { data, error } = await supabase
@@ -49,20 +51,58 @@ const Admin = () => {
     return `TICKET-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
   };
 
+  const sendTicketEmail = async (reservation: Reservation) => {
+    if (!reservation.client_email) {
+      toast.error('Pas d\'adresse email pour ce client');
+      return;
+    }
+
+    setSendingEmail(reservation.id);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-ticket-email', {
+        body: {
+          clientName: reservation.client_name,
+          clientEmail: reservation.client_email,
+          qrCode: reservation.qr_code,
+          eventName: 'Soirée',
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(`Ticket envoyé à ${reservation.client_email}`);
+      } else {
+        throw new Error(data.error || 'Erreur lors de l\'envoi');
+      }
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      toast.error(`Erreur: ${error.message}`);
+    } finally {
+      setSendingEmail(null);
+    }
+  };
+
   const addReservation = async () => {
     if (!newName.trim()) {
       toast.error('Le nom est requis');
       return;
     }
 
+    if (!newEmail.trim()) {
+      toast.error('L\'email est requis pour envoyer le ticket');
+      return;
+    }
+
     setIsAdding(true);
     const qrCode = generateQRCode();
 
-    const { error } = await supabase.from('reservations').insert({
+    const { data, error } = await supabase.from('reservations').insert({
       client_name: newName.trim(),
-      client_email: newEmail.trim() || null,
+      client_email: newEmail.trim(),
       qr_code: qrCode,
-    });
+    }).select().single();
 
     if (error) {
       toast.error('Erreur lors de la création de la réservation');
@@ -71,6 +111,12 @@ const Admin = () => {
     }
 
     toast.success('Réservation créée avec succès');
+    
+    // Automatically send email
+    if (data && data.client_email) {
+      await sendTicketEmail(data);
+    }
+
     setNewName('');
     setNewEmail('');
     setIsAdding(false);
@@ -87,19 +133,6 @@ const Admin = () => {
 
     toast.success('Réservation supprimée');
     fetchReservations();
-  };
-
-  const downloadQRCode = (reservation: Reservation) => {
-    // Create a simple text file with the QR code value
-    const content = `Réservation: ${reservation.client_name}\nCode QR: ${reservation.qr_code}\n\nPrésentez ce code à l'entrée.`;
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ticket-${reservation.client_name.replace(/\s+/g, '-')}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Ticket téléchargé');
   };
 
   const validatedCount = reservations.filter(r => r.is_validated).length;
@@ -191,7 +224,7 @@ const Admin = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email (optionnel)</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -202,7 +235,8 @@ const Admin = () => {
                 </div>
               </div>
               <Button onClick={addReservation} disabled={isAdding} className="w-full md:w-auto">
-                {isAdding ? 'Création...' : 'Créer la réservation'}
+                <Send className="w-4 h-4 mr-2" />
+                {isAdding ? 'Création et envoi...' : 'Créer et envoyer le ticket'}
               </Button>
             </CardContent>
           </Card>
@@ -257,14 +291,21 @@ const Admin = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => downloadQRCode(reservation)}
-                          title="Télécharger le ticket"
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
+                        {reservation.client_email && !reservation.is_validated && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => sendTicketEmail(reservation)}
+                            disabled={sendingEmail === reservation.id}
+                            title="Renvoyer le ticket"
+                          >
+                            {sendingEmail === reservation.id ? (
+                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Mail className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -284,6 +325,24 @@ const Admin = () => {
       </main>
     </div>
   );
+};
+
+const Admin = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check if already authenticated in this session
+    const authenticated = sessionStorage.getItem('admin_authenticated');
+    if (authenticated === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  if (!isAuthenticated) {
+    return <AdminPasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
+
+  return <AdminContent />;
 };
 
 export default Admin;
