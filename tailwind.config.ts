@@ -47,6 +47,20 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        valid: {
+          DEFAULT: "hsl(var(--valid))",
+          foreground: "hsl(var(--valid-foreground))",
+          glow: "hsl(var(--valid-glow))",
+        },
+        invalid: {
+          DEFAULT: "hsl(var(--invalid))",
+          foreground: "hsl(var(--invalid-foreground))",
+          glow: "hsl(var(--invalid-glow))",
+        },
+        scanner: {
+          border: "hsl(var(--scanner-border))",
+          bg: "hsl(var(--scanner-bg))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
