@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import AdminPasswordGate from '@/components/AdminPasswordGate';
+import { useAuth } from '@/hooks/useAuth';
 import QRCode from 'qrcode';
 interface Reservation {
   id: string;
@@ -23,6 +24,7 @@ interface Reservation {
 }
 
 const AdminContent = () => {
+  const { signOut } = useAuth();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -33,6 +35,12 @@ const AdminContent = () => {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+  
+  // User management
+  const [userDialogOpen, setUserDialogOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'agent'>('agent');
+  const [isAddingUser, setIsAddingUser] = useState(false);
 
   const fetchReservations = async () => {
     const { data, error } = await supabase
@@ -187,18 +195,42 @@ const AdminContent = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <motion.header
-        className="px-6 py-4 flex items-center gap-4 border-b border-border"
+        className="px-6 py-4 flex items-center justify-between border-b border-border"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <Link to="/">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-5 h-5" />
+        <div className="flex items-center gap-4">
+          <Link to="/">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-lg font-bold text-foreground">Administration</h1>
+            <p className="text-xs text-muted-foreground">Gestion des réservations</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            onClick={() => setUserDialogOpen(true)}
+          >
+            <UserPlus className="w-4 h-4" />
+            Ajouter utilisateur
           </Button>
-        </Link>
-        <div>
-          <h1 className="text-lg font-bold text-foreground">Administration</h1>
-          <p className="text-xs text-muted-foreground">Gestion des réservations</p>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={async () => {
+              await signOut();
+              toast.success('Déconnexion réussie');
+            }}
+            title="Se déconnecter"
+          >
+            <LogOut className="w-4 h-4" />
+          </Button>
         </div>
       </motion.header>
 
@@ -416,27 +448,73 @@ const AdminContent = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Add User Dialog */}
+        <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Ajouter un utilisateur</DialogTitle>
+              <DialogDescription>
+                L'utilisateur doit d'abord créer un compte sur la page de connexion.
+                Ensuite, entrez son email ici pour lui attribuer un rôle.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-email">Email de l'utilisateur</Label>
+                <Input
+                  id="user-email"
+                  type="email"
+                  placeholder="agent@example.com"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user-role">Rôle</Label>
+                <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as 'admin' | 'agent')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="agent">Agent (scanner uniquement)</SelectItem>
+                    <SelectItem value="admin">Admin (accès complet)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                className="w-full"
+                disabled={isAddingUser || !newUserEmail}
+                onClick={async () => {
+                  setIsAddingUser(true);
+                  try {
+                    // Find user by email via auth admin API (need edge function)
+                    const { data, error } = await supabase.functions.invoke('assign-user-role', {
+                      body: { email: newUserEmail, role: newUserRole }
+                    });
+                    
+                    if (error) throw error;
+                    if (!data.success) throw new Error(data.error);
+                    
+                    toast.success(`Rôle "${newUserRole}" attribué à ${newUserEmail}`);
+                    setNewUserEmail('');
+                    setUserDialogOpen(false);
+                  } catch (err: any) {
+                    toast.error(err.message || 'Erreur lors de l\'attribution du rôle');
+                  } finally {
+                    setIsAddingUser(false);
+                  }
+                }}
+              >
+                {isAddingUser ? 'Attribution...' : 'Attribuer le rôle'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
 };
 
-const Admin = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    // Check if already authenticated in this session
-    const authenticated = sessionStorage.getItem('admin_authenticated');
-    if (authenticated === 'true') {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  if (!isAuthenticated) {
-    return <AdminPasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
-
-  return <AdminContent />;
-};
-
-export default Admin;
+// Admin now uses ProtectedRoute for authentication
+export default AdminContent;
