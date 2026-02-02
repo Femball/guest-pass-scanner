@@ -351,7 +351,7 @@ const AdminContent = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {reservation.client_email && !reservation.is_validated && (
+                        {reservation.client_email && (
                           <Button
                             variant="ghost"
                             size="icon"
