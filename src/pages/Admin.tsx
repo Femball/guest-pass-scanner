@@ -51,6 +51,29 @@ const AdminContent = () => {
 
   useEffect(() => {
     fetchReservations();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('reservations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+        },
+        (payload) => {
+          console.log('Realtime update:', payload);
+          // Refresh the list when any change occurs
+          fetchReservations();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const generateQRCode = () => {
