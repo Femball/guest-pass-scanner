@@ -1,7 +1,7 @@
 project_id = "cgowurmyyrkftiqweavn"
 
 [functions.send-ticket-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.assign-user-role]
-verify_jwt = false
+verify_jwt = true
