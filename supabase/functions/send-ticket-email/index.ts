@@ -34,15 +34,20 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Missing required fields: clientName, clientEmail, or qrCode");
     }
 
-    // Generate QR code as base64 data URL
-    const qrCodeDataUrl = await QRCode.toDataURL(qrCode, {
-      width: 300,
+    // Generate QR code as SVG string (works without canvas in Deno)
+    const qrCodeSvg = await QRCode.toString(qrCode, {
+      type: 'svg',
+      width: 200,
       margin: 2,
       color: {
         dark: "#000000",
         light: "#ffffff",
       },
     });
+    
+    // Convert SVG to base64 data URL for email embedding
+    const base64Svg = btoa(qrCodeSvg);
+    const qrCodeDataUrl = `data:image/svg+xml;base64,${base64Svg}`;
 
     const emailResponse = await resend.emails.send({
       from: "Tickets <onboarding@resend.dev>",
