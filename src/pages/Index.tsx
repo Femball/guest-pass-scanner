@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, QrCode, Users } from 'lucide-react';
+import { Shield, QrCode, Users, LogOut } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
 import ValidationResult from '@/components/ValidationResult';
 import { useReservationValidator } from '@/hooks/useReservationValidator';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 const Index = () => {
   const [isScanning, setIsScanning] = useState(true);
+  const { isAdmin, signOut } = useAuth();
   const {
     isValid,
     clientName,
@@ -42,12 +45,27 @@ const Index = () => {
             <p className="text-xs text-muted-foreground">Contrôle d'accès</p>
           </div>
         </div>
-        <Link to="/admin">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Users className="w-4 h-4" />
-            Admin
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Link to="/admin">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Users className="w-4 h-4" />
+                Admin
+              </Button>
+            </Link>
+          )}
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={async () => {
+              await signOut();
+              toast.success('Déconnexion réussie');
+            }}
+            title="Se déconnecter"
+          >
+            <LogOut className="w-4 h-4" />
           </Button>
-        </Link>
+        </div>
       </motion.header>
 
       {/* Main content */}
