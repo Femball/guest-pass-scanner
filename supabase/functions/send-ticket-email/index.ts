@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
@@ -43,24 +44,80 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const body = await req.json();
+    // ============ AUTHENTICATION ============
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized: No token provided" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Create client with user's token for auth verification
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verify the JWT token by getting user
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
     
-    // Validate and parse input
+    if (authError || !authUser) {
+      console.error("Invalid token:", authError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized: Invalid token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const callerId = authUser.id;
+    console.log(`Request from user: ${callerId}`);
+
+    // ============ AUTHORIZATION - STAFF ONLY (admin or agent) ============
+    // Create admin client to check roles (uses service role to bypass RLS)
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    // Check if caller is staff (admin or agent)
+    const { data: callerRole, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId)
+      .single();
+
+    if (roleError || !callerRole || !["admin", "agent"].includes(callerRole.role)) {
+      console.error("Forbidden: User is not staff", { callerId, role: callerRole?.role });
+      return new Response(
+        JSON.stringify({ success: false, error: "Forbidden: Staff access required" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log(`Staff authorization verified for ${callerRole.role}`);
+
+    // ============ INPUT VALIDATION ============
+    const body = await req.json();
     const parseResult = ticketEmailSchema.safeParse(body);
     if (!parseResult.success) {
       const errorMessages = parseResult.error.errors.map(e => e.message).join(", ");
       console.error("Validation error:", errorMessages);
       return new Response(
         JSON.stringify({ success: false, error: `Validation error: ${errorMessages}` }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     const { clientName, clientEmail, qrCode, eventName } = parseResult.data;
-
     console.log(`Sending ticket email to ${escapeHtml(clientEmail)} for ${escapeHtml(clientName)}`);
 
     // Escape all user inputs for HTML
@@ -171,19 +228,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error in send-ticket-email function:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };

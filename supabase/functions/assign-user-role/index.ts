@@ -34,27 +34,39 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const body = await req.json();
-
-    // Validate and parse input
-    const parseResult = assignRoleSchema.safeParse(body);
-    if (!parseResult.success) {
-      const errorMessages = parseResult.error.errors.map(e => e.message).join(", ");
-      console.error("Validation error:", errorMessages);
+    // ============ AUTHENTICATION ============
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("No authorization header provided");
       return new Response(
-        JSON.stringify({ success: false, error: `Validation error: ${errorMessages}` }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ success: false, error: "Unauthorized: No token provided" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const { email, role } = parseResult.data;
+    // Create client with user's token for auth verification
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
-    console.log(`Assigning role ${role} to ${sanitizeForLog(email)}`);
+    // Verify the JWT token by getting user
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    
+    if (authError || !authUser) {
+      console.error("Invalid token:", authError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized: Invalid token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
-    // Create Supabase admin client
+    const callerId = authUser.id;
+    console.log(`Request from user: ${callerId}`);
+
+    // ============ AUTHORIZATION - ADMIN ONLY ============
+    // Create admin client to check roles (uses service role to bypass RLS)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -66,6 +78,39 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
+    // Check if caller has admin role
+    const { data: callerRole, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId)
+      .single();
+
+    if (roleError || callerRole?.role !== "admin") {
+      console.error("Forbidden: User is not an admin", { callerId, role: callerRole?.role });
+      return new Response(
+        JSON.stringify({ success: false, error: "Forbidden: Admin access required" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("Admin authorization verified");
+
+    // ============ INPUT VALIDATION ============
+    const body = await req.json();
+    const parseResult = assignRoleSchema.safeParse(body);
+    if (!parseResult.success) {
+      const errorMessages = parseResult.error.errors.map(e => e.message).join(", ");
+      console.error("Validation error:", errorMessages);
+      return new Response(
+        JSON.stringify({ success: false, error: `Validation error: ${errorMessages}` }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const { email, role } = parseResult.data;
+    console.log(`Admin ${callerId} assigning role ${role} to ${sanitizeForLog(email)}`);
+
+    // ============ BUSINESS LOGIC ============
     // Get user by email using admin API
     const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
@@ -82,17 +127,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Check if role already exists
     const { data: existingRole } = await supabaseAdmin
-      .from('user_roles')
-      .select('*')
-      .eq('user_id', user.id)
+      .from("user_roles")
+      .select("*")
+      .eq("user_id", user.id)
       .single();
 
     if (existingRole) {
       // Update existing role
       const { error: updateError } = await supabaseAdmin
-        .from('user_roles')
+        .from("user_roles")
         .update({ role })
-        .eq('user_id', user.id);
+        .eq("user_id", user.id);
 
       if (updateError) {
         console.error("Error updating role:", updateError);
@@ -101,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
     } else {
       // Insert new role
       const { error: insertError } = await supabaseAdmin
-        .from('user_roles')
+        .from("user_roles")
         .insert({ user_id: user.id, role });
 
       if (insertError) {
@@ -110,23 +155,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log(`Role ${role} assigned successfully to ${sanitizeForLog(email)}`);
+    console.log(`Role ${role} assigned successfully to ${sanitizeForLog(email)} by admin ${callerId}`);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error in assign-user-role function:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };
