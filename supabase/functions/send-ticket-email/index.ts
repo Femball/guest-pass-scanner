@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-// @deno-types="https://esm.sh/v135/@types/qrcode@1.5.5/index.d.ts"
-import QRCode from "https://esm.sh/qrcode@1.5.4";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -34,20 +32,8 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Missing required fields: clientName, clientEmail, or qrCode");
     }
 
-    // Generate QR code as SVG string (works without canvas in Deno)
-    const qrCodeSvg = await QRCode.toString(qrCode, {
-      type: 'svg',
-      width: 200,
-      margin: 2,
-      color: {
-        dark: "#000000",
-        light: "#ffffff",
-      },
-    });
-    
-    // Convert SVG to base64 data URL for email embedding
-    const base64Svg = btoa(qrCodeSvg);
-    const qrCodeDataUrl = `data:image/svg+xml;base64,${base64Svg}`;
+    // Use external QR code service that generates PNG (works in all email clients)
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`;
 
     const emailResponse = await resend.emails.send({
       from: "Tickets <onboarding@resend.dev>",
@@ -84,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
                       
                       <!-- QR Code -->
                       <div style="text-align: center; padding: 25px; background-color: #f9fafb; border-radius: 12px; margin-bottom: 25px;">
-                        <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 200px; height: 200px; border-radius: 8px;" />
+                        <img src="${qrCodeUrl}" alt="QR Code" style="width: 200px; height: 200px; border-radius: 8px;" />
                         <p style="color: #9ca3af; font-size: 12px; margin: 15px 0 0 0; font-family: monospace;">${qrCode}</p>
                       </div>
                       
