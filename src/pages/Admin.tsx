@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import AdminPasswordGate from '@/components/AdminPasswordGate';
-
+import QRCode from 'qrcode';
 interface Reservation {
   id: string;
   client_name: string;
@@ -29,6 +30,9 @@ const AdminContent = () => {
   const [newPersons, setNewPersons] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
 
   const fetchReservations = async () => {
     const { data, error } = await supabase
@@ -137,6 +141,20 @@ const AdminContent = () => {
 
     toast.success('Réservation supprimée');
     fetchReservations();
+  };
+
+  const showQRCode = async (reservation: Reservation) => {
+    setSelectedReservation(reservation);
+    try {
+      const dataUrl = await QRCode.toDataURL(reservation.qr_code, {
+        width: 300,
+        margin: 2,
+      });
+      setQrCodeDataUrl(dataUrl);
+      setQrDialogOpen(true);
+    } catch (error) {
+      toast.error('Erreur lors de la génération du QR code');
+    }
   };
 
   const validatedCount = reservations.filter(r => r.is_validated).length;
@@ -328,6 +346,14 @@ const AdminContent = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => showQRCode(reservation)}
+                          title="Voir le QR code"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => deleteReservation(reservation.id)}
                           title="Supprimer"
                         >
@@ -341,6 +367,32 @@ const AdminContent = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* QR Code Dialog */}
+        <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center">
+                QR Code - {selectedReservation?.client_name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-4 py-4">
+              {qrCodeDataUrl && (
+                <img 
+                  src={qrCodeDataUrl} 
+                  alt="QR Code" 
+                  className="w-64 h-64 rounded-lg border border-border"
+                />
+              )}
+              <p className="text-sm text-muted-foreground font-mono break-all text-center px-4">
+                {selectedReservation?.qr_code}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {selectedReservation?.number_of_persons} personne(s)
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
