@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -212,6 +212,16 @@ const AdminContent = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <a 
+            href="https://lovable.dev/projects/a8ad0e60-c014-4e9a-9e50-4eb3f4fc3dc2/cloud/database" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            <Button variant="outline" size="sm" className="gap-2">
+              <Database className="w-4 h-4" />
+              Backend
+            </Button>
+          </a>
           <Button 
             variant="outline" 
             size="sm" 
@@ -221,7 +231,7 @@ const AdminContent = () => {
             <UserPlus className="w-4 h-4" />
             Ajouter utilisateur
           </Button>
-          <Button 
+          <Button
             variant="ghost" 
             size="icon"
             onClick={async () => {
