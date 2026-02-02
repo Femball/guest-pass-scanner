@@ -1,6 +1,14 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useScanSounds } from './useScanSounds';
+import { z } from 'zod';
+
+// Schema de validation pour les QR codes
+// Format attendu: TICKET-[UUID] (ex: TICKET-A1B2C3D4-E5F6-7890-ABCD-EF1234567890)
+const qrCodeSchema = z.string()
+  .min(1, 'QR code is required')
+  .max(100, 'QR code too long')
+  .regex(/^TICKET-[A-Z0-9-]+$/i, 'Invalid QR code format');
 
 interface ValidationState {
   isValid: boolean | null;
@@ -24,12 +32,26 @@ export const useReservationValidator = () => {
   const validateQRCode = useCallback(async (qrCode: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
 
+    // Validation de l'entrée avant toute requête
+    const validationResult = qrCodeSchema.safeParse(qrCode);
+    if (!validationResult.success) {
+      playErrorSound();
+      setState({
+        isValid: false,
+        message: 'Format de QR code invalide.',
+        isLoading: false,
+      });
+      return;
+    }
+
+    const validatedQrCode = validationResult.data;
+
     try {
-      // Rechercher la réservation par QR code
+      // Rechercher la réservation par QR code validé
       const { data: reservation, error } = await supabase
         .from('reservations')
         .select('*')
-        .eq('qr_code', qrCode)
+        .eq('qr_code', validatedQrCode)
         .single();
 
       if (error || !reservation) {
