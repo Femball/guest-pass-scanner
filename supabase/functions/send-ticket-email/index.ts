@@ -107,8 +107,8 @@ const handler = async (req: Request): Promise<Response> => {
           },
         ],
         from: {
-          email: "noreply@securiscan.app",
-          name: "Tickets",
+          email: "laccess@laccessstgo.rapidresto.online",
+          name: "L'Access - Tickets",
         },
         subject: `🎉 Votre ticket pour ${eventName}`,
         content: [
