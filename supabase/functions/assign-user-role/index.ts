@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,10 +8,24 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface AssignRoleRequest {
-  email: string;
-  role: 'admin' | 'agent';
-}
+// Input validation schema
+const assignRoleSchema = z.object({
+  email: z.string()
+    .email("Invalid email format")
+    .max(255, "Email must be less than 255 characters")
+    .toLowerCase(),
+  role: z.enum(["admin", "agent"], {
+    errorMap: () => ({ message: "Role must be 'admin' or 'agent'" }),
+  }),
+});
+
+// Sanitize string for safe logging (no HTML, no control chars)
+const sanitizeForLog = (text: string): string => {
+  return text
+    .replace(/[<>]/g, "")
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .substring(0, 100);
+};
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -19,18 +34,25 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, role }: AssignRoleRequest = await req.json();
+    const body = await req.json();
 
-    console.log(`Assigning role ${role} to ${email}`);
-
-    // Validate required fields
-    if (!email || !role) {
-      throw new Error("Missing required fields: email or role");
+    // Validate and parse input
+    const parseResult = assignRoleSchema.safeParse(body);
+    if (!parseResult.success) {
+      const errorMessages = parseResult.error.errors.map(e => e.message).join(", ");
+      console.error("Validation error:", errorMessages);
+      return new Response(
+        JSON.stringify({ success: false, error: `Validation error: ${errorMessages}` }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
-    if (!['admin', 'agent'].includes(role)) {
-      throw new Error("Invalid role. Must be 'admin' or 'agent'");
-    }
+    const { email, role } = parseResult.data;
+
+    console.log(`Assigning role ${role} to ${sanitizeForLog(email)}`);
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(
@@ -52,14 +74,14 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Could not retrieve users");
     }
 
-    const user = usersData.users.find(u => u.email === email);
+    const user = usersData.users.find(u => u.email?.toLowerCase() === email);
 
     if (!user) {
-      throw new Error(`Aucun utilisateur trouvé avec l'email ${email}. L'utilisateur doit d'abord créer un compte.`);
+      throw new Error(`Aucun utilisateur trouvé avec cet email. L'utilisateur doit d'abord créer un compte.`);
     }
 
     // Check if role already exists
-    const { data: existingRole, error: checkError } = await supabaseAdmin
+    const { data: existingRole } = await supabaseAdmin
       .from('user_roles')
       .select('*')
       .eq('user_id', user.id)
@@ -88,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log(`Role ${role} assigned successfully to ${email}`);
+    console.log(`Role ${role} assigned successfully to ${sanitizeForLog(email)}`);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

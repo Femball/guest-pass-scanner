@@ -85,7 +85,8 @@ const AdminContent = () => {
   }, []);
 
   const generateQRCode = () => {
-    return `TICKET-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    // Use cryptographically secure random generation
+    return `TICKET-${crypto.randomUUID().toUpperCase()}`;
   };
 
   const sendTicketEmail = async (reservation: Reservation) => {
