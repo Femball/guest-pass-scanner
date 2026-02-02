@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           id: string
           is_validated: boolean
+          number_of_persons: number
           qr_code: string
           validated_at: string | null
         }
@@ -30,6 +31,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_validated?: boolean
+          number_of_persons?: number
           qr_code: string
           validated_at?: string | null
         }
@@ -39,6 +41,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_validated?: boolean
+          number_of_persons?: number
           qr_code?: string
           validated_at?: string | null
         }

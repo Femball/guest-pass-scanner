@@ -18,6 +18,7 @@ interface Reservation {
   is_validated: boolean;
   validated_at: string | null;
   created_at: string;
+  number_of_persons: number;
 }
 
 const AdminContent = () => {
@@ -25,6 +26,7 @@ const AdminContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPersons, setNewPersons] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
 
@@ -102,6 +104,7 @@ const AdminContent = () => {
       client_name: newName.trim(),
       client_email: newEmail.trim(),
       qr_code: qrCode,
+      number_of_persons: newPersons,
     }).select().single();
 
     if (error) {
@@ -119,6 +122,7 @@ const AdminContent = () => {
 
     setNewName('');
     setNewEmail('');
+    setNewPersons(1);
     setIsAdding(false);
     fetchReservations();
   };
@@ -213,7 +217,7 @@ const AdminContent = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nom du client *</Label>
                   <Input
@@ -231,6 +235,16 @@ const AdminContent = () => {
                     placeholder="jean@example.com"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="persons">Nombre de personnes</Label>
+                  <Input
+                    id="persons"
+                    type="number"
+                    min={1}
+                    value={newPersons}
+                    onChange={(e) => setNewPersons(parseInt(e.target.value) || 1)}
                   />
                 </div>
               </div>
@@ -282,7 +296,12 @@ const AdminContent = () => {
                           )}
                         </div>
                         <div>
-                          <p className="font-medium text-foreground">{reservation.client_name}</p>
+                          <p className="font-medium text-foreground">
+                            {reservation.client_name}
+                            <span className="ml-2 text-sm text-muted-foreground">
+                              ({reservation.number_of_persons} pers.)
+                            </span>
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {reservation.is_validated
                               ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
