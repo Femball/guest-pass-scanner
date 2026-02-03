@@ -191,6 +191,7 @@ const AdminContent = () => {
 
   const validatedCount = reservations.filter(r => r.is_validated).length;
   const pendingCount = reservations.filter(r => !r.is_validated).length;
+  const totalPersons = reservations.reduce((sum, r) => sum + r.number_of_persons, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -238,7 +239,7 @@ const AdminContent = () => {
       <main className="p-6 max-w-4xl mx-auto space-y-6">
         {/* Stats */}
         <motion.div
-          className="grid grid-cols-3 gap-4"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -248,7 +249,18 @@ const AdminContent = () => {
                 <Users className="w-8 h-8 text-primary" />
                 <div>
                   <p className="text-2xl font-bold">{reservations.length}</p>
-                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="text-xs text-muted-foreground">Réservations</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <Users className="w-8 h-8 text-primary/70" />
+                <div>
+                  <p className="text-2xl font-bold">{totalPersons}</p>
+                  <p className="text-xs text-muted-foreground">Personnes</p>
                 </div>
               </div>
             </CardContent>
