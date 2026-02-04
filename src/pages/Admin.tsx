@@ -197,14 +197,14 @@ const AdminContent = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <motion.header
-        className="px-6 py-4 flex items-center justify-between border-b border-border"
+        className="px-4 py-5 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex items-center gap-4">
           <Link to="/">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="h-12 w-12 md:h-10 md:w-10">
+              <ArrowLeft className="w-6 h-6 md:w-5 md:h-5" />
             </Button>
           </Link>
           <div>
@@ -212,26 +212,26 @@ const AdminContent = () => {
             <p className="text-xs text-muted-foreground">Gestion des réservations</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button 
             variant="outline" 
-            size="sm" 
-            className="gap-2"
+            className="gap-2 h-12 px-4 md:h-10 text-sm flex-1 md:flex-none"
             onClick={() => setUserDialogOpen(true)}
           >
-            <UserPlus className="w-4 h-4" />
-            Ajouter utilisateur
+            <UserPlus className="w-5 h-5 md:w-4 md:h-4" />
+            <span className="md:inline">Ajouter utilisateur</span>
           </Button>
           <Button
             variant="ghost" 
             size="icon"
+            className="h-12 w-12 md:h-10 md:w-10"
             onClick={async () => {
               await signOut();
               toast.success('Déconnexion réussie');
             }}
             title="Se déconnecter"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-5 h-5 md:w-4 md:h-4" />
           </Button>
         </div>
       </motion.header>
