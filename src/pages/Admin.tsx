@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -193,6 +193,27 @@ const AdminContent = () => {
   const pendingCount = reservations.filter(r => !r.is_validated).length;
   const totalPersons = reservations.reduce((sum, r) => sum + r.number_of_persons, 0);
 
+  const exportGuestList = () => {
+    const header = ['Nom', 'Email', 'Nombre de personnes', 'Statut'];
+    const rows = reservations.map(r => [
+      r.client_name,
+      r.client_email || '',
+      r.number_of_persons.toString(),
+      r.is_validated ? 'Validé' : 'En attente',
+    ]);
+    const csvContent = [header, ...rows]
+      .map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `liste-invites-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Liste exportée (${reservations.length} invités)`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -213,6 +234,16 @@ const AdminContent = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            className="gap-2 h-12 px-4 md:h-10 text-sm flex-1 md:flex-none"
+            onClick={exportGuestList}
+            disabled={reservations.length === 0}
+            title="Exporter la liste des invités"
+          >
+            <Download className="w-5 h-5 md:w-4 md:h-4" />
+            <span className="md:inline">Exporter CSV</span>
+          </Button>
           <Button 
             variant="outline" 
             className="gap-2 h-12 px-4 md:h-10 text-sm flex-1 md:flex-none"
