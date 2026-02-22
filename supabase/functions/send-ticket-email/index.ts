@@ -25,6 +25,14 @@ const ticketEmailSchema = z.object({
     .max(100, "Event name must be less than 100 characters")
     .optional()
     .default("Soirée"),
+  eventDate: z.string()
+    .max(10)
+    .optional()
+    .default(""),
+  qrColor: z.string()
+    .max(10)
+    .optional()
+    .default("000000"),
 });
 
 // HTML escape function to prevent XSS
@@ -117,16 +125,18 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { clientName, clientEmail, qrCode, eventName } = parseResult.data;
+    const { clientName, clientEmail, qrCode, eventName, eventDate, qrColor } = parseResult.data;
     console.log(`Sending ticket email to ${escapeHtml(clientEmail)} for ${escapeHtml(clientName)}`);
 
     // Escape all user inputs for HTML
     const safeClientName = escapeHtml(clientName);
     const safeEventName = escapeHtml(eventName);
     const safeQrCode = escapeHtml(qrCode);
+    const safeEventDate = escapeHtml(eventDate);
+    const safeQrColor = qrColor.replace(/[^a-fA-F0-9]/g, '').slice(0, 6) || '000000';
 
-    // Use external QR code service that generates PNG (works in all email clients)
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`;
+    // Use external QR code service with custom color
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=${safeQrColor}&data=${encodeURIComponent(qrCode)}`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -159,8 +169,11 @@ const handler = async (req: Request): Promise<Response> => {
                     
                     <!-- QR Code -->
                     <div style="text-align: center; padding: 25px; background-color: #f9fafb; border-radius: 12px; margin-bottom: 25px;">
+                      <p style="color: #${safeQrColor}; font-size: 24px; font-weight: 900; letter-spacing: 3px; margin: 0 0 15px 0;">L'ACCESS</p>
                       <img src="${qrCodeUrl}" alt="QR Code" style="width: 200px; height: 200px; border-radius: 8px;" />
-                      <p style="color: #9ca3af; font-size: 12px; margin: 15px 0 0 0; font-family: monospace;">${safeQrCode}</p>
+                      <p style="color: #374151; font-size: 16px; font-weight: 600; margin: 15px 0 5px 0;">${safeClientName}</p>
+                      ${safeEventDate ? `<p style="color: #6b7280; font-size: 14px; margin: 5px 0 0 0;">📅 ${safeEventDate}</p>` : ''}
+                      <p style="color: #9ca3af; font-size: 12px; margin: 10px 0 0 0; font-family: monospace;">${safeQrCode}</p>
                     </div>
                     
                     <!-- Instructions -->
