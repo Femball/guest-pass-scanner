@@ -30,6 +30,7 @@ const AdminContent = () => {
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPersons, setNewPersons] = useState(1);
+  const [personNames, setPersonNames] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
@@ -123,42 +124,62 @@ const AdminContent = () => {
   };
 
   const addReservation = async () => {
-    if (!newName.trim()) {
-      toast.error('Le nom est requis');
-      return;
-    }
-
     if (!newEmail.trim()) {
       toast.error('L\'email est requis pour envoyer le ticket');
       return;
     }
 
-    setIsAdding(true);
-    const qrCode = generateQRCode();
+    // Build list of names to create
+    const names: string[] = [];
+    if (newPersons <= 1) {
+      if (!newName.trim()) {
+        toast.error('Le nom est requis');
+        return;
+      }
+      names.push(newName.trim());
+    } else {
+      for (let i = 0; i < newPersons; i++) {
+        const name = personNames[i]?.trim();
+        if (!name) {
+          toast.error(`Le nom de la personne ${i + 1} est requis`);
+          return;
+        }
+        names.push(name);
+      }
+    }
 
-    const { data, error } = await supabase.from('reservations').insert({
-      client_name: newName.trim(),
+    setIsAdding(true);
+
+    const reservationsToInsert = names.map(name => ({
+      client_name: name,
       client_email: newEmail.trim(),
-      qr_code: qrCode,
-      number_of_persons: newPersons,
-    }).select().single();
+      qr_code: generateQRCode(),
+      number_of_persons: 1,
+    }));
+
+    const { data, error } = await supabase.from('reservations').insert(reservationsToInsert).select();
 
     if (error) {
-      toast.error('Erreur lors de la création de la réservation');
+      toast.error('Erreur lors de la création des réservations');
       setIsAdding(false);
       return;
     }
 
-    toast.success('Réservation créée avec succès');
+    toast.success(`${names.length} réservation(s) créée(s) avec succès`);
     
-    // Automatically send email
-    if (data && data.client_email) {
-      await sendTicketEmail(data);
+    // Send emails for each reservation
+    if (data) {
+      for (const reservation of data) {
+        if (reservation.client_email) {
+          await sendTicketEmail(reservation);
+        }
+      }
     }
 
     setNewName('');
     setNewEmail('');
     setNewPersons(1);
+    setPersonNames([]);
     setIsAdding(false);
     fetchReservations();
   };
@@ -335,15 +356,17 @@ const AdminContent = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nom du client *</Label>
-                  <Input
-                    id="name"
-                    placeholder="Jean Dupont"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                  />
-                </div>
+                {newPersons <= 1 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nom du client *</Label>
+                    <Input
+                      id="name"
+                      placeholder="Jean Dupont"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
                   <Input
@@ -361,13 +384,44 @@ const AdminContent = () => {
                     type="number"
                     min={1}
                     value={newPersons}
-                    onChange={(e) => setNewPersons(parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1;
+                      setNewPersons(val);
+                      if (val > 1) {
+                        setPersonNames(prev => {
+                          const updated = [...prev];
+                          while (updated.length < val) updated.push('');
+                          return updated.slice(0, val);
+                        });
+                      } else {
+                        setPersonNames([]);
+                      }
+                    }}
                   />
                 </div>
               </div>
+              {newPersons > 1 && (
+                <div className="space-y-3">
+                  <Label>Noms des personnes *</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Array.from({ length: newPersons }, (_, i) => (
+                      <Input
+                        key={i}
+                        placeholder={`Personne ${i + 1}`}
+                        value={personNames[i] || ''}
+                        onChange={(e) => {
+                          const updated = [...personNames];
+                          updated[i] = e.target.value;
+                          setPersonNames(updated);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
               <Button onClick={addReservation} disabled={isAdding} className="w-full md:w-auto">
                 <Send className="w-4 h-4 mr-2" />
-                {isAdding ? 'Création et envoi...' : 'Créer et envoyer le ticket'}
+                {isAdding ? 'Création et envoi...' : `Créer et envoyer ${newPersons > 1 ? newPersons + ' tickets' : 'le ticket'}`}
               </Button>
             </CardContent>
           </Card>
