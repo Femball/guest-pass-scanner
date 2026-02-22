@@ -1,0 +1,1 @@
+ALTER TABLE public.reservations ADD COLUMN event_date date NOT NULL DEFAULT CURRENT_DATE;

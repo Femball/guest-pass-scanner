@@ -19,6 +19,7 @@ export type Database = {
           client_email: string | null
           client_name: string
           created_at: string
+          event_date: string
           id: string
           is_validated: boolean
           number_of_persons: number
@@ -29,6 +30,7 @@ export type Database = {
           client_email?: string | null
           client_name: string
           created_at?: string
+          event_date?: string
           id?: string
           is_validated?: boolean
           number_of_persons?: number
@@ -39,6 +41,7 @@ export type Database = {
           client_email?: string | null
           client_name?: string
           created_at?: string
+          event_date?: string
           id?: string
           is_validated?: boolean
           number_of_persons?: number

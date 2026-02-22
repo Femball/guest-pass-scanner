@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +26,7 @@ interface Reservation {
   validated_at: string | null;
   created_at: string;
   number_of_persons: number;
+  event_date: string;
 }
 
 const AdminContent = () => {
@@ -32,6 +38,7 @@ const AdminContent = () => {
   const [newPersons, setNewPersons] = useState(1);
   const [personNames, setPersonNames] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [eventDate, setEventDate] = useState<Date>(new Date());
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
@@ -150,11 +157,14 @@ const AdminContent = () => {
 
     setIsAdding(true);
 
+    const eventDateStr = format(eventDate, 'yyyy-MM-dd');
+
     const reservationsToInsert = names.map(name => ({
       client_name: name,
       client_email: newEmail.trim(),
       qr_code: generateQRCode(),
       number_of_persons: 1,
+      event_date: eventDateStr,
     }));
 
     const { data, error } = await supabase.from('reservations').insert(reservationsToInsert).select();
@@ -180,6 +190,7 @@ const AdminContent = () => {
     setNewEmail('');
     setNewPersons(1);
     setPersonNames([]);
+    setEventDate(new Date());
     setIsAdding(false);
     fetchReservations();
   };
@@ -215,11 +226,12 @@ const AdminContent = () => {
   const totalPersons = reservations.reduce((sum, r) => sum + r.number_of_persons, 0);
 
   const exportGuestList = () => {
-    const header = ['Nom', 'Email', 'Nombre de personnes', 'Statut'];
+    const header = ['Nom', 'Email', 'Nombre de personnes', 'Date événement', 'Statut'];
     const rows = reservations.map(r => [
       r.client_name,
       r.client_email || '',
       r.number_of_persons.toString(),
+      r.event_date,
       r.is_validated ? 'Validé' : 'En attente',
     ]);
     const csvContent = [header, ...rows]
@@ -399,6 +411,32 @@ const AdminContent = () => {
                     }}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Date de l'événement *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !eventDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {eventDate ? format(eventDate, "PPP", { locale: fr }) : "Choisir une date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={eventDate}
+                        onSelect={(d) => d && setEventDate(d)}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
               {newPersons > 1 && (
                 <div className="space-y-3">
@@ -477,6 +515,10 @@ const AdminContent = () => {
                             {reservation.is_validated
                               ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
                               : reservation.client_email || 'Pas d\'email'}
+                            {' · '}
+                            <span className="font-medium">
+                              {format(new Date(reservation.event_date + 'T00:00:00'), 'dd/MM/yyyy')}
+                            </span>
                           </p>
                         </div>
                       </div>
