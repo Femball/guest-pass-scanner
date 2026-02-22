@@ -360,10 +360,10 @@ const AdminContent = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-primary/70" />
+                <QrCode className="w-8 h-8 text-primary/70" />
                 <div>
-                  <p className="text-2xl font-bold">{totalPersons}</p>
-                  <p className="text-xs text-muted-foreground">Personnes</p>
+                  <p className="text-2xl font-bold">{reservations.length}</p>
+                  <p className="text-xs text-muted-foreground">QR Codes</p>
                 </div>
               </div>
             </CardContent>
