@@ -64,6 +64,23 @@ export const useReservationValidator = () => {
         return;
       }
 
+      // Vérifier la date de l'événement
+      if (reservation.event_date) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (reservation.event_date !== today) {
+          const eventDateFormatted = new Date(reservation.event_date + 'T00:00:00').toLocaleDateString('fr-FR');
+          playErrorSound();
+          setState({
+            isValid: false,
+            clientName: reservation.client_name,
+            numberOfPersons: reservation.number_of_persons,
+            message: `Ce ticket est valable uniquement le ${eventDateFormatted}`,
+            isLoading: false,
+          });
+          return;
+        }
+      }
+
       // Vérifier si déjà validé
       if (reservation.is_validated) {
         playErrorSound();
