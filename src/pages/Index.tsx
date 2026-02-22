@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, QrCode, Users, LogOut } from 'lucide-react';
+import { QrCode, Users, LogOut } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
 import ValidationResult from '@/components/ValidationResult';
 import { useReservationValidator } from '@/hooks/useReservationValidator';
@@ -38,31 +38,31 @@ const Index = () => {
     }}>
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-primary/10">
-            <Shield className="w-6 h-6 text-primary" />
+            <QrCode className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">SecuriScan</h1>
+            <h1 className="text-lg font-bold text-foreground">L'Access</h1>
             <p className="text-xs text-muted-foreground">Contrôle d'accès</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Link to="/admin">
+          {isAdmin &&
+        <Link to="/admin">
               <Button variant="outline" size="sm" className="gap-2">
                 <Users className="w-4 h-4" />
                 Admin
               </Button>
             </Link>
-          )}
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={async () => {
-              await signOut();
-              toast.success('Déconnexion réussie');
-            }}
-            title="Se déconnecter"
-          >
+        }
+          <Button
+          variant="ghost"
+          size="icon"
+          onClick={async () => {
+            await signOut();
+            toast.success('Déconnexion réussie');
+          }}
+          title="Se déconnecter">
+
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
