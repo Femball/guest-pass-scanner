@@ -93,8 +93,39 @@ const AdminContent = () => {
   }, []);
 
   const generateQRCode = () => {
-    // Use cryptographically secure random generation
     return `TICKET-${crypto.randomUUID().toUpperCase()}`;
+  };
+
+  // Generate a deterministic color from event_date
+  const getEventColor = (eventDate: string): string => {
+    let hash = 0;
+    for (let i = 0; i < eventDate.length; i++) {
+      hash = eventDate.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 70%, 35%)`;
+  };
+
+  const getEventColorHex = (eventDate: string): string => {
+    let hash = 0;
+    for (let i = 0; i < eventDate.length; i++) {
+      hash = eventDate.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    // Convert HSL to hex (s=70%, l=35%)
+    const s = 0.7, l = 0.35;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+    const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (hue < 60) { r = c; g = x; }
+    else if (hue < 120) { r = x; g = c; }
+    else if (hue < 180) { g = c; b = x; }
+    else if (hue < 240) { g = x; b = c; }
+    else if (hue < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+    const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return `${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
   const sendTicketEmail = async (reservation: Reservation) => {
@@ -106,12 +137,15 @@ const AdminContent = () => {
     setSendingEmail(reservation.id);
 
     try {
+      const colorHex = getEventColorHex(reservation.event_date);
       const { data, error } = await supabase.functions.invoke('send-ticket-email', {
         body: {
           clientName: reservation.client_name,
           clientEmail: reservation.client_email,
           qrCode: reservation.qr_code,
           eventName: 'Soirée',
+          eventDate: reservation.event_date,
+          qrColor: colorHex,
         },
       });
 
@@ -210,9 +244,14 @@ const AdminContent = () => {
   const showQRCode = async (reservation: Reservation) => {
     setSelectedReservation(reservation);
     try {
+      const colorHex = '#' + getEventColorHex(reservation.event_date);
       const dataUrl = await QRCode.toDataURL(reservation.qr_code, {
         width: 300,
         margin: 2,
+        color: {
+          dark: colorHex,
+          light: '#ffffff',
+        },
       });
       setQrCodeDataUrl(dataUrl);
       setQrDialogOpen(true);
@@ -572,6 +611,12 @@ const AdminContent = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="flex flex-col items-center gap-4 py-4">
+              <h2 
+                className="text-2xl font-black tracking-wider"
+                style={{ color: selectedReservation ? getEventColor(selectedReservation.event_date) : undefined }}
+              >
+                L'ACCESS
+              </h2>
               {qrCodeDataUrl && (
                 <img 
                   src={qrCodeDataUrl} 
@@ -579,11 +624,14 @@ const AdminContent = () => {
                   className="w-64 h-64 rounded-lg border border-border"
                 />
               )}
+              <p className="font-semibold text-foreground text-lg">
+                {selectedReservation?.client_name}
+              </p>
               <p className="text-sm text-muted-foreground font-mono break-all text-center px-4">
                 {selectedReservation?.qr_code}
               </p>
               <p className="text-sm text-muted-foreground">
-                {selectedReservation?.number_of_persons} personne(s)
+                {selectedReservation?.event_date && format(new Date(selectedReservation.event_date + 'T00:00:00'), 'dd/MM/yyyy')}
               </p>
             </div>
           </DialogContent>
