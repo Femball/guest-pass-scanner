@@ -234,7 +234,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!sendgridResponse.ok) {
       const errorText = await sendgridResponse.text();
       console.error("SendGrid error:", errorText);
-      throw new Error(`SendGrid error: ${errorText}`);
+      throw new Error("EMAIL_SEND_FAILED");
     }
 
     console.log("Email sent successfully via SendGrid");
@@ -246,7 +246,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-ticket-email function:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: "Une erreur est survenue lors de l'envoi de l'email" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

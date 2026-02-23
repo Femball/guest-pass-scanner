@@ -163,8 +163,17 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error in assign-user-role function:", error);
+    // Only return safe, known error messages to the client
+    const safeMessages = [
+      "Aucun utilisateur trouvé avec cet email. L'utilisateur doit d'abord créer un compte.",
+      "Erreur lors de la mise à jour du rôle",
+      "Erreur lors de l'attribution du rôle",
+    ];
+    const clientMessage = safeMessages.includes(error.message)
+      ? error.message
+      : "Une erreur est survenue lors de l'attribution du rôle";
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: clientMessage }),
       { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
