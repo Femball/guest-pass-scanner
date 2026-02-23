@@ -31,6 +31,13 @@ interface Reservation {
   event_date: string;
 }
 
+interface BottleWithReservation {
+  bottle_type: string;
+  quantity: number;
+  reservation_id: string;
+  reservations: { client_name: string; event_date: string } | null;
+}
+
 const AdminContent = () => {
   const { signOut } = useAuth();
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -55,6 +62,8 @@ const AdminContent = () => {
   const [newUserRole, setNewUserRole] = useState<'admin' | 'agent'>('agent');
   const [isAddingUser, setIsAddingUser] = useState(false);
 
+  const [bottleData, setBottleData] = useState<BottleWithReservation[]>([]);
+
   const fetchReservations = async () => {
     const { data, error } = await supabase
       .from('reservations')
@@ -68,6 +77,13 @@ const AdminContent = () => {
 
     setReservations(data || []);
     setIsLoading(false);
+
+    // Fetch bottles with reservation info
+    const { data: bottles } = await supabase
+      .from('reservation_bottles')
+      .select('bottle_type, quantity, reservation_id, reservations(client_name, event_date)');
+    
+    setBottleData((bottles as any) || []);
   };
 
   useEffect(() => {
@@ -212,6 +228,25 @@ const AdminContent = () => {
       toast.error('Erreur lors de la création des réservations');
       setIsAdding(false);
       return;
+    }
+
+    // Save bottles if any
+    if (hasBottle && data) {
+      const validBottles = bottles.filter(b => b.type.trim());
+      if (validBottles.length > 0) {
+        const bottleRows = data.flatMap(reservation =>
+          validBottles.map(b => ({
+            reservation_id: reservation.id,
+            bottle_type: b.type.trim(),
+            quantity: b.quantity,
+          }))
+        );
+        const { error: bottleError } = await supabase.from('reservation_bottles').insert(bottleRows);
+        if (bottleError) {
+          console.error('Error saving bottles:', bottleError);
+          toast.error('Réservations créées mais erreur lors de l\'enregistrement des bouteilles');
+        }
+      }
     }
 
     toast.success(`${names.length} réservation(s) créée(s) avec succès`);
@@ -713,7 +748,76 @@ const AdminContent = () => {
           </Card>
         </motion.div>
 
-        {/* QR Code Dialog */}
+        {/* Bottles summary */}
+        {bottleData.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wine className="w-5 h-5" />
+                  Bouteilles par événement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  // Group bottles by event_date
+                  const byDate: Record<string, { bottle_type: string; quantity: number; client_name: string }[]> = {};
+                  for (const b of bottleData) {
+                    const res = b.reservations as any;
+                    if (!res) continue;
+                    const date = res.event_date;
+                    if (!byDate[date]) byDate[date] = [];
+                    byDate[date].push({ bottle_type: b.bottle_type, quantity: b.quantity, client_name: res.client_name });
+                  }
+                  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+                  return (
+                    <Tabs defaultValue={dates[0]} className="w-full">
+                      <TabsList className="w-full flex flex-wrap h-auto gap-1 mb-4">
+                        {dates.map(date => (
+                          <TabsTrigger key={date} value={date} className="text-xs">
+                            {format(new Date(date + 'T00:00:00'), 'dd/MM/yyyy')}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      {dates.map(date => {
+                        const items = byDate[date];
+                        const total = items.reduce((s, i) => s + i.quantity * 60, 0);
+                        return (
+                          <TabsContent key={date} value={date}>
+                            <div className="space-y-2">
+                              {items.map((item, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                                  <div>
+                                    <p className="font-medium text-foreground">{item.bottle_type}</p>
+                                    <p className="text-sm text-muted-foreground">{item.client_name}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-medium">× {item.quantity}</p>
+                                    <p className="text-sm text-muted-foreground">{item.quantity * 60}€</p>
+                                  </div>
+                                </div>
+                              ))}
+                              <div className="border-t border-border pt-3 flex justify-between font-bold text-lg">
+                                <span>Total</span>
+                                <span>{total}€</span>
+                              </div>
+                            </div>
+                          </TabsContent>
+                        );
+                      })}
+                    </Tabs>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+
         <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
