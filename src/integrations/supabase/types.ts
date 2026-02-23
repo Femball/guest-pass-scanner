@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      reservation_bottles: {
+        Row: {
+          bottle_type: string
+          created_at: string
+          id: string
+          quantity: number
+          reservation_id: string
+        }
+        Insert: {
+          bottle_type: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          reservation_id: string
+        }
+        Update: {
+          bottle_type?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          reservation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservation_bottles_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservations: {
         Row: {
           client_email: string | null
