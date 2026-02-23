@@ -146,7 +146,7 @@ const Auth = () => {
               <QrCode className="w-8 h-8 text-primary" />
             </motion.div>
             <div>
-              <CardTitle className="text-2xl">SecuriScan</CardTitle>
+              <CardTitle className="text-2xl">L'Access</CardTitle>
               <CardDescription>
                 {isLogin ? 'Connectez-vous à votre compte' : 'Créez un nouveau compte'}
               </CardDescription>
