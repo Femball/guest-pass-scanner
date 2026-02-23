@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico"],
       manifest: {
-        name: "SecuriScan - Contrôle d'accès",
-        short_name: "SecuriScan",
+        name: "L'Access - Contrôle d'accès",
+        short_name: "L'Access",
         description: "Application de scan QR pour le contrôle d'accès événementiel",
         theme_color: "#0a0e14",
         background_color: "#0a0e14",
@@ -57,5 +57,6 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
   },
 }));
