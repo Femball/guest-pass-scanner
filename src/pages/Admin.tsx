@@ -44,6 +44,7 @@ const AdminContent = () => {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -261,9 +262,21 @@ const AdminContent = () => {
     }
   };
 
-  const validatedCount = reservations.filter(r => r.is_validated).length;
-  const pendingCount = reservations.filter(r => !r.is_validated).length;
-  const totalPersons = reservations.reduce((sum, r) => sum + r.number_of_persons, 0);
+  // Compute sorted dates for tabs
+  const dateGroups = reservations.reduce<Record<string, Reservation[]>>((acc, r) => {
+    const date = r.event_date;
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(r);
+    return acc;
+  }, {});
+  const sortedDates = Object.keys(dateGroups).sort((a, b) => b.localeCompare(a));
+
+  // Auto-select first date if none selected or selected date no longer exists
+  const activeDate = selectedDate && dateGroups[selectedDate] ? selectedDate : sortedDates[0] || null;
+  const filteredReservations = activeDate ? dateGroups[activeDate] : [];
+
+  const validatedCount = filteredReservations.filter(r => r.is_validated).length;
+  const pendingCount = filteredReservations.filter(r => !r.is_validated).length;
 
   const exportGuestList = () => {
     const header = ['Nom', 'Email', 'Nombre de personnes', 'Date événement', 'Statut'];
@@ -352,7 +365,7 @@ const AdminContent = () => {
               <div className="flex items-center gap-3">
                 <Users className="w-8 h-8 text-primary" />
                 <div>
-                  <p className="text-2xl font-bold">{reservations.length}</p>
+                  <p className="text-2xl font-bold">{filteredReservations.length}</p>
                   <p className="text-xs text-muted-foreground">Réservations</p>
                 </div>
               </div>
@@ -363,7 +376,7 @@ const AdminContent = () => {
               <div className="flex items-center gap-3">
                 <Users className="w-8 h-8 text-primary/70" />
                 <div>
-                  <p className="text-2xl font-bold">{reservations.length}</p>
+                  <p className="text-2xl font-bold">{filteredReservations.length}</p>
                   <p className="text-xs text-muted-foreground">Personnes</p>
                 </div>
               </div>
@@ -527,17 +540,8 @@ const AdminContent = () => {
                 <p className="text-center text-muted-foreground py-8">
                   Aucune réservation pour le moment
                 </p>
-              ) : (() => {
-                const dateGroups = reservations.reduce<Record<string, Reservation[]>>((acc, r) => {
-                  const date = r.event_date;
-                  if (!acc[date]) acc[date] = [];
-                  acc[date].push(r);
-                  return acc;
-                }, {});
-                const sortedDates = Object.keys(dateGroups).sort((a, b) => b.localeCompare(a));
-                
-                return (
-                  <Tabs defaultValue={sortedDates[0]} className="w-full">
+              ) : activeDate ? (
+                  <Tabs value={activeDate} onValueChange={setSelectedDate} className="w-full">
                     <TabsList className="w-full flex flex-wrap h-auto gap-1 mb-4">
                       {sortedDates.map(date => (
                         <TabsTrigger key={date} value={date} className="text-xs">
@@ -616,8 +620,7 @@ const AdminContent = () => {
                       </TabsContent>
                     ))}
                   </Tabs>
-                );
-              })()}
+              ) : null}
             </CardContent>
           </Card>
         </motion.div>
