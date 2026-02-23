@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -526,78 +527,97 @@ const AdminContent = () => {
                 <p className="text-center text-muted-foreground py-8">
                   Aucune réservation pour le moment
                 </p>
-              ) : (
-                <div className="space-y-3">
-                  {reservations.map((reservation) => (
-                    <motion.div
-                      key={reservation.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-full ${reservation.is_validated ? 'bg-valid/20' : 'bg-muted'}`}>
-                          {reservation.is_validated ? (
-                            <CheckCircle className="w-5 h-5 text-valid" />
-                          ) : (
-                            <QrCode className="w-5 h-5 text-muted-foreground" />
-                          )}
+              ) : (() => {
+                const dateGroups = reservations.reduce<Record<string, Reservation[]>>((acc, r) => {
+                  const date = r.event_date;
+                  if (!acc[date]) acc[date] = [];
+                  acc[date].push(r);
+                  return acc;
+                }, {});
+                const sortedDates = Object.keys(dateGroups).sort((a, b) => b.localeCompare(a));
+                
+                return (
+                  <Tabs defaultValue={sortedDates[0]} className="w-full">
+                    <TabsList className="w-full flex flex-wrap h-auto gap-1 mb-4">
+                      {sortedDates.map(date => (
+                        <TabsTrigger key={date} value={date} className="text-xs">
+                          {format(new Date(date + 'T00:00:00'), 'dd/MM/yyyy')} ({dateGroups[date].length})
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    {sortedDates.map(date => (
+                      <TabsContent key={date} value={date}>
+                        <div className="space-y-3">
+                          {dateGroups[date].map((reservation) => (
+                            <motion.div
+                              key={reservation.id}
+                              className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`p-2 rounded-full ${reservation.is_validated ? 'bg-valid/20' : 'bg-muted'}`}>
+                                  {reservation.is_validated ? (
+                                    <CheckCircle className="w-5 h-5 text-valid" />
+                                  ) : (
+                                    <QrCode className="w-5 h-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-foreground">
+                                    {reservation.client_name}
+                                    <span className="ml-2 text-sm text-muted-foreground">
+                                      ({reservation.number_of_persons} pers.)
+                                    </span>
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {reservation.is_validated
+                                      ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
+                                      : reservation.client_email || 'Pas d\'email'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {reservation.client_email && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => sendTicketEmail(reservation)}
+                                    disabled={sendingEmail === reservation.id}
+                                    title="Renvoyer le ticket"
+                                  >
+                                    {sendingEmail === reservation.id ? (
+                                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <Mail className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => showQRCode(reservation)}
+                                  title="Voir le QR code"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => deleteReservation(reservation.id)}
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </motion.div>
+                          ))}
                         </div>
-                        <div>
-                          <p className="font-medium text-foreground">
-                            {reservation.client_name}
-                            <span className="ml-2 text-sm text-muted-foreground">
-                              ({reservation.number_of_persons} pers.)
-                            </span>
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {reservation.is_validated
-                              ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
-                              : reservation.client_email || 'Pas d\'email'}
-                            {' · '}
-                            <span className="font-medium">
-                              {format(new Date(reservation.event_date + 'T00:00:00'), 'dd/MM/yyyy')}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {reservation.client_email && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => sendTicketEmail(reservation)}
-                            disabled={sendingEmail === reservation.id}
-                            title="Renvoyer le ticket"
-                          >
-                            {sendingEmail === reservation.id ? (
-                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <Mail className="w-4 h-4" />
-                            )}
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => showQRCode(reservation)}
-                          title="Voir le QR code"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteReservation(reservation.id)}
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                );
+              })()}
             </CardContent>
           </Card>
         </motion.div>
