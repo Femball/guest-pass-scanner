@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -38,6 +39,8 @@ const AdminContent = () => {
   const [newEmail, setNewEmail] = useState('');
   const [newPersons, setNewPersons] = useState(1);
   const [personNames, setPersonNames] = useState<string[]>([]);
+  const [hasBottle, setHasBottle] = useState(false);
+  const [bottles, setBottles] = useState<{ type: string; quantity: number }[]>([{ type: '', quantity: 1 }]);
   const [isAdding, setIsAdding] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
@@ -226,6 +229,8 @@ const AdminContent = () => {
     setNewEmail('');
     setNewPersons(1);
     setPersonNames([]);
+    setHasBottle(false);
+    setBottles([{ type: '', quantity: 1 }]);
     setEventDate(new Date());
     setIsAdding(false);
     fetchReservations();
@@ -510,6 +515,89 @@ const AdminContent = () => {
                   </div>
                 </div>
               )}
+              {/* Bottle option */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="hasBottle"
+                    checked={hasBottle}
+                    onCheckedChange={(checked) => {
+                      setHasBottle(!!checked);
+                      if (!checked) setBottles([{ type: '', quantity: 1 }]);
+                    }}
+                  />
+                  <Label htmlFor="hasBottle" className="flex items-center gap-1 cursor-pointer">
+                    <Wine className="w-4 h-4" />
+                    Avec bouteille
+                  </Label>
+                </div>
+
+                {hasBottle && (
+                  <div className="space-y-3 pl-6 border-l-2 border-primary/20">
+                    {bottles.map((bottle, i) => (
+                      <div key={i} className="flex items-end gap-2">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs">Type de bouteille</Label>
+                          <Input
+                            placeholder="Ex: Champagne, Vodka..."
+                            value={bottle.type}
+                            onChange={(e) => {
+                              const updated = [...bottles];
+                              updated[i] = { ...updated[i], type: e.target.value };
+                              setBottles(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="w-20 space-y-1">
+                          <Label className="text-xs">Qté</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={bottle.quantity}
+                            onChange={(e) => {
+                              const updated = [...bottles];
+                              updated[i] = { ...updated[i], quantity: parseInt(e.target.value) || 1 };
+                              setBottles(updated);
+                            }}
+                          />
+                        </div>
+                        {bottles.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 shrink-0"
+                            onClick={() => setBottles(bottles.filter((_, j) => j !== i))}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBottles([...bottles, { type: '', quantity: 1 }])}
+                      className="gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Ajouter une bouteille
+                    </Button>
+                    <div className="bg-muted/50 rounded-md p-3 space-y-1">
+                      {bottles.filter(b => b.type.trim()).map((b, i) => (
+                        <div key={i} className="flex justify-between text-sm">
+                          <span>{b.type} × {b.quantity}</span>
+                          <span className="font-medium">{b.quantity * 60}€</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-border pt-1 flex justify-between font-bold">
+                        <span>Sous-total bouteilles</span>
+                        <span>{bottles.reduce((sum, b) => sum + b.quantity * 60, 0)}€</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button onClick={addReservation} disabled={isAdding} className="w-full md:w-auto">
                 <Send className="w-4 h-4 mr-2" />
                 {isAdding ? 'Création et envoi...' : `Créer et envoyer ${newPersons > 1 ? newPersons + ' tickets' : 'le ticket'}`}
