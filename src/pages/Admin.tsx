@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -339,6 +339,84 @@ const AdminContent = () => {
     toast.success(`Liste exportée (${reservations.length} invités)`);
   };
 
+  const printBottles = () => {
+    if (!activeDate) return;
+    // Gather bottles for the active date
+    const dateBottles = bottleData
+      .filter(b => {
+        const res = b.reservations as any;
+        return res?.event_date === activeDate;
+      })
+      .map(b => ({
+        bottle_type: b.bottle_type,
+        quantity: b.quantity,
+        client_name: (b.reservations as any)?.client_name || '',
+        price: b.quantity * 60,
+      }));
+
+    if (dateBottles.length === 0) {
+      toast.error('Aucune bouteille pour cette date');
+      return;
+    }
+
+    const total = dateBottles.reduce((s, b) => s + b.price, 0);
+    const formattedDate = format(new Date(activeDate + 'T00:00:00'), 'dd/MM/yyyy');
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bouteilles - ${formattedDate}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; color: #111; }
+          h1 { font-size: 22px; margin-bottom: 4px; }
+          h2 { font-size: 14px; color: #666; margin-bottom: 24px; font-weight: normal; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; }
+          th { background: #f5f5f5; font-size: 13px; text-transform: uppercase; color: #555; }
+          td { font-size: 14px; }
+          .total-row { font-weight: bold; font-size: 16px; border-top: 2px solid #111; }
+          .price { text-align: right; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <h1>Récapitulatif Bouteilles</h1>
+        <h2>Événement du ${formattedDate}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Bouteille</th>
+              <th>Quantité</th>
+              <th class="price">Prix</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dateBottles.map(b => `
+              <tr>
+                <td>${b.client_name}</td>
+                <td>${b.bottle_type}</td>
+                <td>${b.quantity}</td>
+                <td class="price">${b.price}€</td>
+              </tr>
+            `).join('')}
+            <tr class="total-row">
+              <td colspan="3">Total</td>
+              <td class="price">${total}€</td>
+            </tr>
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -368,6 +446,16 @@ const AdminContent = () => {
           >
             <Download className="w-5 h-5 md:w-4 md:h-4" />
             <span className="md:inline">Exporter CSV</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-12 px-4 md:h-10 text-sm flex-1 md:flex-none"
+            onClick={printBottles}
+            disabled={!activeDate}
+            title="Imprimer les bouteilles"
+          >
+            <Printer className="w-5 h-5 md:w-4 md:h-4" />
+            <span className="md:inline">Imprimer bouteilles</span>
           </Button>
           <Button 
             variant="outline" 
