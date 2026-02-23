@@ -672,150 +672,120 @@ const AdminContent = () => {
                         </TabsTrigger>
                       ))}
                     </TabsList>
-                    {sortedDates.map(date => (
-                      <TabsContent key={date} value={date}>
-                        <div className="space-y-3">
-                          {dateGroups[date].map((reservation) => (
-                            <motion.div
-                              key={reservation.id}
-                              className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className={`p-2 rounded-full ${reservation.is_validated ? 'bg-valid/20' : 'bg-muted'}`}>
-                                  {reservation.is_validated ? (
-                                    <CheckCircle className="w-5 h-5 text-valid" />
-                                  ) : (
-                                    <QrCode className="w-5 h-5 text-muted-foreground" />
+                    {sortedDates.map(date => {
+                      // Get bottles for this date
+                      const dateBottles = bottleData.filter(b => {
+                        const res = b.reservations as any;
+                        return res?.event_date === date;
+                      }).map(b => ({
+                        bottle_type: b.bottle_type,
+                        quantity: b.quantity,
+                        client_name: (b.reservations as any)?.client_name || '',
+                      }));
+                      const bottleTotal = dateBottles.reduce((s, i) => s + i.quantity * 60, 0);
+
+                      return (
+                        <TabsContent key={date} value={date}>
+                          <div className="space-y-3">
+                            {dateGroups[date].map((reservation) => (
+                              <motion.div
+                                key={reservation.id}
+                                className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className={`p-2 rounded-full ${reservation.is_validated ? 'bg-valid/20' : 'bg-muted'}`}>
+                                    {reservation.is_validated ? (
+                                      <CheckCircle className="w-5 h-5 text-valid" />
+                                    ) : (
+                                      <QrCode className="w-5 h-5 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-foreground">
+                                      {reservation.client_name}
+                                      <span className="ml-2 text-sm text-muted-foreground">
+                                        ({reservation.number_of_persons} pers.)
+                                      </span>
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {reservation.is_validated
+                                        ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
+                                        : reservation.client_email || 'Pas d\'email'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {reservation.client_email && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => sendTicketEmail(reservation)}
+                                      disabled={sendingEmail === reservation.id}
+                                      title="Renvoyer le ticket"
+                                    >
+                                      {sendingEmail === reservation.id ? (
+                                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                      ) : (
+                                        <Mail className="w-4 h-4" />
+                                      )}
+                                    </Button>
                                   )}
-                                </div>
-                                <div>
-                                  <p className="font-medium text-foreground">
-                                    {reservation.client_name}
-                                    <span className="ml-2 text-sm text-muted-foreground">
-                                      ({reservation.number_of_persons} pers.)
-                                    </span>
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {reservation.is_validated
-                                      ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
-                                      : reservation.client_email || 'Pas d\'email'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {reservation.client_email && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => sendTicketEmail(reservation)}
-                                    disabled={sendingEmail === reservation.id}
-                                    title="Renvoyer le ticket"
+                                    onClick={() => showQRCode(reservation)}
+                                    title="Voir le QR code"
                                   >
-                                    {sendingEmail === reservation.id ? (
-                                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                    ) : (
-                                      <Mail className="w-4 h-4" />
-                                    )}
+                                    <Eye className="w-4 h-4" />
                                   </Button>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => showQRCode(reservation)}
-                                  title="Voir le QR code"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => deleteReservation(reservation.id)}
-                                  title="Supprimer"
-                                >
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => deleteReservation(reservation.id)}
+                                    title="Supprimer"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </motion.div>
+                            ))}
+
+                            {/* Bottles section within the same tab */}
+                            {dateBottles.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-border space-y-2">
+                                <h4 className="flex items-center gap-2 font-semibold text-foreground">
+                                  <Wine className="w-4 h-4" />
+                                  Bouteilles
+                                </h4>
+                                {dateBottles.map((item, i) => (
+                                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                                    <div>
+                                      <p className="font-medium text-foreground">{item.bottle_type}</p>
+                                      <p className="text-sm text-muted-foreground">{item.client_name}</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-medium">× {item.quantity}</p>
+                                      <p className="text-sm text-muted-foreground">{item.quantity * 60}€</p>
+                                    </div>
+                                  </div>
+                                ))}
+                                <div className="border-t border-border pt-2 flex justify-between font-bold">
+                                  <span>Total bouteilles</span>
+                                  <span>{bottleTotal}€</span>
+                                </div>
                               </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </TabsContent>
-                    ))}
+                            )}
+                          </div>
+                        </TabsContent>
+                      );
+                    })}
                   </Tabs>
               ) : null}
             </CardContent>
           </Card>
         </motion.div>
-
-        {/* Bottles summary */}
-        {bottleData.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wine className="w-5 h-5" />
-                  Bouteilles par événement
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {(() => {
-                  // Group bottles by event_date
-                  const byDate: Record<string, { bottle_type: string; quantity: number; client_name: string }[]> = {};
-                  for (const b of bottleData) {
-                    const res = b.reservations as any;
-                    if (!res) continue;
-                    const date = res.event_date;
-                    if (!byDate[date]) byDate[date] = [];
-                    byDate[date].push({ bottle_type: b.bottle_type, quantity: b.quantity, client_name: res.client_name });
-                  }
-                  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
-                  return (
-                    <Tabs defaultValue={dates[0]} className="w-full">
-                      <TabsList className="w-full flex flex-wrap h-auto gap-1 mb-4">
-                        {dates.map(date => (
-                          <TabsTrigger key={date} value={date} className="text-xs">
-                            {format(new Date(date + 'T00:00:00'), 'dd/MM/yyyy')}
-                          </TabsTrigger>
-                        ))}
-                      </TabsList>
-                      {dates.map(date => {
-                        const items = byDate[date];
-                        const total = items.reduce((s, i) => s + i.quantity * 60, 0);
-                        return (
-                          <TabsContent key={date} value={date}>
-                            <div className="space-y-2">
-                              {items.map((item, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                                  <div>
-                                    <p className="font-medium text-foreground">{item.bottle_type}</p>
-                                    <p className="text-sm text-muted-foreground">{item.client_name}</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="font-medium">× {item.quantity}</p>
-                                    <p className="text-sm text-muted-foreground">{item.quantity * 60}€</p>
-                                  </div>
-                                </div>
-                              ))}
-                              <div className="border-t border-border pt-3 flex justify-between font-bold text-lg">
-                                <span>Total</span>
-                                <span>{total}€</span>
-                              </div>
-                            </div>
-                          </TabsContent>
-                        );
-                      })}
-                    </Tabs>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
 
 
         <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
