@@ -190,7 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <tr>
                   <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
                     <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                      SecuriScan - Gestion sécurisée des accès
+                      L'Access - Gestion sécurisée des accès
                     </p>
                   </td>
                 </tr>
