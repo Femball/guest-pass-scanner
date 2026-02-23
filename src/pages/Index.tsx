@@ -36,7 +36,7 @@ const Index = () => {
       opacity: 1,
       y: 0
     }}>
-        <div className="flex items-center gap-3">
+        <div className="items-center gap-3 flex flex-row my-[5px] py-[10px]">
           <div className="p-2 rounded-xl bg-primary/10">
             <QrCode className="w-6 h-6 text-primary" />
           </div>
