@@ -234,13 +234,12 @@ const AdminContent = () => {
     if (hasBottle && data) {
       const validBottles = bottles.filter(b => b.type.trim());
       if (validBottles.length > 0) {
-        const bottleRows = data.flatMap(reservation =>
-          validBottles.map(b => ({
-            reservation_id: reservation.id,
-            bottle_type: b.type.trim(),
-            quantity: b.quantity,
-          }))
-        );
+        // Only link bottles to the first reservation (not duplicated per person)
+        const bottleRows = validBottles.map(b => ({
+          reservation_id: data[0].id,
+          bottle_type: b.type.trim(),
+          quantity: b.quantity,
+        }));
         const { error: bottleError } = await supabase.from('reservation_bottles').insert(bottleRows);
         if (bottleError) {
           console.error('Error saving bottles:', bottleError);
