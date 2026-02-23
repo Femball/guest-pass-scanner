@@ -687,94 +687,95 @@ const AdminContent = () => {
                       return (
                         <TabsContent key={date} value={date}>
                           <div className="space-y-3">
-                            {dateGroups[date].map((reservation) => (
+                            {dateGroups[date].map((reservation) => {
+                              // Get bottles for this specific reservation
+                              const resBottles = bottleData.filter(b => b.reservation_id === reservation.id);
+                              return (
                               <motion.div
                                 key={reservation.id}
-                                className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                                className="p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                               >
-                                <div className="flex items-center gap-4">
-                                  <div className={`p-2 rounded-full ${reservation.is_validated ? 'bg-valid/20' : 'bg-muted'}`}>
-                                    {reservation.is_validated ? (
-                                      <CheckCircle className="w-5 h-5 text-valid" />
-                                    ) : (
-                                      <QrCode className="w-5 h-5 text-muted-foreground" />
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                    <div className={`p-2 rounded-full ${reservation.is_validated ? 'bg-valid/20' : 'bg-muted'}`}>
+                                      {reservation.is_validated ? (
+                                        <CheckCircle className="w-5 h-5 text-valid" />
+                                      ) : (
+                                        <QrCode className="w-5 h-5 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-foreground">
+                                        {reservation.client_name}
+                                        <span className="ml-2 text-sm text-muted-foreground">
+                                          ({reservation.number_of_persons} pers.)
+                                        </span>
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {reservation.is_validated
+                                          ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
+                                          : reservation.client_email || 'Pas d\'email'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {reservation.client_email && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => sendTicketEmail(reservation)}
+                                        disabled={sendingEmail === reservation.id}
+                                        title="Renvoyer le ticket"
+                                      >
+                                        {sendingEmail === reservation.id ? (
+                                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                          <Mail className="w-4 h-4" />
+                                        )}
+                                      </Button>
                                     )}
-                                  </div>
-                                  <div>
-                                    <p className="font-medium text-foreground">
-                                      {reservation.client_name}
-                                      <span className="ml-2 text-sm text-muted-foreground">
-                                        ({reservation.number_of_persons} pers.)
-                                      </span>
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                      {reservation.is_validated
-                                        ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
-                                        : reservation.client_email || 'Pas d\'email'}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {reservation.client_email && (
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => sendTicketEmail(reservation)}
-                                      disabled={sendingEmail === reservation.id}
-                                      title="Renvoyer le ticket"
+                                      onClick={() => showQRCode(reservation)}
+                                      title="Voir le QR code"
                                     >
-                                      {sendingEmail === reservation.id ? (
-                                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                      ) : (
-                                        <Mail className="w-4 h-4" />
-                                      )}
+                                      <Eye className="w-4 h-4" />
                                     </Button>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => showQRCode(reservation)}
-                                    title="Voir le QR code"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => deleteReservation(reservation.id)}
-                                    title="Supprimer"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-destructive" />
-                                  </Button>
-                                </div>
-                              </motion.div>
-                            ))}
-
-                            {/* Bottles section within the same tab */}
-                            {dateBottles.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-border space-y-2">
-                                <h4 className="flex items-center gap-2 font-semibold text-foreground">
-                                  <Wine className="w-4 h-4" />
-                                  Bouteilles
-                                </h4>
-                                {dateBottles.map((item, i) => (
-                                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                                    <div>
-                                      <p className="font-medium text-foreground">{item.bottle_type}</p>
-                                      <p className="text-sm text-muted-foreground">{item.client_name}</p>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="font-medium">× {item.quantity}</p>
-                                      <p className="text-sm text-muted-foreground">{item.quantity * 60}€</p>
-                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => deleteReservation(reservation.id)}
+                                      title="Supprimer"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-destructive" />
+                                    </Button>
                                   </div>
-                                ))}
-                                <div className="border-t border-border pt-2 flex justify-between font-bold">
-                                  <span>Total bouteilles</span>
-                                  <span>{bottleTotal}€</span>
                                 </div>
+                                {resBottles.length > 0 && (
+                                  <div className="mt-2 ml-14 flex flex-wrap gap-2">
+                                    {resBottles.map((b, i) => (
+                                      <span key={i} className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary rounded-full px-2.5 py-1">
+                                        <Wine className="w-3 h-3" />
+                                        {b.bottle_type} × {b.quantity} ({b.quantity * 60}€)
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </motion.div>
+                              );
+                            })}
+
+                            {/* Total bouteilles pour la date */}
+                            {bottleTotal > 0 && (
+                              <div className="mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10 flex justify-between items-center">
+                                <span className="flex items-center gap-2 font-semibold text-sm">
+                                  <Wine className="w-4 h-4" />
+                                  Total bouteilles
+                                </span>
+                                <span className="font-bold">{bottleTotal}€</span>
                               </div>
                             )}
                           </div>
