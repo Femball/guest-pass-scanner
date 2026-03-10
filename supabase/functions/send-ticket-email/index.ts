@@ -202,42 +202,30 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Send email using SendGrid API
-    const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    // Send email using Resend API
+    const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${Deno.env.get("SENDGRID_API_KEY")}`,
+        "Authorization": `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: clientEmail, name: safeClientName }],
-          },
-        ],
-        from: {
-          email: "laccess@laccessstgo.rapidresto.online",
-          name: "L'Access - Tickets",
-        },
+        from: "L'Access - Tickets <laccess@laccessstgo.rapidresto.online>",
+        to: [clientEmail],
         subject: `🎉 Votre ticket pour ${safeEventName}`,
-        content: [
-          {
-            type: "text/html",
-            value: htmlContent,
-          },
-        ],
+        html: htmlContent,
       }),
     });
 
-    console.log("SendGrid response status:", sendgridResponse.status);
+    console.log("Resend response status:", resendResponse.status);
 
-    if (!sendgridResponse.ok) {
-      const errorText = await sendgridResponse.text();
-      console.error("SendGrid error:", errorText);
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error("Resend error:", errorText);
       throw new Error("EMAIL_SEND_FAILED");
     }
 
-    console.log("Email sent successfully via SendGrid");
+    console.log("Email sent successfully via Resend");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
