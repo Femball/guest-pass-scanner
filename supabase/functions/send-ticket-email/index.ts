@@ -13,7 +13,7 @@ const ticketEmailSchema = z.object({
   clientName: z.string()
     .min(1, "Client name is required")
     .max(100, "Client name must be less than 100 characters")
-    .regex(/^[\p{L}\s.'-]+$/u, "Client name contains invalid characters"),
+    .regex(/^[\p{L}\p{N}\s.'-]+$/u, "Client name contains invalid characters"),
   clientEmail: z.string()
     .email("Invalid email format")
     .max(255, "Email must be less than 255 characters"),
