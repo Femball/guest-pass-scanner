@@ -230,11 +230,13 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log("SendGrid response status:", sendgridResponse.status);
+    console.log("SendGrid API key present:", !!Deno.env.get("SENDGRID_API_KEY"));
 
     if (!sendgridResponse.ok) {
       const errorText = await sendgridResponse.text();
-      console.error("SendGrid error:", errorText);
-      throw new Error("EMAIL_SEND_FAILED");
+      console.error("SendGrid error status:", sendgridResponse.status);
+      console.error("SendGrid error body:", errorText);
+      throw new Error(`EMAIL_SEND_FAILED: ${sendgridResponse.status} - ${errorText}`);
     }
 
     console.log("Email sent successfully via SendGrid");
