@@ -47,6 +47,69 @@ export const useReservationValidator = () => {
     const validatedQrCode = validationResult.data;
 
     try {
+      // Detect flyer QR codes
+      if (validatedQrCode.startsWith('FLYER-')) {
+        const { data: flyer, error } = await supabase
+          .from('flyer_invitations')
+          .select('*')
+          .eq('qr_code', validatedQrCode)
+          .single();
+
+        if (error || !flyer) {
+          playErrorSound();
+          setState({
+            isValid: false,
+            message: 'QR Code flyer non reconnu.',
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Check event date
+        const today = new Date().toISOString().slice(0, 10);
+        if (flyer.event_date !== today) {
+          const eventDateFormatted = new Date(flyer.event_date + 'T00:00:00').toLocaleDateString('fr-FR');
+          playErrorSound();
+          setState({
+            isValid: false,
+            message: `Ce flyer est valable uniquement le ${eventDateFormatted}`,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Record the scan
+        const { error: scanError } = await supabase
+          .from('flyer_scans')
+          .insert({ flyer_invitation_id: flyer.id });
+
+        if (scanError) {
+          playErrorSound();
+          setState({
+            isValid: false,
+            message: 'Erreur lors de l\'enregistrement. Réessayez.',
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Update scan count
+        await supabase
+          .from('flyer_invitations')
+          .update({ scan_count: (flyer.scan_count || 0) + 1 })
+          .eq('id', flyer.id);
+
+        playSuccessSound();
+        setState({
+          isValid: true,
+          clientName: `Invité Flyer - ${flyer.label}`,
+          numberOfPersons: 1,
+          message: 'Bienvenue à la soirée !',
+          isLoading: false,
+        });
+        return;
+      }
+
       // Rechercher la réservation par QR code validé
       const { data: reservation, error } = await supabase
         .from('reservations')
