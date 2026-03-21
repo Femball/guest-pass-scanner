@@ -81,8 +81,7 @@ const AdminContent = () => {
   const [selectedFlyer, setSelectedFlyer] = useState<FlyerInvitation | null>(null);
   const [flyerQrDataUrl, setFlyerQrDataUrl] = useState('');
 
-
-    const { data, error } = await supabase
+  const fetchReservations = async () => {
       .from('reservations')
       .select('*')
       .order('created_at', { ascending: false });
