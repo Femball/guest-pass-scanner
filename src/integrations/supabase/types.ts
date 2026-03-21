@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      flyer_invitations: {
+        Row: {
+          created_at: string
+          event_date: string
+          id: string
+          label: string
+          qr_code: string
+          scan_count: number
+        }
+        Insert: {
+          created_at?: string
+          event_date?: string
+          id?: string
+          label: string
+          qr_code: string
+          scan_count?: number
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          id?: string
+          label?: string
+          qr_code?: string
+          scan_count?: number
+        }
+        Relationships: []
+      }
+      flyer_scans: {
+        Row: {
+          flyer_invitation_id: string
+          id: string
+          scanned_at: string
+        }
+        Insert: {
+          flyer_invitation_id: string
+          id?: string
+          scanned_at?: string
+        }
+        Update: {
+          flyer_invitation_id?: string
+          id?: string
+          scanned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flyer_scans_flyer_invitation_id_fkey"
+            columns: ["flyer_invitation_id"]
+            isOneToOne: false
+            referencedRelation: "flyer_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservation_bottles: {
         Row: {
           bottle_type: string
