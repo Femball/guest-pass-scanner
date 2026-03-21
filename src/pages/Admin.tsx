@@ -64,7 +64,24 @@ const AdminContent = () => {
 
   const [bottleData, setBottleData] = useState<BottleWithReservation[]>([]);
 
-  const fetchReservations = async () => {
+  // Flyer invitations
+  interface FlyerInvitation {
+    id: string;
+    label: string;
+    event_date: string;
+    qr_code: string;
+    scan_count: number;
+    created_at: string;
+  }
+  const [flyers, setFlyers] = useState<FlyerInvitation[]>([]);
+  const [newFlyerLabel, setNewFlyerLabel] = useState('');
+  const [flyerDate, setFlyerDate] = useState<Date>(new Date());
+  const [isAddingFlyer, setIsAddingFlyer] = useState(false);
+  const [flyerQrDialogOpen, setFlyerQrDialogOpen] = useState(false);
+  const [selectedFlyer, setSelectedFlyer] = useState<FlyerInvitation | null>(null);
+  const [flyerQrDataUrl, setFlyerQrDataUrl] = useState('');
+
+
     const { data, error } = await supabase
       .from('reservations')
       .select('*')
