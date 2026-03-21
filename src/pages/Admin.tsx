@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -64,6 +64,23 @@ const AdminContent = () => {
 
   const [bottleData, setBottleData] = useState<BottleWithReservation[]>([]);
 
+  // Flyer invitations
+  interface FlyerInvitation {
+    id: string;
+    label: string;
+    event_date: string;
+    qr_code: string;
+    scan_count: number;
+    created_at: string;
+  }
+  const [flyers, setFlyers] = useState<FlyerInvitation[]>([]);
+  const [newFlyerLabel, setNewFlyerLabel] = useState('');
+  const [flyerDate, setFlyerDate] = useState<Date>(new Date());
+  const [isAddingFlyer, setIsAddingFlyer] = useState(false);
+  const [flyerQrDialogOpen, setFlyerQrDialogOpen] = useState(false);
+  const [selectedFlyer, setSelectedFlyer] = useState<FlyerInvitation | null>(null);
+  const [flyerQrDataUrl, setFlyerQrDataUrl] = useState('');
+
   const fetchReservations = async () => {
     const { data, error } = await supabase
       .from('reservations')
@@ -84,6 +101,14 @@ const AdminContent = () => {
       .select('bottle_type, quantity, reservation_id, reservations(client_name, event_date)');
     
     setBottleData((bottles as any) || []);
+
+    // Fetch flyer invitations
+    const { data: flyerData } = await supabase
+      .from('flyer_invitations')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    setFlyers((flyerData as any) || []);
   };
 
   useEffect(() => {
@@ -743,7 +768,148 @@ const AdminContent = () => {
           </Card>
         </motion.div>
 
-        {/* Reservations list */}
+        {/* Flyer Invitations */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Ticket className="w-5 h-5" />
+                Invitations Flyer
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Nom du flyer *</Label>
+                  <Input
+                    placeholder="Ex: Soirée VIP Mars"
+                    value={newFlyerLabel}
+                    onChange={(e) => setNewFlyerLabel(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date de l'événement *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn("w-full justify-start text-left font-normal")}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(flyerDate, "PPP", { locale: fr })}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={flyerDate}
+                        onSelect={(d) => d && setFlyerDate(d)}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={async () => {
+                      if (!newFlyerLabel.trim()) {
+                        toast.error('Le nom du flyer est requis');
+                        return;
+                      }
+                      setIsAddingFlyer(true);
+                      const qrCode = `FLYER-${crypto.randomUUID().toUpperCase()}`;
+                      const { error } = await supabase.from('flyer_invitations').insert({
+                        label: newFlyerLabel.trim(),
+                        event_date: format(flyerDate, 'yyyy-MM-dd'),
+                        qr_code: qrCode,
+                      } as any);
+                      if (error) {
+                        toast.error('Erreur lors de la création');
+                      } else {
+                        toast.success('Invitation flyer créée');
+                        setNewFlyerLabel('');
+                        fetchReservations();
+                      }
+                      setIsAddingFlyer(false);
+                    }}
+                    disabled={isAddingFlyer}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {isAddingFlyer ? 'Création...' : 'Créer le flyer'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* List existing flyers */}
+              {flyers.length > 0 && (
+                <div className="space-y-3 mt-4">
+                  {flyers.map((flyer) => (
+                    <div
+                      key={flyer.id}
+                      className="p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-full bg-primary/10">
+                          <Ticket className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{flyer.label}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(flyer.event_date + 'T00:00:00'), 'dd/MM/yyyy')} • {flyer.scan_count} scan{flyer.scan_count !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            setSelectedFlyer(flyer);
+                            const colorHex = '#' + getEventColorHex(flyer.event_date);
+                            const dataUrl = await QRCode.toDataURL(flyer.qr_code, {
+                              width: 300,
+                              margin: 2,
+                              color: { dark: colorHex, light: '#ffffff' },
+                            });
+                            setFlyerQrDataUrl(dataUrl);
+                            setFlyerQrDialogOpen(true);
+                          }}
+                          title="Voir le QR code"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            const { error } = await supabase.from('flyer_invitations').delete().eq('id', flyer.id);
+                            if (error) {
+                              toast.error('Erreur lors de la suppression');
+                            } else {
+                              toast.success('Flyer supprimé');
+                              fetchReservations();
+                            }
+                          }}
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -983,6 +1149,56 @@ const AdminContent = () => {
                 }}
               >
                 {isAddingUser ? 'Attribution...' : 'Attribuer le rôle'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Flyer QR Code Dialog */}
+        <Dialog open={flyerQrDialogOpen} onOpenChange={setFlyerQrDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center">
+                QR Code Flyer - {selectedFlyer?.label}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-4 py-4">
+              <h2 
+                className="text-2xl font-black tracking-wider"
+                style={{ color: selectedFlyer ? getEventColor(selectedFlyer.event_date) : undefined }}
+              >
+                L'ACCESS
+              </h2>
+              {flyerQrDataUrl && (
+                <img 
+                  src={flyerQrDataUrl} 
+                  alt="QR Code Flyer" 
+                  className="w-64 h-64 rounded-lg border border-border"
+                />
+              )}
+              <p className="font-semibold text-foreground text-lg">
+                {selectedFlyer?.label}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {selectedFlyer?.event_date && format(new Date(selectedFlyer.event_date + 'T00:00:00'), 'dd/MM/yyyy')}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedFlyer?.scan_count} scan{(selectedFlyer?.scan_count || 0) !== 1 ? 's' : ''} enregistré{(selectedFlyer?.scan_count || 0) !== 1 ? 's' : ''}
+              </p>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  if (!flyerQrDataUrl) return;
+                  const link = document.createElement('a');
+                  link.href = flyerQrDataUrl;
+                  link.download = `flyer-qr-${selectedFlyer?.label || 'code'}.png`;
+                  link.click();
+                  toast.success('QR code téléchargé');
+                }}
+              >
+                <Download className="w-4 h-4" />
+                Télécharger le QR code
               </Button>
             </div>
           </DialogContent>
