@@ -1153,6 +1153,56 @@ const AdminContent = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Flyer QR Code Dialog */}
+        <Dialog open={flyerQrDialogOpen} onOpenChange={setFlyerQrDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center">
+                QR Code Flyer - {selectedFlyer?.label}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-4 py-4">
+              <h2 
+                className="text-2xl font-black tracking-wider"
+                style={{ color: selectedFlyer ? getEventColor(selectedFlyer.event_date) : undefined }}
+              >
+                L'ACCESS
+              </h2>
+              {flyerQrDataUrl && (
+                <img 
+                  src={flyerQrDataUrl} 
+                  alt="QR Code Flyer" 
+                  className="w-64 h-64 rounded-lg border border-border"
+                />
+              )}
+              <p className="font-semibold text-foreground text-lg">
+                {selectedFlyer?.label}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {selectedFlyer?.event_date && format(new Date(selectedFlyer.event_date + 'T00:00:00'), 'dd/MM/yyyy')}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedFlyer?.scan_count} scan{(selectedFlyer?.scan_count || 0) !== 1 ? 's' : ''} enregistré{(selectedFlyer?.scan_count || 0) !== 1 ? 's' : ''}
+              </p>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  if (!flyerQrDataUrl) return;
+                  const link = document.createElement('a');
+                  link.href = flyerQrDataUrl;
+                  link.download = `flyer-qr-${selectedFlyer?.label || 'code'}.png`;
+                  link.click();
+                  toast.success('QR code téléchargé');
+                }}
+              >
+                <Download className="w-4 h-4" />
+                Télécharger le QR code
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
