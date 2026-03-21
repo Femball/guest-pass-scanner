@@ -82,6 +82,7 @@ const AdminContent = () => {
   const [flyerQrDataUrl, setFlyerQrDataUrl] = useState('');
 
   const fetchReservations = async () => {
+    const { data, error } = await supabase
       .from('reservations')
       .select('*')
       .order('created_at', { ascending: false });
@@ -100,6 +101,14 @@ const AdminContent = () => {
       .select('bottle_type, quantity, reservation_id, reservations(client_name, event_date)');
     
     setBottleData((bottles as any) || []);
+
+    // Fetch flyer invitations
+    const { data: flyerData } = await supabase
+      .from('flyer_invitations')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    setFlyers((flyerData as any) || []);
   };
 
   useEffect(() => {
