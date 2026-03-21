@@ -4,11 +4,11 @@ import { useScanSounds } from './useScanSounds';
 import { z } from 'zod';
 
 // Schema de validation pour les QR codes
-// Format attendu: TICKET-[UUID] (ex: TICKET-A1B2C3D4-E5F6-7890-ABCD-EF1234567890)
+// Format attendu: TICKET-[UUID] ou FLYER-[UUID]
 const qrCodeSchema = z.string()
   .min(1, 'QR code is required')
   .max(100, 'QR code too long')
-  .regex(/^TICKET-[A-Z0-9-]+$/i, 'Invalid QR code format');
+  .regex(/^(TICKET|FLYER)-[A-Z0-9-]+$/i, 'Invalid QR code format');
 
 interface ValidationState {
   isValid: boolean | null;
