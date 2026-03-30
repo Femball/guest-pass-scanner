@@ -114,27 +114,13 @@ const AdminContent = () => {
   useEffect(() => {
     fetchReservations();
 
-    // Subscribe to realtime changes
-    const channel = supabase
-      .channel('reservations-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reservations',
-        },
-        (payload) => {
-          console.log('Realtime update:', payload);
-          // Refresh the list when any change occurs
-          fetchReservations();
-        }
-      )
-      .subscribe();
+    // Poll for updates every 10 seconds
+    const interval = setInterval(() => {
+      fetchReservations();
+    }, 10000);
 
-    // Cleanup subscription on unmount
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 
@@ -421,14 +407,16 @@ const AdminContent = () => {
             </tr>
           </thead>
           <tbody>
-            ${dateBottles.map(b => `
+            ${dateBottles.map(b => {
+              const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+              return `
               <tr>
-                <td>${b.client_name}</td>
-                <td>${b.bottle_type}</td>
+                <td>${esc(b.client_name)}</td>
+                <td>${esc(b.bottle_type)}</td>
                 <td>${b.quantity}</td>
                 <td class="price">${b.price}€</td>
-              </tr>
-            `).join('')}
+              </tr>`;
+            }).join('')}
             <tr class="total-row">
               <td colspan="3">Total</td>
               <td class="price">${total}€</td>
