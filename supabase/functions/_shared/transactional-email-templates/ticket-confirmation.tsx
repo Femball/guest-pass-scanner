@@ -98,7 +98,7 @@ const TicketConfirmationEmail = ({
           {/* Footer */}
           <Hr style={divider} />
           <Section style={footerSection}>
-            <Img src={LOGO_URL} alt="L'Access" width="80" height="auto" style={footerLogo} />
+            <Img src={LOGO_URL} alt="L'Access" width="60" height="20" style={footerLogo} />
             <Text style={footerText}>Gestion sécurisée des accès</Text>
             <Text style={footerCopy}>© {new Date().getFullYear()} {SITE_NAME}</Text>
           </Section>
