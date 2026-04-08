@@ -183,21 +183,30 @@ const AdminContent = () => {
         qrCode: r.qr_code,
       }));
 
-      const { data, error } = await supabase.functions.invoke('send-ticket-email', {
+      const idempotencyKey = `tickets-${list.map(r => r.id).join('-')}`;
+
+      const { data, error } = await supabase.functions.invoke('send-transactional-email', {
         body: {
-          clientEmail: email,
-          eventName: 'Soirée',
-          eventDate: list[0].event_date,
-          qrColor: colorHex,
-          tickets,
+          templateName: 'ticket-confirmation',
+          recipientEmail: email,
+          idempotencyKey,
+          templateData: {
+            mainName: list[0].client_name,
+            eventName: 'Soirée',
+            eventDate: list[0].event_date,
+            qrColor: colorHex,
+            tickets,
+          },
         },
       });
 
       if (error) throw error;
-      if (data.success) {
+      if (data?.success || data?.queued) {
         toast.success(`${tickets.length} ticket(s) envoyé(s) à ${email}`);
+      } else if (data?.reason === 'email_suppressed') {
+        toast.error('Cette adresse email est bloquée (désabonnement ou bounce)');
       } else {
-        throw new Error(data.error || 'Erreur lors de l\'envoi');
+        throw new Error(data?.error || 'Erreur lors de l\'envoi');
       }
     } catch (error: any) {
       console.error('Error sending email:', error);
