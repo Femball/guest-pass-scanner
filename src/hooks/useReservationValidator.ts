@@ -27,18 +27,6 @@ export const useReservationValidator = () => {
   
   const { playSuccessSound, playErrorSound } = useScanSounds();
 
-  const notifyScan = useCallback(async (clientName: string, eventDate: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('scan_notifications').insert({
-        client_name: clientName,
-        event_date: eventDate,
-        scanned_by: user?.id || null,
-      });
-    } catch (err) {
-      console.error('Failed to create scan notification:', err);
-    }
-  }, []);
 
   const validateQRCode = useCallback(async (qrCode: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
@@ -91,7 +79,7 @@ export const useReservationValidator = () => {
           .eq('id', flyer.id);
 
         // Send arrival notification
-        await notifyScan(`Invité Flyer - ${flyer.label}`, flyer.event_date);
+        // Notification handled by database trigger
 
         playSuccessSound();
         setState({
@@ -157,7 +145,7 @@ export const useReservationValidator = () => {
       }
 
       // Send arrival notification
-      await notifyScan(reservation.client_name, reservation.event_date);
+      // Notification handled by database trigger
 
       playSuccessSound();
       setState({
@@ -171,7 +159,7 @@ export const useReservationValidator = () => {
       playErrorSound();
       setState({ isValid: false, message: 'Erreur de connexion. Vérifiez votre réseau.', isLoading: false });
     }
-  }, [notifyScan]);
+  }, []);
 
   const reset = useCallback(() => {
     setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, isLoading: false });
