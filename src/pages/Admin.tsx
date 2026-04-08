@@ -319,8 +319,15 @@ const AdminContent = () => {
     }
   };
 
-  // Compute sorted dates for tabs
-  const dateGroups = reservations.reduce<Record<string, Reservation[]>>((acc, r) => {
+  // Apply search filters
+  const searchFilteredReservations = reservations.filter(r => {
+    const matchName = !searchName || r.client_name.toLowerCase().includes(searchName.toLowerCase());
+    const matchEmail = !searchEmail || (r.client_email || '').toLowerCase().includes(searchEmail.toLowerCase());
+    return matchName && matchEmail;
+  });
+
+  // Compute sorted dates for tabs from filtered results
+  const dateGroups = searchFilteredReservations.reduce<Record<string, Reservation[]>>((acc, r) => {
     const date = r.event_date;
     if (!acc[date]) acc[date] = [];
     acc[date].push(r);
@@ -328,7 +335,6 @@ const AdminContent = () => {
   }, {});
   const sortedDates = Object.keys(dateGroups).sort((a, b) => b.localeCompare(a));
 
-  // Auto-select first date if none selected or selected date no longer exists
   const activeDate = selectedDate && dateGroups[selectedDate] ? selectedDate : sortedDates[0] || null;
   const filteredReservations = activeDate ? dateGroups[activeDate] : [];
 
@@ -336,8 +342,9 @@ const AdminContent = () => {
   const pendingCount = filteredReservations.filter(r => !r.is_validated).length;
 
   const exportGuestList = () => {
+    const dataToExport = searchFilteredReservations;
     const header = ['Nom', 'Email', 'Nombre de personnes', 'Date événement', 'Statut'];
-    const rows = reservations.map(r => [
+    const rows = dataToExport.map(r => [
       r.client_name,
       r.client_email || '',
       r.number_of_persons.toString(),
@@ -351,10 +358,11 @@ const AdminContent = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `liste-invites-${new Date().toISOString().slice(0, 10)}.csv`;
+    const suffix = searchName || searchEmail ? '-filtre' : '';
+    link.download = `liste-invites${suffix}-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success(`Liste exportée (${reservations.length} invités)`);
+    toast.success(`Liste exportée (${dataToExport.length} invités)`);
   };
 
   const printBottles = () => {
