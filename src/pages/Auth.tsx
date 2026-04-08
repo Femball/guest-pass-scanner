@@ -62,7 +62,11 @@ const Auth = () => {
 
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/');
+      // Use replace to avoid back-button loops, and requestAnimationFrame
+      // to let React finish the current render before navigating
+      requestAnimationFrame(() => {
+        navigate('/', { replace: true });
+      });
     }
   }, [user, authLoading, navigate]);
 
