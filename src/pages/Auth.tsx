@@ -63,10 +63,12 @@ const Auth = () => {
   useEffect(() => {
     if (user && !authLoading && !hasNavigated.current) {
       hasNavigated.current = true;
-      // Delay navigation to let React finish current commit
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 50);
+      // Use requestAnimationFrame to ensure DOM is stable before navigating
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          navigate('/', { replace: true });
+        });
+      });
     }
   }, [user, authLoading, navigate]);
 
