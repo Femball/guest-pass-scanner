@@ -229,6 +229,8 @@ export type Database = {
           event_date: string
           id: string
           scanned_by: string | null
+          source_kind: string | null
+          source_record_id: string | null
         }
         Insert: {
           client_name: string
@@ -236,6 +238,8 @@ export type Database = {
           event_date?: string
           id?: string
           scanned_by?: string | null
+          source_kind?: string | null
+          source_record_id?: string | null
         }
         Update: {
           client_name?: string
@@ -243,6 +247,8 @@ export type Database = {
           event_date?: string
           id?: string
           scanned_by?: string | null
+          source_kind?: string | null
+          source_record_id?: string | null
         }
         Relationships: []
       }
