@@ -222,6 +222,30 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_notifications: {
+        Row: {
+          client_name: string
+          created_at: string
+          event_date: string
+          id: string
+          scanned_by: string | null
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          event_date?: string
+          id?: string
+          scanned_by?: string | null
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          event_date?: string
+          id?: string
+          scanned_by?: string | null
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
