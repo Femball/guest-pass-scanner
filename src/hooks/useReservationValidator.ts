@@ -27,18 +27,6 @@ export const useReservationValidator = () => {
   
   const { playSuccessSound, playErrorSound } = useScanSounds();
 
-  const notifyScan = useCallback(async (clientName: string, eventDate: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('scan_notifications').insert({
-        client_name: clientName,
-        event_date: eventDate,
-        scanned_by: user?.id || null,
-      });
-    } catch (err) {
-      console.error('Failed to create scan notification:', err);
-    }
-  }, []);
 
   const validateQRCode = useCallback(async (qrCode: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
