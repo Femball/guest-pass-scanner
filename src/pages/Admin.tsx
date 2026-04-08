@@ -272,13 +272,9 @@ const AdminContent = () => {
 
     toast.success(`${names.length} réservation(s) créée(s) avec succès`);
     
-    // Send emails for each reservation
-    if (data) {
-      for (const reservation of data) {
-        if (reservation.client_email) {
-          await sendTicketEmail(reservation);
-        }
-      }
+    // Send ONE grouped email with all tickets
+    if (data && data.length > 0 && data[0].client_email) {
+      await sendTicketEmail(data as Reservation[]);
     }
 
     setNewName('');
