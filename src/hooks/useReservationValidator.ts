@@ -3,8 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useScanSounds } from './useScanSounds';
 import { z } from 'zod';
 
-// Schema de validation pour les QR codes
-// Format attendu: TICKET-[UUID] ou FLYER-[UUID]
 const qrCodeSchema = z.string()
   .min(1, 'QR code is required')
   .max(100, 'QR code too long')
@@ -29,25 +27,33 @@ export const useReservationValidator = () => {
   
   const { playSuccessSound, playErrorSound } = useScanSounds();
 
+  const notifyScan = useCallback(async (clientName: string, eventDate: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('scan_notifications').insert({
+        client_name: clientName,
+        event_date: eventDate,
+        scanned_by: user?.id || null,
+      });
+    } catch (err) {
+      console.error('Failed to create scan notification:', err);
+    }
+  }, []);
+
   const validateQRCode = useCallback(async (qrCode: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
 
-    // Validation de l'entrée avant toute requête
     const validationResult = qrCodeSchema.safeParse(qrCode);
     if (!validationResult.success) {
       playErrorSound();
-      setState({
-        isValid: false,
-        message: 'Format de QR code invalide.',
-        isLoading: false,
-      });
+      setState({ isValid: false, message: 'Format de QR code invalide.', isLoading: false });
       return;
     }
 
     const validatedQrCode = validationResult.data;
 
     try {
-      // Detect flyer QR codes
+      // Flyer QR codes
       if (validatedQrCode.startsWith('FLYER-')) {
         const { data: flyer, error } = await supabase
           .from('flyer_invitations')
@@ -57,47 +63,35 @@ export const useReservationValidator = () => {
 
         if (error || !flyer) {
           playErrorSound();
-          setState({
-            isValid: false,
-            message: 'QR Code flyer non reconnu.',
-            isLoading: false,
-          });
+          setState({ isValid: false, message: 'QR Code flyer non reconnu.', isLoading: false });
           return;
         }
 
-        // Check event date
         const today = new Date().toISOString().slice(0, 10);
         if (flyer.event_date !== today) {
           const eventDateFormatted = new Date(flyer.event_date + 'T00:00:00').toLocaleDateString('fr-FR');
           playErrorSound();
-          setState({
-            isValid: false,
-            message: `Ce flyer est valable uniquement le ${eventDateFormatted}`,
-            isLoading: false,
-          });
+          setState({ isValid: false, message: `Ce flyer est valable uniquement le ${eventDateFormatted}`, isLoading: false });
           return;
         }
 
-        // Record the scan
         const { error: scanError } = await supabase
           .from('flyer_scans')
           .insert({ flyer_invitation_id: flyer.id });
 
         if (scanError) {
           playErrorSound();
-          setState({
-            isValid: false,
-            message: 'Erreur lors de l\'enregistrement. Réessayez.',
-            isLoading: false,
-          });
+          setState({ isValid: false, message: 'Erreur lors de l\'enregistrement. Réessayez.', isLoading: false });
           return;
         }
 
-        // Update scan count
         await supabase
           .from('flyer_invitations')
           .update({ scan_count: (flyer.scan_count || 0) + 1 })
           .eq('id', flyer.id);
+
+        // Send arrival notification
+        await notifyScan(`Invité Flyer - ${flyer.label}`, flyer.event_date);
 
         playSuccessSound();
         setState({
@@ -110,7 +104,7 @@ export const useReservationValidator = () => {
         return;
       }
 
-      // Rechercher la réservation par QR code validé
+      // Ticket QR codes
       const { data: reservation, error } = await supabase
         .from('reservations')
         .select('*')
@@ -119,15 +113,10 @@ export const useReservationValidator = () => {
 
       if (error || !reservation) {
         playErrorSound();
-        setState({
-          isValid: false,
-          message: 'QR Code non reconnu. Ce ticket n\'existe pas.',
-          isLoading: false,
-        });
+        setState({ isValid: false, message: 'QR Code non reconnu. Ce ticket n\'existe pas.', isLoading: false });
         return;
       }
 
-      // Vérifier la date de l'événement
       if (reservation.event_date) {
         const today = new Date().toISOString().slice(0, 10);
         if (reservation.event_date !== today) {
@@ -144,7 +133,6 @@ export const useReservationValidator = () => {
         }
       }
 
-      // Vérifier si déjà validé
       if (reservation.is_validated) {
         playErrorSound();
         setState({
@@ -157,24 +145,19 @@ export const useReservationValidator = () => {
         return;
       }
 
-      // Valider le ticket
       const { error: updateError } = await supabase
         .from('reservations')
-        .update({
-          is_validated: true,
-          validated_at: new Date().toISOString(),
-        })
+        .update({ is_validated: true, validated_at: new Date().toISOString() })
         .eq('id', reservation.id);
 
       if (updateError) {
         playErrorSound();
-        setState({
-          isValid: false,
-          message: 'Erreur lors de la validation. Réessayez.',
-          isLoading: false,
-        });
+        setState({ isValid: false, message: 'Erreur lors de la validation. Réessayez.', isLoading: false });
         return;
       }
+
+      // Send arrival notification
+      await notifyScan(reservation.client_name, reservation.event_date);
 
       playSuccessSound();
       setState({
@@ -186,27 +169,13 @@ export const useReservationValidator = () => {
       });
     } catch (err) {
       playErrorSound();
-      setState({
-        isValid: false,
-        message: 'Erreur de connexion. Vérifiez votre réseau.',
-        isLoading: false,
-      });
+      setState({ isValid: false, message: 'Erreur de connexion. Vérifiez votre réseau.', isLoading: false });
     }
-  }, []);
+  }, [notifyScan]);
 
   const reset = useCallback(() => {
-    setState({
-      isValid: null,
-      clientName: undefined,
-      numberOfPersons: undefined,
-      message: undefined,
-      isLoading: false,
-    });
+    setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, isLoading: false });
   }, []);
 
-  return {
-    ...state,
-    validateQRCode,
-    reset,
-  };
+  return { ...state, validateQRCode, reset };
 };

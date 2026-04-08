@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -55,6 +55,10 @@ const AdminContent = () => {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Search/filter state
+  const [searchName, setSearchName] = useState('');
+  const [searchEmail, setSearchEmail] = useState('');
   
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -160,31 +164,38 @@ const AdminContent = () => {
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
-  const sendTicketEmail = async (reservation: Reservation) => {
-    if (!reservation.client_email) {
+  const sendTicketEmail = async (reservationOrList: Reservation | Reservation[]) => {
+    const list = Array.isArray(reservationOrList) ? reservationOrList : [reservationOrList];
+    if (list.length === 0) return;
+
+    const email = list[0].client_email;
+    if (!email) {
       toast.error('Pas d\'adresse email pour ce client');
       return;
     }
 
-    setSendingEmail(reservation.id);
+    setSendingEmail(list[0].id);
 
     try {
-      const colorHex = getEventColorHex(reservation.event_date);
+      const colorHex = getEventColorHex(list[0].event_date);
+      const tickets = list.map(r => ({
+        clientName: r.client_name,
+        qrCode: r.qr_code,
+      }));
+
       const { data, error } = await supabase.functions.invoke('send-ticket-email', {
         body: {
-          clientName: reservation.client_name,
-          clientEmail: reservation.client_email,
-          qrCode: reservation.qr_code,
+          clientEmail: email,
           eventName: 'Soirée',
-          eventDate: reservation.event_date,
+          eventDate: list[0].event_date,
           qrColor: colorHex,
+          tickets,
         },
       });
 
       if (error) throw error;
-
       if (data.success) {
-        toast.success(`Ticket envoyé à ${reservation.client_email}`);
+        toast.success(`${tickets.length} ticket(s) envoyé(s) à ${email}`);
       } else {
         throw new Error(data.error || 'Erreur lors de l\'envoi');
       }
@@ -261,13 +272,9 @@ const AdminContent = () => {
 
     toast.success(`${names.length} réservation(s) créée(s) avec succès`);
     
-    // Send emails for each reservation
-    if (data) {
-      for (const reservation of data) {
-        if (reservation.client_email) {
-          await sendTicketEmail(reservation);
-        }
-      }
+    // Send ONE grouped email with all tickets
+    if (data && data.length > 0 && data[0].client_email) {
+      await sendTicketEmail(data as Reservation[]);
     }
 
     setNewName('');
@@ -312,8 +319,15 @@ const AdminContent = () => {
     }
   };
 
-  // Compute sorted dates for tabs
-  const dateGroups = reservations.reduce<Record<string, Reservation[]>>((acc, r) => {
+  // Apply search filters
+  const searchFilteredReservations = reservations.filter(r => {
+    const matchName = !searchName || r.client_name.toLowerCase().includes(searchName.toLowerCase());
+    const matchEmail = !searchEmail || (r.client_email || '').toLowerCase().includes(searchEmail.toLowerCase());
+    return matchName && matchEmail;
+  });
+
+  // Compute sorted dates for tabs from filtered results
+  const dateGroups = searchFilteredReservations.reduce<Record<string, Reservation[]>>((acc, r) => {
     const date = r.event_date;
     if (!acc[date]) acc[date] = [];
     acc[date].push(r);
@@ -321,7 +335,6 @@ const AdminContent = () => {
   }, {});
   const sortedDates = Object.keys(dateGroups).sort((a, b) => b.localeCompare(a));
 
-  // Auto-select first date if none selected or selected date no longer exists
   const activeDate = selectedDate && dateGroups[selectedDate] ? selectedDate : sortedDates[0] || null;
   const filteredReservations = activeDate ? dateGroups[activeDate] : [];
 
@@ -329,8 +342,9 @@ const AdminContent = () => {
   const pendingCount = filteredReservations.filter(r => !r.is_validated).length;
 
   const exportGuestList = () => {
+    const dataToExport = searchFilteredReservations;
     const header = ['Nom', 'Email', 'Nombre de personnes', 'Date événement', 'Statut'];
-    const rows = reservations.map(r => [
+    const rows = dataToExport.map(r => [
       r.client_name,
       r.client_email || '',
       r.number_of_persons.toString(),
@@ -344,10 +358,11 @@ const AdminContent = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `liste-invites-${new Date().toISOString().slice(0, 10)}.csv`;
+    const suffix = searchName || searchEmail ? '-filtre' : '';
+    link.download = `liste-invites${suffix}-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success(`Liste exportée (${reservations.length} invités)`);
+    toast.success(`Liste exportée (${dataToExport.length} invités)`);
   };
 
   const printBottles = () => {
@@ -907,10 +922,41 @@ const AdminContent = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                Réservations ({reservations.length})
+                Réservations ({searchFilteredReservations.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Search filters */}
+              <div className="flex flex-col md:flex-row gap-3 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher par nom..."
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher par email..."
+                    value={searchEmail}
+                    onChange={(e) => setSearchEmail(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                {(searchName || searchEmail) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => { setSearchName(''); setSearchEmail(''); }}
+                    title="Effacer les filtres"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
               {isLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />

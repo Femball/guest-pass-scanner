@@ -8,34 +8,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Input validation schema
-const ticketEmailSchema = z.object({
-  clientName: z.string()
-    .min(1, "Client name is required")
-    .max(100, "Client name must be less than 100 characters")
-    .regex(/^[\p{L}\p{N}\s.'-]+$/u, "Client name contains invalid characters"),
-  clientEmail: z.string()
-    .email("Invalid email format")
-    .max(255, "Email must be less than 255 characters"),
-  qrCode: z.string()
-    .min(1, "QR code is required")
-    .max(100, "QR code must be less than 100 characters")
-    .regex(/^TICKET-[A-Z0-9-]+$/i, "Invalid QR code format"),
-  eventName: z.string()
-    .max(100, "Event name must be less than 100 characters")
-    .optional()
-    .default("Soirée"),
-  eventDate: z.string()
-    .max(10)
-    .optional()
-    .default(""),
-  qrColor: z.string()
-    .max(10)
-    .optional()
-    .default("000000"),
+const ticketSchema = z.object({
+  clientName: z.string().min(1).max(100),
+  qrCode: z.string().min(1).max(100).regex(/^TICKET-[A-Z0-9-]+$/i),
 });
 
-// HTML escape function to prevent XSS
+const ticketEmailSchema = z.object({
+  clientEmail: z.string().email().max(255),
+  eventName: z.string().max(100).optional().default("Soirée"),
+  eventDate: z.string().max(10).optional().default(""),
+  qrColor: z.string().max(10).optional().default("000000"),
+  // Support single ticket (backward compat) or multiple tickets
+  clientName: z.string().min(1).max(100).optional(),
+  qrCode: z.string().min(1).max(100).regex(/^TICKET-[A-Z0-9-]+$/i).optional(),
+  tickets: z.array(ticketSchema).min(1).max(50).optional(),
+});
+
 const escapeHtml = (text: string): string => {
   return text
     .replace(/&/g, "&amp;")
@@ -46,7 +34,6 @@ const escapeHtml = (text: string): string => {
 };
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -55,88 +42,97 @@ const handler = async (req: Request): Promise<Response> => {
     // ============ AUTHENTICATION ============
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      console.error("No authorization header provided");
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized: No token provided" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Create client with user's token for auth verification
     const supabaseAuth = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Verify the JWT token by getting user
     const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
-    
     if (authError || !authUser) {
-      console.error("Invalid token:", authError);
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized: Invalid token" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const callerId = authUser.id;
-    console.log(`Request from user: ${callerId}`);
-
-    // ============ AUTHORIZATION - STAFF ONLY (admin or agent) ============
-    // Create admin client to check roles (uses service role to bypass RLS)
+    // ============ AUTHORIZATION ============
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Check if caller is staff (admin or agent)
     const { data: callerRole, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", callerId)
+      .eq("user_id", authUser.id)
       .single();
 
     if (roleError || !callerRole || !["admin", "agent"].includes(callerRole.role)) {
-      console.error("Forbidden: User is not staff", { callerId, role: callerRole?.role });
       return new Response(
         JSON.stringify({ success: false, error: "Forbidden: Staff access required" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log(`Staff authorization verified for ${callerRole.role}`);
-
     // ============ INPUT VALIDATION ============
     const body = await req.json();
     const parseResult = ticketEmailSchema.safeParse(body);
     if (!parseResult.success) {
       const errorMessages = parseResult.error.errors.map(e => e.message).join(", ");
-      console.error("Validation error:", errorMessages);
       return new Response(
         JSON.stringify({ success: false, error: `Validation error: ${errorMessages}` }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const { clientName, clientEmail, qrCode, eventName, eventDate, qrColor } = parseResult.data;
-    console.log(`Sending ticket email to ${escapeHtml(clientEmail)} for ${escapeHtml(clientName)}`);
+    const { clientEmail, eventName, eventDate, qrColor, clientName, qrCode, tickets: rawTickets } = parseResult.data;
 
-    // Escape all user inputs for HTML
-    const safeClientName = escapeHtml(clientName);
+    // Build tickets array from either format
+    let tickets: { clientName: string; qrCode: string }[];
+    if (rawTickets && rawTickets.length > 0) {
+      tickets = rawTickets;
+    } else if (clientName && qrCode) {
+      tickets = [{ clientName, qrCode }];
+    } else {
+      return new Response(
+        JSON.stringify({ success: false, error: "Either 'tickets' array or 'clientName'+'qrCode' required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const safeEventName = escapeHtml(eventName);
-    const safeQrCode = escapeHtml(qrCode);
     const safeEventDate = escapeHtml(eventDate);
     const safeQrColor = qrColor.replace(/[^a-fA-F0-9]/g, '').slice(0, 6) || '000000';
 
-    // Use external QR code service with custom color
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=${safeQrColor}&data=${encodeURIComponent(qrCode)}`;
+    // Generate ticket cards HTML
+    const ticketCardsHtml = tickets.map((t) => {
+      const safeName = escapeHtml(t.clientName);
+      const safeCode = escapeHtml(t.qrCode);
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=${safeQrColor}&data=${encodeURIComponent(t.qrCode)}`;
+
+      return `
+        <div style="text-align: center; padding: 25px; background-color: #f9fafb; border-radius: 12px; margin-bottom: 15px;">
+          <p style="color: #${safeQrColor}; font-size: 20px; font-weight: 900; letter-spacing: 3px; margin: 0 0 10px 0;">L'ACCESS</p>
+          <img src="${qrCodeUrl}" alt="QR Code" style="width: 180px; height: 180px; border-radius: 8px;" />
+          <p style="color: #374151; font-size: 16px; font-weight: 600; margin: 10px 0 5px 0;">${safeName}</p>
+          ${safeEventDate ? `<p style="color: #6b7280; font-size: 14px; margin: 5px 0 0 0;">📅 ${safeEventDate}</p>` : ''}
+          <p style="color: #9ca3af; font-size: 11px; margin: 8px 0 0 0; font-family: monospace;">${safeCode}</p>
+        </div>`;
+    }).join('');
+
+    const mainName = escapeHtml(tickets[0].clientName);
+    const ticketCount = tickets.length;
+    const subtitle = ticketCount > 1
+      ? `${ticketCount} tickets pour ${safeEventName}`
+      : safeEventName;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -144,54 +140,41 @@ const handler = async (req: Request): Promise<Response> => {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Votre Ticket</title>
+        <title>Vos Tickets</title>
       </head>
       <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
           <tr>
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                <!-- Header -->
                 <tr>
                   <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; text-align: center;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">🎫 Votre Ticket</h1>
-                    <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">${safeEventName}</p>
+                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">🎫 ${ticketCount > 1 ? 'Vos Tickets' : 'Votre Ticket'}</h1>
+                    <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">${subtitle}</p>
                   </td>
                 </tr>
-                
-                <!-- Content -->
                 <tr>
                   <td style="padding: 30px;">
-                    <p style="color: #374151; font-size: 18px; margin: 0 0 10px 0;">Bonjour <strong>${safeClientName}</strong>,</p>
+                    <p style="color: #374151; font-size: 18px; margin: 0 0 10px 0;">Bonjour <strong>${mainName}</strong>,</p>
                     <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
-                      Votre réservation est confirmée ! Présentez ce QR code à l'entrée pour accéder à l'événement.
+                      ${ticketCount > 1
+                        ? `Votre réservation pour ${ticketCount} personnes est confirmée ! Voici les QR codes à présenter à l'entrée.`
+                        : `Votre réservation est confirmée ! Présentez ce QR code à l'entrée pour accéder à l'événement.`}
                     </p>
-                    
-                    <!-- QR Code -->
-                    <div style="text-align: center; padding: 25px; background-color: #f9fafb; border-radius: 12px; margin-bottom: 25px;">
-                      <p style="color: #${safeQrColor}; font-size: 24px; font-weight: 900; letter-spacing: 3px; margin: 0 0 15px 0;">L'ACCESS</p>
-                      <img src="${qrCodeUrl}" alt="QR Code" style="width: 200px; height: 200px; border-radius: 8px;" />
-                      <p style="color: #374151; font-size: 16px; font-weight: 600; margin: 15px 0 5px 0;">${safeClientName}</p>
-                      ${safeEventDate ? `<p style="color: #6b7280; font-size: 14px; margin: 5px 0 0 0;">📅 ${safeEventDate}</p>` : ''}
-                      <p style="color: #9ca3af; font-size: 12px; margin: 10px 0 0 0; font-family: monospace;">${safeQrCode}</p>
-                    </div>
-                    
-                    <!-- Instructions -->
-                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 0 8px 8px 0;">
+                    ${ticketCardsHtml}
+                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 0 8px 8px 0; margin-top: 10px;">
                       <p style="color: #92400e; font-size: 14px; margin: 0; font-weight: 500;">⚠️ Important</p>
                       <p style="color: #a16207; font-size: 14px; margin: 8px 0 0 0;">
-                        Ce ticket est personnel et à usage unique. Il ne peut être utilisé qu'une seule fois.
+                        ${ticketCount > 1
+                          ? 'Chaque ticket est personnel et à usage unique. Chaque QR code ne peut être utilisé qu\'une seule fois.'
+                          : 'Ce ticket est personnel et à usage unique. Il ne peut être utilisé qu\'une seule fois.'}
                       </p>
                     </div>
                   </td>
                 </tr>
-                
-                <!-- Footer -->
                 <tr>
                   <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                      L'Access - Gestion sécurisée des accès
-                    </p>
+                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">L'Access - Gestion sécurisée des accès</p>
                   </td>
                 </tr>
               </table>
@@ -202,7 +185,6 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Send email using SendGrid API
     const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
@@ -210,43 +192,27 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        personalizations: [
-          {
-            to: [{ email: clientEmail, name: safeClientName }],
-          },
-        ],
-        from: {
-          email: "laccess@laccessstgo.rapidresto.online",
-          name: "L'Access - Tickets",
-        },
-        subject: `🎉 Votre ticket pour ${safeEventName}`,
-        content: [
-          {
-            type: "text/html",
-            value: htmlContent,
-          },
-        ],
+        personalizations: [{ to: [{ email: clientEmail, name: mainName }] }],
+        from: { email: "info@laccess.fr", name: "L'Access - Tickets" },
+        subject: `🎉 ${ticketCount > 1 ? `Vos ${ticketCount} tickets` : 'Votre ticket'} pour ${safeEventName}`,
+        content: [{ type: "text/html", value: htmlContent }],
       }),
     });
 
-    console.log("SendGrid response status:", sendgridResponse.status);
-    console.log("SendGrid API key present:", !!Deno.env.get("SENDGRID_API_KEY"));
-
     if (!sendgridResponse.ok) {
       const errorText = await sendgridResponse.text();
-      console.error("SendGrid error status:", sendgridResponse.status);
-      console.error("SendGrid error body:", errorText);
-      throw new Error(`EMAIL_SEND_FAILED: ${sendgridResponse.status} - ${errorText}`);
+      console.error("SendGrid error:", sendgridResponse.status, errorText);
+      throw new Error(`EMAIL_SEND_FAILED: ${sendgridResponse.status}`);
     }
 
-    console.log("Email sent successfully via SendGrid");
+    console.log(`Email sent to ${clientEmail} with ${ticketCount} ticket(s)`);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("Error in send-ticket-email function:", error);
+    console.error("Error in send-ticket-email:", error);
     return new Response(
       JSON.stringify({ success: false, error: "Une erreur est survenue lors de l'envoi de l'email" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
