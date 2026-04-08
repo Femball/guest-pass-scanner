@@ -922,10 +922,41 @@ const AdminContent = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                Réservations ({reservations.length})
+                Réservations ({searchFilteredReservations.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Search filters */}
+              <div className="flex flex-col md:flex-row gap-3 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher par nom..."
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher par email..."
+                    value={searchEmail}
+                    onChange={(e) => setSearchEmail(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                {(searchName || searchEmail) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => { setSearchName(''); setSearchEmail(''); }}
+                    title="Effacer les filtres"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
               {isLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
