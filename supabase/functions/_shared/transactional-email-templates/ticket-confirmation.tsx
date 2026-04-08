@@ -40,8 +40,7 @@ const TicketConfirmationEmail = ({
         <Container style={container}>
           {/* Header with logo */}
           <Section style={headerSection}>
-            <Img src={LOGO_URL} alt="L'Access" width="120" height="40" style={logoImg} />
-            <Text style={headerDividerLine}>━━━━━━━━━━━━━━━━━━━━</Text>
+            <Text style={headerBrand}>L'ACCESS</Text>
             <Heading style={headerTitle}>
               {ticketCount > 1 ? `Vos ${ticketCount} Tickets` : 'Votre Ticket'}
             </Heading>
