@@ -79,7 +79,7 @@ export const useReservationValidator = () => {
           .eq('id', flyer.id);
 
         // Send arrival notification
-        await notifyScan(`Invité Flyer - ${flyer.label}`, flyer.event_date);
+        // Notification handled by database trigger
 
         playSuccessSound();
         setState({
@@ -145,7 +145,7 @@ export const useReservationValidator = () => {
       }
 
       // Send arrival notification
-      await notifyScan(reservation.client_name, reservation.event_date);
+      // Notification handled by database trigger
 
       playSuccessSound();
       setState({
@@ -159,7 +159,7 @@ export const useReservationValidator = () => {
       playErrorSound();
       setState({ isValid: false, message: 'Erreur de connexion. Vérifiez votre réseau.', isLoading: false });
     }
-  }, [notifyScan]);
+  }, []);
 
   const reset = useCallback(() => {
     setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, isLoading: false });
