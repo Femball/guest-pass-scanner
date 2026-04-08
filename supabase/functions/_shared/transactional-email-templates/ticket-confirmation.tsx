@@ -149,20 +149,19 @@ const container = {
 
 const headerSection = {
   backgroundColor: PRIMARY,
-  padding: '40px 30px 30px',
+  padding: '36px 30px 28px',
   textAlign: 'center' as const,
   borderRadius: '16px 16px 0 0',
 }
 
-const logoImg = {
-  margin: '0 auto 12px',
-}
-
-const headerDividerLine = {
-  color: 'rgba(255,255,255,0.3)',
-  fontSize: '10px',
-  letterSpacing: '4px',
+const headerBrand = {
+  color: 'rgba(255,255,255,0.95)',
+  fontSize: '28px',
+  fontWeight: '800' as const,
+  letterSpacing: '6px',
   margin: '0 0 16px',
+  textTransform: 'uppercase' as const,
+  fontFamily: 'Georgia, "Times New Roman", serif',
 }
 
 const headerTitle = {
