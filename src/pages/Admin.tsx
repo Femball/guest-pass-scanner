@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import ArrivalHistory from '@/components/ArrivalHistory';
 import QRCode from 'qrcode';
 interface Reservation {
   id: string;
@@ -1099,6 +1100,8 @@ const AdminContent = () => {
           </Card>
         </motion.div>
 
+        {/* Arrival History */}
+        <ArrivalHistory />
 
         <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
           <DialogContent className="sm:max-w-md">
