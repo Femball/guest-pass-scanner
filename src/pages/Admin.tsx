@@ -164,31 +164,38 @@ const AdminContent = () => {
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
-  const sendTicketEmail = async (reservation: Reservation) => {
-    if (!reservation.client_email) {
+  const sendTicketEmail = async (reservationOrList: Reservation | Reservation[]) => {
+    const list = Array.isArray(reservationOrList) ? reservationOrList : [reservationOrList];
+    if (list.length === 0) return;
+
+    const email = list[0].client_email;
+    if (!email) {
       toast.error('Pas d\'adresse email pour ce client');
       return;
     }
 
-    setSendingEmail(reservation.id);
+    setSendingEmail(list[0].id);
 
     try {
-      const colorHex = getEventColorHex(reservation.event_date);
+      const colorHex = getEventColorHex(list[0].event_date);
+      const tickets = list.map(r => ({
+        clientName: r.client_name,
+        qrCode: r.qr_code,
+      }));
+
       const { data, error } = await supabase.functions.invoke('send-ticket-email', {
         body: {
-          clientName: reservation.client_name,
-          clientEmail: reservation.client_email,
-          qrCode: reservation.qr_code,
+          clientEmail: email,
           eventName: 'Soirée',
-          eventDate: reservation.event_date,
+          eventDate: list[0].event_date,
           qrColor: colorHex,
+          tickets,
         },
       });
 
       if (error) throw error;
-
       if (data.success) {
-        toast.success(`Ticket envoyé à ${reservation.client_email}`);
+        toast.success(`${tickets.length} ticket(s) envoyé(s) à ${email}`);
       } else {
         throw new Error(data.error || 'Erreur lors de l\'envoi');
       }
