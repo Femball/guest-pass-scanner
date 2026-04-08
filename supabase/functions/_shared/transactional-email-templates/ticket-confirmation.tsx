@@ -303,9 +303,13 @@ const footerSection = {
   borderRadius: '0 0 16px 16px',
 }
 
-const footerLogo = {
-  margin: '0 auto 8px',
-  opacity: '0.7',
+const footerBrand = {
+  color: PRIMARY,
+  fontSize: '14px',
+  fontWeight: '700' as const,
+  letterSpacing: '3px',
+  margin: '0 0 4px',
+  fontFamily: 'Georgia, "Times New Roman", serif',
 }
 
 const footerText = {
