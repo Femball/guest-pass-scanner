@@ -4,12 +4,40 @@ import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+const playArrivalSound = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    // Two-tone doorbell chime
+    const notes = [
+      { freq: 880, start: 0, end: 0.15 },    // A5
+      { freq: 1108.73, start: 0.15, end: 0.35 }, // C#6
+      { freq: 1318.51, start: 0.3, end: 0.55 },  // E6
+    ];
+
+    notes.forEach(({ freq, start, end }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      gain.gain.setValueAtTime(0, ctx.currentTime + start);
+      gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + start + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + end);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + end);
+    });
+  } catch {
+    // Audio not available
+  }
+};
+
 export const useScanNotifications = () => {
   const { isStaff } = useAuth();
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const subscribe = useCallback(() => {
-    // Clean up existing channel first
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
@@ -26,6 +54,7 @@ export const useScanNotifications = () => {
         },
         (payload) => {
           const { client_name } = payload.new as { client_name: string };
+          playArrivalSound();
           toast.info(`🚶 Arrivée : ${client_name}`, {
             description: "Vient de scanner son ticket à l'entrée",
             duration: 8000,
