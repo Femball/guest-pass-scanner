@@ -55,6 +55,10 @@ const AdminContent = () => {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Search/filter state
+  const [searchName, setSearchName] = useState('');
+  const [searchEmail, setSearchEmail] = useState('');
   
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
