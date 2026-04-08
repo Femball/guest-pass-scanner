@@ -5,7 +5,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = "L'Access"
-const LOGO_URL = 'https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/logo-email.png'
+
 
 interface Ticket {
   clientName: string
