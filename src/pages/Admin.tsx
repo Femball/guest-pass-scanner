@@ -252,12 +252,19 @@ const AdminContent = () => {
 
     const eventDateStr = format(eventDate, 'yyyy-MM-dd');
 
+    const parsedAmount = paymentAmount ? parseFloat(paymentAmount) : null;
+
     const reservationsToInsert = names.map(name => ({
       client_name: name,
       client_email: newEmail.trim(),
       qr_code: generateQRCode(),
       number_of_persons: 1,
       event_date: eventDateStr,
+      ...(parsedAmount ? {
+        amount: parsedAmount,
+        payment_method: paymentMethod || null,
+        payment_status: paymentMethod === 'cash' ? 'paid' : 'pending',
+      } : {}),
     }));
 
     const { data, error } = await supabase.from('reservations').insert(reservationsToInsert).select();
