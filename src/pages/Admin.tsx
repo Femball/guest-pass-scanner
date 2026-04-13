@@ -389,6 +389,18 @@ const AdminContent = () => {
   const validatedCount = filteredReservations.filter(r => r.is_validated).length;
   const pendingCount = filteredReservations.filter(r => !r.is_validated).length;
 
+  // Payment stats
+  const reservationsWithPayment = filteredReservations.filter(r => r.amount && r.amount > 0);
+  const totalCash = reservationsWithPayment
+    .filter(r => r.payment_method === 'cash' && r.payment_status === 'paid')
+    .reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalCard = reservationsWithPayment
+    .filter(r => r.payment_method === 'card' && r.payment_status === 'paid')
+    .reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalPending = reservationsWithPayment
+    .filter(r => r.payment_status === 'pending')
+    .reduce((sum, r) => sum + (r.amount || 0), 0);
+
   const exportGuestList = () => {
     const dataToExport = searchFilteredReservations;
     const header = ['Nom', 'Email', 'Nombre de personnes', 'Date événement', 'Statut'];
@@ -623,6 +635,50 @@ const AdminContent = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Payment Stats */}
+        {reservationsWithPayment.length > 0 && (
+          <motion.div
+            className="grid grid-cols-3 gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <Banknote className="w-8 h-8 text-valid" />
+                  <div>
+                    <p className="text-2xl font-bold">{totalCash.toFixed(2)}€</p>
+                    <p className="text-xs text-muted-foreground">Espèces</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-8 h-8 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{totalCard.toFixed(2)}€</p>
+                    <p className="text-xs text-muted-foreground">Carte</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-8 h-8 text-muted-foreground" />
+                  <div>
+                    <p className="text-2xl font-bold">{totalPending.toFixed(2)}€</p>
+                    <p className="text-xs text-muted-foreground">En attente</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Add new reservation */}
         <motion.div
