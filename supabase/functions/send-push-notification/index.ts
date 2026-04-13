@@ -1,5 +1,9 @@
-import { corsHeaders } from '@supabase/supabase-js/cors';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 // Web Push utilities using Web Crypto API
 async function generateVapidHeaders(endpoint: string, vapidPublicKey: string, vapidPrivateKey: string, subject: string) {
