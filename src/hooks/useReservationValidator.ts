@@ -136,6 +136,22 @@ export const useReservationValidator = () => {
         return;
       }
 
+      // Block validation if card payment is not yet paid
+      if (reservation.payment_method === 'card' && reservation.payment_status !== 'paid') {
+        playErrorSound();
+        setState({
+          isValid: false,
+          clientName: reservation.client_name,
+          numberOfPersons: reservation.number_of_persons,
+          amount: reservation.amount,
+          paymentMethod: reservation.payment_method,
+          paymentStatus: reservation.payment_status,
+          message: '💳 Paiement CB non effectué. La validation est impossible tant que le paiement n\'est pas confirmé.',
+          isLoading: false,
+        });
+        return;
+      }
+
       const { error: updateError } = await supabase
         .from('reservations')
         .update({ is_validated: true, validated_at: new Date().toISOString() })
