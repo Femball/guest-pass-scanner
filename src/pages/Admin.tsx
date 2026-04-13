@@ -57,6 +57,7 @@ const AdminContent = () => {
   const [bottles, setBottles] = useState<{ type: string; quantity: number }[]>([{ type: '', quantity: 1 }]);
   const [isAdding, setIsAdding] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [hasPayment, setHasPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | ''>('');
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
@@ -277,7 +278,7 @@ const AdminContent = () => {
 
     const eventDateStr = format(eventDate, 'yyyy-MM-dd');
 
-    const parsedAmount = paymentAmount ? parseFloat(paymentAmount) : null;
+    const parsedAmount = hasPayment && paymentAmount ? parseFloat(paymentAmount) : null;
 
     const reservationsToInsert = names.map(name => ({
       client_name: name,
@@ -285,7 +286,7 @@ const AdminContent = () => {
       qr_code: generateQRCode(),
       number_of_persons: 1,
       event_date: eventDateStr,
-      ...(parsedAmount ? {
+      ...(hasPayment && parsedAmount ? {
         amount: parsedAmount,
         payment_method: paymentMethod || null,
         payment_status: paymentMethod === 'cash' ? 'paid' : 'pending',
@@ -355,6 +356,7 @@ const AdminContent = () => {
     setHasBottle(false);
     setBottles([{ type: '', quantity: 1 }]);
     setEventDate(new Date());
+    setHasPayment(false);
     setPaymentAmount('');
     setPaymentMethod('');
     setIsAdding(false);
@@ -909,53 +911,69 @@ const AdminContent = () => {
 
               {/* Payment option */}
               <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  Paiement <span className="text-xs font-normal text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">optionnel</span>
-                </Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Montant (€)</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      placeholder="0.00"
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
-                    />
-                  </div>
-                  {paymentAmount && parseFloat(paymentAmount) > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-xs">Mode de paiement</Label>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant={paymentMethod === 'cash' ? 'default' : 'outline'}
-                          className="flex-1 gap-2"
-                          onClick={() => setPaymentMethod('cash')}
-                        >
-                          <Banknote className="w-4 h-4" />
-                          Espèces
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={paymentMethod === 'card' ? 'default' : 'outline'}
-                          className="flex-1 gap-2"
-                          onClick={() => setPaymentMethod('card')}
-                        >
-                          <CreditCard className="w-4 h-4" />
-                          Carte (SumUp)
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="hasPayment"
+                    checked={hasPayment}
+                    onCheckedChange={(checked) => {
+                      setHasPayment(!!checked);
+                      if (!checked) {
+                        setPaymentAmount('');
+                        setPaymentMethod('');
+                      }
+                    }}
+                  />
+                  <Label htmlFor="hasPayment" className="flex items-center gap-1 cursor-pointer">
+                    <CreditCard className="w-4 h-4" />
+                    Avec paiement
+                  </Label>
                 </div>
-                {paymentAmount && parseFloat(paymentAmount) > 0 && paymentMethod === 'cash' && (
-                  <p className="text-sm text-muted-foreground">Le paiement sera marqué comme reçu en espèces.</p>
-                )}
-                {paymentAmount && parseFloat(paymentAmount) > 0 && paymentMethod === 'card' && (
-                  <p className="text-sm text-muted-foreground">Un lien de paiement SumUp sera créé automatiquement.</p>
+
+                {hasPayment && (
+                  <div className="space-y-3 pl-6 border-l-2 border-primary/20">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Montant (€)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        placeholder="0.00"
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(e.target.value)}
+                      />
+                    </div>
+                    {paymentAmount && parseFloat(paymentAmount) > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-xs">Mode de paiement</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                            className="flex-1 gap-2"
+                            onClick={() => setPaymentMethod('cash')}
+                          >
+                            <Banknote className="w-4 h-4" />
+                            Espèces
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={paymentMethod === 'card' ? 'default' : 'outline'}
+                            className="flex-1 gap-2"
+                            onClick={() => setPaymentMethod('card')}
+                          >
+                            <CreditCard className="w-4 h-4" />
+                            CB (SumUp)
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {paymentAmount && parseFloat(paymentAmount) > 0 && paymentMethod === 'cash' && (
+                      <p className="text-sm text-muted-foreground">💵 Le paiement sera marqué comme reçu en espèces.</p>
+                    )}
+                    {paymentAmount && parseFloat(paymentAmount) > 0 && paymentMethod === 'card' && (
+                      <p className="text-sm text-muted-foreground">💳 Vous serez redirigé vers SumUp pour effectuer le paiement. La réservation ne sera validée qu'après confirmation du paiement.</p>
+                    )}
+                  </div>
                 )}
               </div>
 
