@@ -188,6 +188,7 @@ export type Database = {
       }
       reservations: {
         Row: {
+          amount: number | null
           client_email: string | null
           client_name: string
           created_at: string
@@ -195,10 +196,14 @@ export type Database = {
           id: string
           is_validated: boolean
           number_of_persons: number
+          payment_method: string | null
+          payment_status: string | null
           qr_code: string
+          sumup_checkout_id: string | null
           validated_at: string | null
         }
         Insert: {
+          amount?: number | null
           client_email?: string | null
           client_name: string
           created_at?: string
@@ -206,10 +211,14 @@ export type Database = {
           id?: string
           is_validated?: boolean
           number_of_persons?: number
+          payment_method?: string | null
+          payment_status?: string | null
           qr_code: string
+          sumup_checkout_id?: string | null
           validated_at?: string | null
         }
         Update: {
+          amount?: number | null
           client_email?: string | null
           client_name?: string
           created_at?: string
@@ -217,7 +226,10 @@ export type Database = {
           id?: string
           is_validated?: boolean
           number_of_persons?: number
+          payment_method?: string | null
+          payment_status?: string | null
           qr_code?: string
+          sumup_checkout_id?: string | null
           validated_at?: string | null
         }
         Relationships: []
