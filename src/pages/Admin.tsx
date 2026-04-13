@@ -76,6 +76,7 @@ const AdminContent = () => {
   const [isAddingUser, setIsAddingUser] = useState(false);
 
   const [bottleData, setBottleData] = useState<BottleWithReservation[]>([]);
+  const prevPaymentStatusesRef = useRef<Map<string, string | null>>(new Map());
 
   // Flyer invitations
   interface FlyerInvitation {
