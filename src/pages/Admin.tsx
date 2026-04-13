@@ -1217,6 +1217,18 @@ const AdminContent = () => {
                                           )}>
                                             {reservation.payment_status === 'paid' ? 'Payé' : reservation.payment_status === 'failed' ? 'Échoué' : 'En attente'}
                                           </span>
+                                          {reservation.payment_status !== 'paid' && reservation.amount > 0 && (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                markAsPaid(reservation.id);
+                                              }}
+                                              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+                                              title="Marquer comme payé"
+                                            >
+                                              ✓ Payé
+                                            </button>
+                                          )}
                                         </p>
                                       )}
                                     </div>
