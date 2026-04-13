@@ -30,6 +30,10 @@ interface Reservation {
   created_at: string;
   number_of_persons: number;
   event_date: string;
+  amount: number | null;
+  payment_method: string | null;
+  payment_status: string | null;
+  sumup_checkout_id: string | null;
 }
 
 interface BottleWithReservation {
