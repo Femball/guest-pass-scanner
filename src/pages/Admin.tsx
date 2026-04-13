@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useScanSounds } from '@/hooks/useScanSounds';
 import ArrivalHistory from '@/components/ArrivalHistory';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import QRCode from 'qrcode';
 interface Reservation {
   id: string;
@@ -47,6 +48,7 @@ interface BottleWithReservation {
 const AdminContent = () => {
   const { signOut } = useAuth();
   const { playPaymentSound } = useScanSounds();
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe, permission: pushPermission } = usePushNotifications();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -617,6 +619,30 @@ const AdminContent = () => {
             <UserPlus className="w-5 h-5 md:w-4 md:h-4" />
             <span className="md:inline">Ajouter utilisateur</span>
           </Button>
+          {pushSupported && (
+            <Button
+              variant={pushSubscribed ? "default" : "outline"}
+              size="icon"
+              className="h-12 w-12 md:h-10 md:w-10"
+              onClick={async () => {
+                if (pushSubscribed) {
+                  await pushUnsubscribe();
+                  toast.success('Notifications push désactivées');
+                } else {
+                  await pushSubscribe();
+                  if (pushPermission === 'denied') {
+                    toast.error('Les notifications sont bloquées dans les paramètres de votre navigateur');
+                  } else {
+                    toast.success('Notifications push activées !');
+                  }
+                }
+              }}
+              disabled={pushLoading}
+              title={pushSubscribed ? 'Désactiver les notifications push' : 'Activer les notifications push'}
+            >
+              {pushSubscribed ? <Bell className="w-5 h-5 md:w-4 md:h-4" /> : <BellOff className="w-5 h-5 md:w-4 md:h-4" />}
+            </Button>
+          )}
           <Button
             variant="ghost" 
             size="icon"
