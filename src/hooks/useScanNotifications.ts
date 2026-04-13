@@ -33,15 +33,6 @@ const playArrivalSound = () => {
   }
 };
 
-const sendPushToAll = async (clientName: string, eventDate: string) => {
-  try {
-    await supabase.functions.invoke('send-push-notification', {
-      body: { client_name: clientName, event_date: eventDate },
-    });
-  } catch (err) {
-    console.error('Failed to trigger push notifications:', err);
-  }
-};
 
 export const useScanNotifications = () => {
   const { isStaff } = useAuth();
@@ -63,14 +54,12 @@ export const useScanNotifications = () => {
           table: 'scan_notifications',
         },
         (payload) => {
-          const { client_name, event_date } = payload.new as { client_name: string; event_date: string };
+          const { client_name } = payload.new as { client_name: string; event_date: string };
           playArrivalSound();
           toast.info(`🚶 Arrivée : ${client_name}`, {
             description: "Vient de scanner son ticket à l'entrée",
             duration: 8000,
           });
-          // Also send push notifications to all subscribed staff
-          sendPushToAll(client_name, event_date);
         }
       )
       .subscribe();
