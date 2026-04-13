@@ -106,7 +106,26 @@ const AdminContent = () => {
       return;
     }
 
-    setReservations(data || []);
+    const newData = data || [];
+
+    // Detect payment status changes (pending → paid)
+    const prevStatuses = prevPaymentStatusesRef.current;
+    newData.forEach((r) => {
+      const prev = prevStatuses.get(r.id);
+      if (prev === 'pending' && r.payment_status === 'paid') {
+        toast.success(`💳 Paiement confirmé pour ${r.client_name} (${r.amount?.toFixed(2)}€)`, {
+          duration: 6000,
+        });
+        playPaymentSound();
+      }
+    });
+
+    // Update tracking map
+    const newMap = new Map<string, string | null>();
+    newData.forEach((r) => newMap.set(r.id, r.payment_status));
+    prevPaymentStatusesRef.current = newMap;
+
+    setReservations(newData);
     setIsLoading(false);
 
     // Fetch bottles with reservation info
