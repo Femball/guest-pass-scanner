@@ -1522,13 +1522,22 @@ const AdminContent = () => {
               {sumupCheckoutId && (
                 <SumUpPaymentWidget
                   checkoutId={sumupCheckoutId}
-                  onComplete={() => {
-                    toast.success('💳 Paiement traité !');
+                  onComplete={async () => {
+                    toast.success('💳 Paiement confirmé ! Envoi du ticket en cours...');
+                    // Now send the email after successful payment
+                    if (pendingCardReservations && pendingCardReservations.length > 0 && pendingCardReservations[0].client_email) {
+                      await sendTicketEmail(pendingCardReservations);
+                    }
+                    setPendingCardReservations(null);
                     setSumupDialogOpen(false);
                     setSumupCheckoutId(null);
                     fetchReservations();
                   }}
                   onClose={() => {
+                    if (pendingCardReservations) {
+                      toast.warning('⚠️ Paiement non effectué. La réservation reste en attente.');
+                    }
+                    setPendingCardReservations(null);
                     setSumupDialogOpen(false);
                     setSumupCheckoutId(null);
                     fetchReservations();
