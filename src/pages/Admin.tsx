@@ -1120,6 +1120,24 @@ const AdminContent = () => {
                                           ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
                                           : reservation.client_email || 'Pas d\'email'}
                                       </p>
+                                      {reservation.amount != null && reservation.amount > 0 && (
+                                        <p className="text-xs mt-0.5 flex items-center gap-1">
+                                          {reservation.payment_method === 'card' ? (
+                                            <CreditCard className="w-3 h-3" />
+                                          ) : (
+                                            <Banknote className="w-3 h-3" />
+                                          )}
+                                          <span className="font-medium">{reservation.amount}€</span>
+                                          <span className={cn(
+                                            "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                            reservation.payment_status === 'paid' ? 'bg-valid/20 text-valid' :
+                                            reservation.payment_status === 'failed' ? 'bg-destructive/20 text-destructive' :
+                                            'bg-muted text-muted-foreground'
+                                          )}>
+                                            {reservation.payment_status === 'paid' ? 'Payé' : reservation.payment_status === 'failed' ? 'Échoué' : 'En attente'}
+                                          </span>
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
