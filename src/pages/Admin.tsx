@@ -65,6 +65,8 @@ const AdminContent = () => {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [sumupCheckoutId, setSumupCheckoutId] = useState<string | null>(null);
+  const [sumupDialogOpen, setSumupDialogOpen] = useState(false);
 
   // Search/filter state
   const [searchName, setSearchName] = useState('');
@@ -334,9 +336,9 @@ const AdminContent = () => {
         });
         if (checkoutError) throw checkoutError;
         if (checkoutData?.checkout_id) {
-          toast.success('Lien de paiement CB créé');
-          // Open SumUp payment page
-          window.open(`https://pay.sumup.com/b2c/Q${checkoutData.checkout_id}`, '_blank');
+          toast.success('Paiement CB en attente - ouvrez le lien SumUp pour payer');
+          setSumupCheckoutId(checkoutData.checkout_id);
+          setSumupDialogOpen(true);
         }
       } catch (err: any) {
         console.error('SumUp checkout error:', err);
@@ -1492,10 +1494,117 @@ const AdminContent = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* SumUp Payment Dialog */}
+        <Dialog open={sumupDialogOpen} onOpenChange={(open) => {
+          setSumupDialogOpen(open);
+          if (!open) {
+            setSumupCheckoutId(null);
+            fetchReservations();
+          }
+        }}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Paiement par carte bancaire
+              </DialogTitle>
+              <DialogDescription>
+                Complétez le paiement ci-dessous via SumUp.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {sumupCheckoutId && (
+                <SumUpPaymentWidget
+                  checkoutId={sumupCheckoutId}
+                  onComplete={() => {
+                    toast.success('💳 Paiement traité !');
+                    setSumupDialogOpen(false);
+                    setSumupCheckoutId(null);
+                    fetchReservations();
+                  }}
+                  onClose={() => {
+                    setSumupDialogOpen(false);
+                    setSumupCheckoutId(null);
+                    fetchReservations();
+                  }}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
 };
+
+// SumUp Card Payment Widget
+const SumUpPaymentWidget = ({ checkoutId, onComplete, onClose }: {
+  checkoutId: string;
+  onComplete: () => void;
+  onClose: () => void;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadWidget = async () => {
+      // Load SumUp SDK if not already loaded
+      if (!(window as any).SumUpCard) {
+        const script = document.createElement('script');
+        script.src = 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js';
+        script.async = true;
+        await new Promise<void>((resolve, reject) => {
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load SumUp SDK'));
+          document.head.appendChild(script);
+        });
+      }
+
+      if (!mounted || !containerRef.current) return;
+
+      const SumUpCard = (window as any).SumUpCard;
+      if (SumUpCard) {
+        SumUpCard.mount({
+          id: 'sumup-card-container',
+          checkoutId,
+          onResponse: (_type: string, body: any) => {
+            if (body?.status === 'PAID') {
+              onComplete();
+            }
+          },
+        });
+      }
+    };
+
+    loadWidget().catch((err) => {
+      console.error('SumUp widget error:', err);
+      toast.error('Impossible de charger le formulaire de paiement');
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [checkoutId]);
+
+  return (
+    <div className="space-y-4">
+      <div id="sumup-card-container" ref={containerRef} className="min-h-[300px]" />
+      <p className="text-xs text-muted-foreground text-center">
+        Paiement sécurisé traité par SumUp
+      </p>
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={onClose}
+      >
+        Fermer et vérifier plus tard
+      </Button>
+    </div>
+  );
+};
+
 
 // Admin now uses ProtectedRoute for authentication
 export default AdminContent;
