@@ -33,45 +33,6 @@ export const useReservationValidator = () => {
   
   const { playSuccessSound, playErrorSound } = useScanSounds();
 
-  const notifyArrival = useCallback(async ({
-    clientName,
-    eventDate,
-    sourceKind,
-    sourceRecordId,
-  }: {
-    clientName: string;
-    eventDate: string;
-    sourceKind: 'reservation' | 'flyer_scan';
-    sourceRecordId: string;
-  }) => {
-    const [notificationResult, pushResult] = await Promise.allSettled([
-      supabase.from('scan_notifications').insert({
-        client_name: clientName,
-        event_date: eventDate,
-        source_kind: sourceKind,
-        source_record_id: sourceRecordId,
-      }),
-      supabase.functions.invoke('send-push-notification', {
-        body: {
-          client_name: clientName,
-          event_date: eventDate,
-        },
-      }),
-    ]);
-
-    if (notificationResult.status === 'rejected') {
-      console.error('Arrival notification insert failed:', notificationResult.reason);
-    } else if (notificationResult.value.error) {
-      console.error('Arrival notification insert failed:', notificationResult.value.error);
-    }
-
-    if (pushResult.status === 'rejected') {
-      console.error('Push notification failed:', pushResult.reason);
-    } else if (pushResult.value.error) {
-      console.error('Push notification failed:', pushResult.value.error);
-    }
-  }, []);
-
 
   const validateQRCode = useCallback(async (qrCode: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
@@ -108,13 +69,11 @@ export const useReservationValidator = () => {
           return;
         }
 
-        const { data: flyerScan, error: scanError } = await supabase
+        const { error: scanError } = await supabase
           .from('flyer_scans')
-          .insert({ flyer_invitation_id: flyer.id })
-          .select('id')
-          .single();
+          .insert({ flyer_invitation_id: flyer.id });
 
-        if (scanError || !flyerScan) {
+        if (scanError) {
           playErrorSound();
           setState({ isValid: false, message: 'Erreur lors de l\'enregistrement. Réessayez.', isLoading: false });
           return;
@@ -124,13 +83,6 @@ export const useReservationValidator = () => {
           .from('flyer_invitations')
           .update({ scan_count: (flyer.scan_count || 0) + 1 })
           .eq('id', flyer.id);
-
-        void notifyArrival({
-          clientName: `Invité Flyer - ${flyer.label}`,
-          eventDate: flyer.event_date,
-          sourceKind: 'flyer_scan',
-          sourceRecordId: flyerScan.id,
-        });
 
         playSuccessSound();
         setState({
@@ -211,13 +163,6 @@ export const useReservationValidator = () => {
         return;
       }
 
-      void notifyArrival({
-        clientName: reservation.client_name,
-        eventDate: reservation.event_date,
-        sourceKind: 'reservation',
-        sourceRecordId: reservation.id,
-      });
-
       playSuccessSound();
       setState({
         isValid: true,
@@ -233,7 +178,7 @@ export const useReservationValidator = () => {
       playErrorSound();
       setState({ isValid: false, message: 'Erreur de connexion. Vérifiez votre réseau.', isLoading: false });
     }
-  }, [notifyArrival, playErrorSound, playSuccessSound]);
+  }, []);
 
   const reset = useCallback(() => {
     setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, amount: undefined, paymentMethod: undefined, paymentStatus: undefined, isLoading: false });
