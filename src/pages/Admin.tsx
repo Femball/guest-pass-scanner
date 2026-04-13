@@ -294,6 +294,29 @@ const AdminContent = () => {
     }
 
     toast.success(`${names.length} réservation(s) créée(s) avec succès`);
+
+    // If card payment, create SumUp checkout for the first reservation
+    if (paymentMethod === 'card' && parsedAmount && data && data.length > 0) {
+      try {
+        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-sumup-checkout', {
+          body: {
+            amount: parsedAmount,
+            description: `Réservation ${names[0]}`,
+            reservation_id: data[0].id,
+            redirect_url: window.location.origin + '/admin',
+          },
+        });
+        if (checkoutError) throw checkoutError;
+        if (checkoutData?.checkout_id) {
+          toast.success('Lien de paiement CB créé');
+          // Open SumUp payment page
+          window.open(`https://pay.sumup.com/b2c/Q${checkoutData.checkout_id}`, '_blank');
+        }
+      } catch (err: any) {
+        console.error('SumUp checkout error:', err);
+        toast.error('Réservation créée mais erreur lors de la création du paiement CB');
+      }
+    }
     
     // Send ONE grouped email with all tickets
     if (data && data.length > 0 && data[0].client_email) {
@@ -307,6 +330,8 @@ const AdminContent = () => {
     setHasBottle(false);
     setBottles([{ type: '', quantity: 1 }]);
     setEventDate(new Date());
+    setPaymentAmount('');
+    setPaymentMethod('');
     setIsAdding(false);
     fetchReservations();
   };
