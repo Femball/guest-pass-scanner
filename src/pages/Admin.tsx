@@ -361,6 +361,21 @@ const AdminContent = () => {
     fetchReservations();
   };
 
+  const markAsPaid = async (id: string) => {
+    const { error } = await supabase
+      .from('reservations')
+      .update({ payment_status: 'paid' })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Erreur lors de la mise à jour du paiement');
+      return;
+    }
+
+    toast.success('Paiement marqué comme payé');
+    fetchReservations();
+  };
+
   const deleteReservation = async (id: string) => {
     const { error } = await supabase.from('reservations').delete().eq('id', id);
 
