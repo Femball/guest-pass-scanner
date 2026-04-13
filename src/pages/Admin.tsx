@@ -663,50 +663,48 @@ const AdminContent = () => {
       <main className="p-6 max-w-4xl mx-auto space-y-6">
         {/* Stats */}
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
         >
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{filteredReservations.length}</p>
-                  <p className="text-xs text-muted-foreground">Réservations</p>
+            <CardContent className="p-3 md:pt-6 md:px-6">
+              <div className="flex items-center gap-2 md:gap-3">
+                <Users className="w-6 h-6 md:w-8 md:h-8 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xl md:text-2xl font-bold truncate">{filteredReservations.length}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground truncate">Réservations</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-primary/70" />
-                <div>
-                  <p className="text-2xl font-bold">{filteredReservations.length}</p>
-                  <p className="text-xs text-muted-foreground">Personnes</p>
+            <CardContent className="p-3 md:pt-6 md:px-6">
+              <div className="flex items-center gap-2 md:gap-3">
+                <Users className="w-6 h-6 md:w-8 md:h-8 text-primary/70 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xl md:text-2xl font-bold truncate">{filteredReservations.length}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground truncate">Personnes</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-8 h-8 text-valid" />
-                <div>
-                  <p className="text-2xl font-bold">{validatedCount}</p>
-                  <p className="text-xs text-muted-foreground">Validés</p>
+            <CardContent className="p-3 md:pt-6 md:px-6">
+              <div className="flex items-center gap-2 md:gap-3">
+                <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-valid shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xl md:text-2xl font-bold truncate">{validatedCount}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground truncate">Validés</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Clock className="w-8 h-8 text-muted-foreground" />
-                <div>
-                  <p className="text-2xl font-bold">{pendingCount}</p>
-                  <p className="text-xs text-muted-foreground">En attente</p>
+            <CardContent className="p-3 md:pt-6 md:px-6">
+              <div className="flex items-center gap-2 md:gap-3">
+                <Clock className="w-6 h-6 md:w-8 md:h-8 text-muted-foreground shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xl md:text-2xl font-bold truncate">{pendingCount}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground truncate">En attente</p>
                 </div>
               </div>
             </CardContent>
@@ -716,40 +714,40 @@ const AdminContent = () => {
         {/* Payment Stats */}
         {reservationsWithPayment.length > 0 && (
           <motion.div
-            className="grid grid-cols-3 gap-4"
+            className="grid grid-cols-3 gap-3 md:gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
           >
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Banknote className="w-8 h-8 text-valid" />
-                  <div>
-                    <p className="text-2xl font-bold">{totalCash.toFixed(2)}€</p>
-                    <p className="text-xs text-muted-foreground">Espèces</p>
+              <CardContent className="p-3 md:pt-6 md:px-6">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <Banknote className="w-5 h-5 md:w-8 md:h-8 text-valid shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-base md:text-2xl font-bold truncate">{totalCash.toFixed(2)}€</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground truncate">Espèces</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-8 h-8 text-primary" />
-                  <div>
-                    <p className="text-2xl font-bold">{totalCard.toFixed(2)}€</p>
-                    <p className="text-xs text-muted-foreground">Carte</p>
+              <CardContent className="p-3 md:pt-6 md:px-6">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <CreditCard className="w-5 h-5 md:w-8 md:h-8 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-base md:text-2xl font-bold truncate">{totalCard.toFixed(2)}€</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground truncate">Carte</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-8 h-8 text-muted-foreground" />
-                  <div>
-                    <p className="text-2xl font-bold">{totalPending.toFixed(2)}€</p>
-                    <p className="text-xs text-muted-foreground">En attente</p>
+              <CardContent className="p-3 md:pt-6 md:px-6">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <Clock className="w-5 h-5 md:w-8 md:h-8 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-base md:text-2xl font-bold truncate">{totalPending.toFixed(2)}€</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground truncate">En attente</p>
                   </div>
                 </div>
               </CardContent>
