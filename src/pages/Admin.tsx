@@ -815,7 +815,7 @@ const AdminContent = () => {
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <CreditCard className="w-4 h-4" />
-                  Paiement (optionnel)
+                  Paiement <span className="text-xs font-normal text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">optionnel</span>
                 </Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
