@@ -346,3 +346,33 @@ const footerCopy = {
   fontSize: '11px',
   margin: '0',
 }
+
+const paymentBox = {
+  backgroundColor: '#f0fdf4',
+  border: '1px solid #bbf7d0',
+  borderLeft: `4px solid ${PRIMARY}`,
+  padding: '16px 20px',
+  borderRadius: '0 10px 10px 0',
+  marginBottom: '16px',
+  textAlign: 'center' as const,
+}
+
+const paymentTitle = {
+  color: PRIMARY_DARK,
+  fontSize: '14px',
+  margin: '0 0 4px',
+  fontWeight: '600' as const,
+}
+
+const paymentAmount = {
+  color: TEXT_DARK,
+  fontSize: '24px',
+  fontWeight: '700' as const,
+  margin: '4px 0',
+}
+
+const paymentDetail = {
+  color: TEXT_MUTED,
+  fontSize: '13px',
+  margin: '4px 0 0',
+}
