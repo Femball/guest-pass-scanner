@@ -1251,21 +1251,53 @@ const AdminContent = () => {
                                           : reservation.client_email || 'Pas d\'email'}
                                       </p>
                                       {reservation.amount != null && reservation.amount > 0 && (
-                                        <p className="text-xs mt-0.5 flex items-center gap-1">
-                                          {reservation.payment_method === 'card' ? (
-                                            <CreditCard className="w-3 h-3" />
-                                          ) : (
-                                            <Banknote className="w-3 h-3" />
+                                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                          <p className="text-xs flex items-center gap-1">
+                                            {reservation.payment_method === 'card' ? (
+                                              <CreditCard className="w-3 h-3" />
+                                            ) : (
+                                              <Banknote className="w-3 h-3" />
+                                            )}
+                                            <span className="font-medium">{reservation.amount}€</span>
+                                            <span className={cn(
+                                              "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                              reservation.payment_status === 'paid' ? 'bg-valid/20 text-valid' :
+                                              reservation.payment_status === 'failed' ? 'bg-destructive/20 text-destructive' :
+                                              'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                            )}>
+                                              {reservation.payment_status === 'paid' ? '✅ Payé' : reservation.payment_status === 'failed' ? '❌ Échoué' : '⏳ En attente'}
+                                            </span>
+                                          </p>
+                                          {reservation.payment_method === 'card' && reservation.payment_status !== 'paid' && (
+                                            <button
+                                              onClick={async (e) => {
+                                                e.stopPropagation();
+                                                try {
+                                                  const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-sumup-checkout', {
+                                                    body: {
+                                                      amount: reservation.amount,
+                                                      description: `Réservation ${reservation.client_name}`,
+                                                      reservation_id: reservation.id,
+                                                      redirect_url: window.location.origin + '/admin',
+                                                    },
+                                                  });
+                                                  if (checkoutError) throw checkoutError;
+                                                  if (checkoutData?.checkout_id) {
+                                                    setPendingCardReservations([reservation]);
+                                                    setSumupCheckoutId(checkoutData.checkout_id);
+                                                    setSumupDialogOpen(true);
+                                                  }
+                                                } catch (err) {
+                                                  console.error('SumUp retry error:', err);
+                                                  toast.error('Erreur lors de la relance du paiement');
+                                                }
+                                              }}
+                                              className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors flex items-center gap-1"
+                                              title="Relancer le paiement CB"
+                                            >
+                                              💳 Relancer
+                                            </button>
                                           )}
-                                          <span className="font-medium">{reservation.amount}€</span>
-                                          <span className={cn(
-                                            "px-1.5 py-0.5 rounded text-[10px] font-medium",
-                                            reservation.payment_status === 'paid' ? 'bg-valid/20 text-valid' :
-                                            reservation.payment_status === 'failed' ? 'bg-destructive/20 text-destructive' :
-                                            'bg-muted text-muted-foreground'
-                                          )}>
-                                            {reservation.payment_status === 'paid' ? 'Payé' : reservation.payment_status === 'failed' ? 'Échoué' : 'En attente'}
-                                          </span>
                                           {reservation.payment_status !== 'paid' && reservation.amount > 0 && (
                                             <button
                                               onClick={(e) => {
@@ -1278,7 +1310,7 @@ const AdminContent = () => {
                                               ✓ Payé
                                             </button>
                                           )}
-                                        </p>
+                                        </div>
                                       )}
                                     </div>
                                   </div>
