@@ -389,6 +389,18 @@ const AdminContent = () => {
   const validatedCount = filteredReservations.filter(r => r.is_validated).length;
   const pendingCount = filteredReservations.filter(r => !r.is_validated).length;
 
+  // Payment stats
+  const reservationsWithPayment = filteredReservations.filter(r => r.amount && r.amount > 0);
+  const totalCash = reservationsWithPayment
+    .filter(r => r.payment_method === 'cash' && r.payment_status === 'paid')
+    .reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalCard = reservationsWithPayment
+    .filter(r => r.payment_method === 'card' && r.payment_status === 'paid')
+    .reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalPending = reservationsWithPayment
+    .filter(r => r.payment_status === 'pending')
+    .reduce((sum, r) => sum + (r.amount || 0), 0);
+
   const exportGuestList = () => {
     const dataToExport = searchFilteredReservations;
     const header = ['Nom', 'Email', 'Nombre de personnes', 'Date événement', 'Statut'];
