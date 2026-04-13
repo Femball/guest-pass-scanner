@@ -560,7 +560,7 @@ const AdminContent = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <motion.header
-        className="px-4 py-5 md:px-6 md:py-4 flex-col md:items-center justify-between gap-4 border-b border-border flex md:flex-col"
+        className="px-4 py-5 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
