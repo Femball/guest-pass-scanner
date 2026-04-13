@@ -82,6 +82,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Build webhook URL
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const webhookUrl = `${supabaseUrl}/functions/v1/sumup-webhook`;
+
     // Create SumUp checkout
     const checkoutRes = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
@@ -96,6 +100,7 @@ Deno.serve(async (req) => {
         description: description || "Réservation",
         merchant_code,
         redirect_url,
+        webhook_url: webhookUrl,
       }),
     });
 
