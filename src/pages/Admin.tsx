@@ -46,6 +46,7 @@ interface BottleWithReservation {
 
 const AdminContent = () => {
   const { signOut } = useAuth();
+  const { playPaymentSound } = useScanSounds();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newName, setNewName] = useState('');
