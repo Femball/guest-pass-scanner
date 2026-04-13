@@ -811,6 +811,58 @@ const AdminContent = () => {
                 )}
               </div>
 
+              {/* Payment option */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Paiement (optionnel)
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Montant (€)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder="0.00"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                    />
+                  </div>
+                  {paymentAmount && parseFloat(paymentAmount) > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Mode de paiement</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                          className="flex-1 gap-2"
+                          onClick={() => setPaymentMethod('cash')}
+                        >
+                          <Banknote className="w-4 h-4" />
+                          Espèces
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={paymentMethod === 'card' ? 'default' : 'outline'}
+                          className="flex-1 gap-2"
+                          onClick={() => setPaymentMethod('card')}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          Carte (SumUp)
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {paymentAmount && parseFloat(paymentAmount) > 0 && paymentMethod === 'cash' && (
+                  <p className="text-sm text-muted-foreground">Le paiement sera marqué comme reçu en espèces.</p>
+                )}
+                {paymentAmount && parseFloat(paymentAmount) > 0 && paymentMethod === 'card' && (
+                  <p className="text-sm text-muted-foreground">Un lien de paiement SumUp sera créé automatiquement.</p>
+                )}
+              </div>
+
               <Button onClick={addReservation} disabled={isAdding} className="w-full md:w-auto">
                 <Send className="w-4 h-4 mr-2" />
                 {isAdding ? 'Création et envoi...' : `Créer et envoyer ${newPersons > 1 ? newPersons + ' tickets' : 'le ticket'}`}
