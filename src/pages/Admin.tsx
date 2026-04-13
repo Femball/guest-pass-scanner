@@ -347,8 +347,12 @@ const AdminContent = () => {
       }
     }
     
-    // Send ONE grouped email with all tickets
-    if (data && data.length > 0 && data[0].client_email) {
+    // For card payments, delay email until payment is confirmed
+    if (paymentMethod === 'card' && parsedAmount && data && data.length > 0) {
+      setPendingCardReservations(data as Reservation[]);
+      // Don't send email yet - will be sent after payment confirmation
+    } else if (data && data.length > 0 && data[0].client_email) {
+      // For cash or no payment, send email immediately
       await sendTicketEmail(data as Reservation[]);
     }
 
