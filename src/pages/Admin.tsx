@@ -57,6 +57,7 @@ const AdminContent = () => {
   const [bottles, setBottles] = useState<{ type: string; quantity: number }[]>([{ type: '', quantity: 1 }]);
   const [isAdding, setIsAdding] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [hasPayment, setHasPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | ''>('');
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
