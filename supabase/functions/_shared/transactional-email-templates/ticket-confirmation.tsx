@@ -18,6 +18,9 @@ interface TicketConfirmationProps {
   eventDate?: string
   qrColor?: string
   tickets?: Ticket[]
+  amount?: number | null
+  paymentMethod?: string | null
+  paymentStatus?: string | null
 }
 
 const TicketConfirmationEmail = ({
@@ -26,6 +29,9 @@ const TicketConfirmationEmail = ({
   eventDate = '',
   qrColor = '0f9b6e',
   tickets = [],
+  amount,
+  paymentMethod,
+  paymentStatus,
 }: TicketConfirmationProps) => {
   const ticketCount = tickets.length || 1
   const subtitle = ticketCount > 1
@@ -83,6 +89,19 @@ const TicketConfirmationEmail = ({
               )
             })}
 
+            {/* Payment info */}
+            {amount != null && amount > 0 && (
+              <Section style={paymentBox}>
+                <Text style={paymentTitle}>💰 Paiement</Text>
+                <Text style={paymentAmount}>{amount.toFixed(2)} €</Text>
+                <Text style={paymentDetail}>
+                  {paymentMethod === 'card' ? '💳 Carte bancaire' : '💵 Espèces'}
+                  {' — '}
+                  {paymentStatus === 'paid' ? '✅ Payé' : paymentStatus === 'pending' ? '⏳ En attente' : '❌ Échoué'}
+                </Text>
+              </Section>
+            )}
+
             {/* Warning box */}
             <Section style={warningBox}>
               <Text style={warningTitle}>⚠️ Important</Text>
@@ -120,6 +139,9 @@ export const template = {
     eventName: 'Soirée VIP',
     eventDate: '2026-04-15',
     qrColor: '0f9b6e',
+    amount: 50,
+    paymentMethod: 'card',
+    paymentStatus: 'paid',
     tickets: [
       { clientName: 'Jean Dupont', qrCode: 'TICKET-PREVIEW-001' },
       { clientName: 'Marie Dupont', qrCode: 'TICKET-PREVIEW-002' },
@@ -323,4 +345,34 @@ const footerCopy = {
   color: TEXT_LIGHT,
   fontSize: '11px',
   margin: '0',
+}
+
+const paymentBox = {
+  backgroundColor: '#f0fdf4',
+  border: '1px solid #bbf7d0',
+  borderLeft: `4px solid ${PRIMARY}`,
+  padding: '16px 20px',
+  borderRadius: '0 10px 10px 0',
+  marginBottom: '16px',
+  textAlign: 'center' as const,
+}
+
+const paymentTitle = {
+  color: PRIMARY_DARK,
+  fontSize: '14px',
+  margin: '0 0 4px',
+  fontWeight: '600' as const,
+}
+
+const paymentAmount = {
+  color: TEXT_DARK,
+  fontSize: '24px',
+  fontWeight: '700' as const,
+  margin: '4px 0',
+}
+
+const paymentDetail = {
+  color: TEXT_MUTED,
+  fontSize: '13px',
+  margin: '4px 0 0',
 }

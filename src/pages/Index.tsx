@@ -15,6 +15,9 @@ const Index = () => {
     isValid,
     clientName,
     message,
+    amount,
+    paymentMethod,
+    paymentStatus,
     isLoading,
     validateQRCode,
     reset
@@ -112,7 +115,7 @@ const Index = () => {
       </main>
 
       {/* Validation overlay */}
-      <ValidationResult isValid={isValid} clientName={clientName} message={message} onReset={handleReset} />
+      <ValidationResult isValid={isValid} clientName={clientName} message={message} amount={amount} paymentMethod={paymentMethod} paymentStatus={paymentStatus} onReset={handleReset} />
     </div>;
 };
 export default Index;
