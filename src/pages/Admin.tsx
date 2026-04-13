@@ -278,7 +278,7 @@ const AdminContent = () => {
 
     const eventDateStr = format(eventDate, 'yyyy-MM-dd');
 
-    const parsedAmount = paymentAmount ? parseFloat(paymentAmount) : null;
+    const parsedAmount = hasPayment && paymentAmount ? parseFloat(paymentAmount) : null;
 
     const reservationsToInsert = names.map(name => ({
       client_name: name,
@@ -286,7 +286,7 @@ const AdminContent = () => {
       qr_code: generateQRCode(),
       number_of_persons: 1,
       event_date: eventDateStr,
-      ...(parsedAmount ? {
+      ...(hasPayment && parsedAmount ? {
         amount: parsedAmount,
         payment_method: paymentMethod || null,
         payment_status: paymentMethod === 'cash' ? 'paid' : 'pending',
