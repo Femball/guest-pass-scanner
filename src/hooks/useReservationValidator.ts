@@ -178,7 +178,7 @@ export const useReservationValidator = () => {
       playErrorSound();
       setState({ isValid: false, message: 'Erreur de connexion. Vérifiez votre réseau.', isLoading: false });
     }
-  }, []);
+  }, [playSuccessSound, playErrorSound]);
 
   const reset = useCallback(() => {
     setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, amount: undefined, paymentMethod: undefined, paymentStatus: undefined, isLoading: false });
