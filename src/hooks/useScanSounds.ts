@@ -18,10 +18,9 @@ export const useScanSounds = () => {
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
 
-    // Pleasant ascending chime for success
-    oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-    oscillator.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
-    oscillator.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+    oscillator.frequency.setValueAtTime(523.25, ctx.currentTime);
+    oscillator.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
 
     oscillator.type = 'sine';
     
@@ -40,7 +39,6 @@ export const useScanSounds = () => {
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
 
-    // Low buzz for error
     oscillator.frequency.setValueAtTime(200, ctx.currentTime);
     oscillator.frequency.setValueAtTime(150, ctx.currentTime + 0.15);
 
@@ -53,5 +51,28 @@ export const useScanSounds = () => {
     oscillator.stop(ctx.currentTime + 0.3);
   }, [getAudioContext]);
 
-  return { playSuccessSound, playErrorSound };
+  const playPaymentSound = useCallback(() => {
+    const ctx = getAudioContext();
+
+    const notes = [
+      { freq: 1318.51, start: 0, dur: 0.08 },    // E6
+      { freq: 1567.98, start: 0.1, dur: 0.15 },   // G6
+      { freq: 2093.00, start: 0.2, dur: 0.25 },   // C7
+    ];
+
+    notes.forEach(({ freq, start, dur }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur);
+    });
+  }, [getAudioContext]);
+
+  return { playSuccessSound, playErrorSound, playPaymentSound };
 };

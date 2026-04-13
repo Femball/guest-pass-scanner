@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useScanSounds } from '@/hooks/useScanSounds';
 import ArrivalHistory from '@/components/ArrivalHistory';
 import QRCode from 'qrcode';
 interface Reservation {
@@ -45,6 +46,7 @@ interface BottleWithReservation {
 
 const AdminContent = () => {
   const { signOut } = useAuth();
+  const { playPaymentSound } = useScanSounds();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -74,6 +76,7 @@ const AdminContent = () => {
   const [isAddingUser, setIsAddingUser] = useState(false);
 
   const [bottleData, setBottleData] = useState<BottleWithReservation[]>([]);
+  const prevPaymentStatusesRef = useRef<Map<string, string | null>>(new Map());
 
   // Flyer invitations
   interface FlyerInvitation {
@@ -103,7 +106,26 @@ const AdminContent = () => {
       return;
     }
 
-    setReservations(data || []);
+    const newData = data || [];
+
+    // Detect payment status changes (pending → paid)
+    const prevStatuses = prevPaymentStatusesRef.current;
+    newData.forEach((r) => {
+      const prev = prevStatuses.get(r.id);
+      if (prev === 'pending' && r.payment_status === 'paid') {
+        toast.success(`💳 Paiement confirmé pour ${r.client_name} (${r.amount?.toFixed(2)}€)`, {
+          duration: 6000,
+        });
+        playPaymentSound();
+      }
+    });
+
+    // Update tracking map
+    const newMap = new Map<string, string | null>();
+    newData.forEach((r) => newMap.set(r.id, r.payment_status));
+    prevPaymentStatusesRef.current = newMap;
+
+    setReservations(newData);
     setIsLoading(false);
 
     // Fetch bottles with reservation info
