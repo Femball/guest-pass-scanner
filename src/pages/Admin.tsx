@@ -67,6 +67,7 @@ const AdminContent = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [sumupCheckoutId, setSumupCheckoutId] = useState<string | null>(null);
   const [sumupDialogOpen, setSumupDialogOpen] = useState(false);
+  const [pendingCardReservations, setPendingCardReservations] = useState<Reservation[] | null>(null);
 
   // Search/filter state
   const [searchName, setSearchName] = useState('');
