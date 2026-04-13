@@ -65,6 +65,8 @@ const AdminContent = () => {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [sumupCheckoutId, setSumupCheckoutId] = useState<string | null>(null);
+  const [sumupDialogOpen, setSumupDialogOpen] = useState(false);
 
   // Search/filter state
   const [searchName, setSearchName] = useState('');
