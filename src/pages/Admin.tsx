@@ -336,9 +336,9 @@ const AdminContent = () => {
         });
         if (checkoutError) throw checkoutError;
         if (checkoutData?.checkout_id) {
-          toast.success('Lien de paiement CB créé');
-          // Open SumUp payment page
-          window.open(`https://pay.sumup.com/b2c/Q${checkoutData.checkout_id}`, '_blank');
+          toast.success('Paiement CB en attente - ouvrez le lien SumUp pour payer');
+          setSumupCheckoutId(checkoutData.checkout_id);
+          setSumupDialogOpen(true);
         }
       } catch (err: any) {
         console.error('SumUp checkout error:', err);
