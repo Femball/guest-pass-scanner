@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 const VAPID_PUBLIC_KEY = 'BGQF7mfNkOUbkwOR0Jez-oTcSlYJc8tWGPT6wCXREToIdKFXTXXP2mHpsdkS-rngo4EVsqXl5O3-mmjLdFjWzGY';
-const VAPID_PRIVATE_KEY = 'piQafQ_UdR-Mp_Ib11nNVzusTjq-2Hvqmnjyxp0xH94';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,10 +16,15 @@ Deno.serve(async (req) => {
   try {
     const { client_name, event_date } = await req.json();
 
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+    if (!vapidPrivateKey) {
+      throw new Error('VAPID_PRIVATE_KEY is not set');
+    }
+
     webpush.setVapidDetails(
       'mailto:info@laccess.fr',
       VAPID_PUBLIC_KEY,
-      VAPID_PRIVATE_KEY
+      vapidPrivateKey
     );
 
     const supabase = createClient(
