@@ -13,6 +13,9 @@ interface ValidationState {
   clientName?: string;
   numberOfPersons?: number;
   message?: string;
+  amount?: number | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
   isLoading: boolean;
 }
 
@@ -22,6 +25,9 @@ export const useReservationValidator = () => {
     clientName: undefined,
     numberOfPersons: undefined,
     message: undefined,
+    amount: undefined,
+    paymentMethod: undefined,
+    paymentStatus: undefined,
     isLoading: false,
   });
   
@@ -77,9 +83,6 @@ export const useReservationValidator = () => {
           .from('flyer_invitations')
           .update({ scan_count: (flyer.scan_count || 0) + 1 })
           .eq('id', flyer.id);
-
-        // Send arrival notification
-        // Notification handled by database trigger
 
         playSuccessSound();
         setState({
@@ -144,14 +147,14 @@ export const useReservationValidator = () => {
         return;
       }
 
-      // Send arrival notification
-      // Notification handled by database trigger
-
       playSuccessSound();
       setState({
         isValid: true,
         clientName: reservation.client_name,
         numberOfPersons: reservation.number_of_persons,
+        amount: reservation.amount,
+        paymentMethod: reservation.payment_method,
+        paymentStatus: reservation.payment_status,
         message: 'Bienvenue à la soirée !',
         isLoading: false,
       });
@@ -162,7 +165,7 @@ export const useReservationValidator = () => {
   }, []);
 
   const reset = useCallback(() => {
-    setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, isLoading: false });
+    setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, amount: undefined, paymentMethod: undefined, paymentStatus: undefined, isLoading: false });
   }, []);
 
   return { ...state, validateQRCode, reset };

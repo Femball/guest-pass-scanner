@@ -1,15 +1,33 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, User, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, User, CreditCard, Banknote } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ValidationResultProps {
   isValid: boolean | null;
   clientName?: string;
   message?: string;
+  amount?: number | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
   onReset: () => void;
 }
 
-const ValidationResult = ({ isValid, clientName, message, onReset }: ValidationResultProps) => {
+const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod, paymentStatus, onReset }: ValidationResultProps) => {
+  const [confirmed, setConfirmed] = useState(false);
+
   if (isValid === null) return null;
+
+  const handleConfirm = () => {
+    setConfirmed(true);
+    setTimeout(() => {
+      setConfirmed(false);
+      onReset();
+    }, 300);
+  };
+
+  const hasPaid = amount != null && amount > 0 && paymentStatus === 'paid';
+  const hasPending = amount != null && amount > 0 && paymentStatus === 'pending';
 
   return (
     <AnimatePresence>
@@ -21,7 +39,6 @@ const ValidationResult = ({ isValid, clientName, message, onReset }: ValidationR
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
-        onClick={onReset}
       >
         <motion.div
           initial={{ scale: 0 }}
@@ -61,6 +78,26 @@ const ValidationResult = ({ isValid, clientName, message, onReset }: ValidationR
           </motion.div>
         )}
 
+        {/* Payment info */}
+        {isValid && amount != null && amount > 0 && (
+          <motion.div
+            className="flex items-center gap-3 text-xl mb-4 px-6 py-3 rounded-xl bg-white/20 backdrop-blur-sm"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            {paymentMethod === 'card' ? (
+              <CreditCard className="w-6 h-6" />
+            ) : (
+              <Banknote className="w-6 h-6" />
+            )}
+            <span className="font-bold">{amount.toFixed(2)}€</span>
+            <span className="text-lg opacity-80">
+              {hasPaid ? '✅ Payé' : hasPending ? '⏳ En attente' : '❌ Échoué'}
+            </span>
+          </motion.div>
+        )}
+
         <motion.p
           className="text-xl opacity-90 text-center mb-8"
           initial={{ opacity: 0 }}
@@ -71,13 +108,19 @@ const ValidationResult = ({ isValid, clientName, message, onReset }: ValidationR
         </motion.p>
 
         <motion.div
-          className="flex items-center gap-2 text-lg opacity-70"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.7 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Clock className="w-5 h-5" />
-          <span>Appuyez pour scanner un autre code</span>
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={handleConfirm}
+            disabled={confirmed}
+            className="text-lg px-8 py-6 bg-white/20 border-white/40 hover:bg-white/30 text-current font-semibold"
+          >
+            {confirmed ? 'OK ✓' : '✋ Confirmer et scanner suivant'}
+          </Button>
         </motion.div>
       </motion.div>
     </AnimatePresence>

@@ -225,6 +225,9 @@ const AdminContent = () => {
             eventDate: list[0].event_date,
             qrColor: colorHex,
             tickets,
+            amount: list[0].amount,
+            paymentMethod: list[0].payment_method,
+            paymentStatus: list[0].payment_status,
           },
         },
       });
