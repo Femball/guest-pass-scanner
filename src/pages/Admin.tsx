@@ -356,6 +356,7 @@ const AdminContent = () => {
     setHasBottle(false);
     setBottles([{ type: '', quantity: 1 }]);
     setEventDate(new Date());
+    setHasPayment(false);
     setPaymentAmount('');
     setPaymentMethod('');
     setIsAdding(false);
