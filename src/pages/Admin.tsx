@@ -1209,7 +1209,16 @@ const AdminContent = () => {
                               return (
                               <motion.div
                                 key={reservation.id}
-                                className="p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                                className={cn(
+                                  "p-4 rounded-lg hover:bg-secondary transition-colors border-l-4",
+                                  reservation.amount && reservation.amount > 0
+                                    ? reservation.payment_status === 'paid'
+                                      ? 'bg-valid/5 border-l-valid'
+                                      : reservation.payment_status === 'failed'
+                                        ? 'bg-destructive/5 border-l-destructive'
+                                        : 'bg-amber-50 dark:bg-amber-950/20 border-l-amber-400'
+                                    : 'bg-secondary/50 border-l-transparent'
+                                )}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                               >
