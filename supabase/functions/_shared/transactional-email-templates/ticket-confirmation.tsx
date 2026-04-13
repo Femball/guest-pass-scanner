@@ -18,6 +18,9 @@ interface TicketConfirmationProps {
   eventDate?: string
   qrColor?: string
   tickets?: Ticket[]
+  amount?: number | null
+  paymentMethod?: string | null
+  paymentStatus?: string | null
 }
 
 const TicketConfirmationEmail = ({
@@ -26,6 +29,9 @@ const TicketConfirmationEmail = ({
   eventDate = '',
   qrColor = '0f9b6e',
   tickets = [],
+  amount,
+  paymentMethod,
+  paymentStatus,
 }: TicketConfirmationProps) => {
   const ticketCount = tickets.length || 1
   const subtitle = ticketCount > 1
@@ -82,6 +88,19 @@ const TicketConfirmationEmail = ({
                 </Section>
               )
             })}
+
+            {/* Payment info */}
+            {amount != null && amount > 0 && (
+              <Section style={paymentBox}>
+                <Text style={paymentTitle}>💰 Paiement</Text>
+                <Text style={paymentAmount}>{amount.toFixed(2)} €</Text>
+                <Text style={paymentDetail}>
+                  {paymentMethod === 'card' ? '💳 Carte bancaire' : '💵 Espèces'}
+                  {' — '}
+                  {paymentStatus === 'paid' ? '✅ Payé' : paymentStatus === 'pending' ? '⏳ En attente' : '❌ Échoué'}
+                </Text>
+              </Section>
+            )}
 
             {/* Warning box */}
             <Section style={warningBox}>
