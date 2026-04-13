@@ -139,6 +139,9 @@ export const template = {
     eventName: 'Soirée VIP',
     eventDate: '2026-04-15',
     qrColor: '0f9b6e',
+    amount: 50,
+    paymentMethod: 'card',
+    paymentStatus: 'paid',
     tickets: [
       { clientName: 'Jean Dupont', qrCode: 'TICKET-PREVIEW-001' },
       { clientName: 'Marie Dupont', qrCode: 'TICKET-PREVIEW-002' },
