@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -30,6 +30,10 @@ interface Reservation {
   created_at: string;
   number_of_persons: number;
   event_date: string;
+  amount: number | null;
+  payment_method: string | null;
+  payment_status: string | null;
+  sumup_checkout_id: string | null;
 }
 
 interface BottleWithReservation {
@@ -51,6 +55,8 @@ const AdminContent = () => {
   const [bottles, setBottles] = useState<{ type: string; quantity: number }[]>([{ type: '', quantity: 1 }]);
   const [isAdding, setIsAdding] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | ''>('');
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
@@ -246,12 +252,19 @@ const AdminContent = () => {
 
     const eventDateStr = format(eventDate, 'yyyy-MM-dd');
 
+    const parsedAmount = paymentAmount ? parseFloat(paymentAmount) : null;
+
     const reservationsToInsert = names.map(name => ({
       client_name: name,
       client_email: newEmail.trim(),
       qr_code: generateQRCode(),
       number_of_persons: 1,
       event_date: eventDateStr,
+      ...(parsedAmount ? {
+        amount: parsedAmount,
+        payment_method: paymentMethod || null,
+        payment_status: paymentMethod === 'cash' ? 'paid' : 'pending',
+      } : {}),
     }));
 
     const { data, error } = await supabase.from('reservations').insert(reservationsToInsert).select();
@@ -281,6 +294,29 @@ const AdminContent = () => {
     }
 
     toast.success(`${names.length} réservation(s) créée(s) avec succès`);
+
+    // If card payment, create SumUp checkout for the first reservation
+    if (paymentMethod === 'card' && parsedAmount && data && data.length > 0) {
+      try {
+        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-sumup-checkout', {
+          body: {
+            amount: parsedAmount,
+            description: `Réservation ${names[0]}`,
+            reservation_id: data[0].id,
+            redirect_url: window.location.origin + '/admin',
+          },
+        });
+        if (checkoutError) throw checkoutError;
+        if (checkoutData?.checkout_id) {
+          toast.success('Lien de paiement CB créé');
+          // Open SumUp payment page
+          window.open(`https://pay.sumup.com/b2c/Q${checkoutData.checkout_id}`, '_blank');
+        }
+      } catch (err: any) {
+        console.error('SumUp checkout error:', err);
+        toast.error('Réservation créée mais erreur lors de la création du paiement CB');
+      }
+    }
     
     // Send ONE grouped email with all tickets
     if (data && data.length > 0 && data[0].client_email) {
@@ -294,6 +330,8 @@ const AdminContent = () => {
     setHasBottle(false);
     setBottles([{ type: '', quantity: 1 }]);
     setEventDate(new Date());
+    setPaymentAmount('');
+    setPaymentMethod('');
     setIsAdding(false);
     fetchReservations();
   };
@@ -773,6 +811,58 @@ const AdminContent = () => {
                 )}
               </div>
 
+              {/* Payment option */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Paiement (optionnel)
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Montant (€)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder="0.00"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                    />
+                  </div>
+                  {paymentAmount && parseFloat(paymentAmount) > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Mode de paiement</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                          className="flex-1 gap-2"
+                          onClick={() => setPaymentMethod('cash')}
+                        >
+                          <Banknote className="w-4 h-4" />
+                          Espèces
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={paymentMethod === 'card' ? 'default' : 'outline'}
+                          className="flex-1 gap-2"
+                          onClick={() => setPaymentMethod('card')}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          Carte (SumUp)
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {paymentAmount && parseFloat(paymentAmount) > 0 && paymentMethod === 'cash' && (
+                  <p className="text-sm text-muted-foreground">Le paiement sera marqué comme reçu en espèces.</p>
+                )}
+                {paymentAmount && parseFloat(paymentAmount) > 0 && paymentMethod === 'card' && (
+                  <p className="text-sm text-muted-foreground">Un lien de paiement SumUp sera créé automatiquement.</p>
+                )}
+              </div>
+
               <Button onClick={addReservation} disabled={isAdding} className="w-full md:w-auto">
                 <Send className="w-4 h-4 mr-2" />
                 {isAdding ? 'Création et envoi...' : `Créer et envoyer ${newPersons > 1 ? newPersons + ' tickets' : 'le ticket'}`}
@@ -1030,6 +1120,24 @@ const AdminContent = () => {
                                           ? `Validé le ${new Date(reservation.validated_at!).toLocaleString('fr-FR')}`
                                           : reservation.client_email || 'Pas d\'email'}
                                       </p>
+                                      {reservation.amount != null && reservation.amount > 0 && (
+                                        <p className="text-xs mt-0.5 flex items-center gap-1">
+                                          {reservation.payment_method === 'card' ? (
+                                            <CreditCard className="w-3 h-3" />
+                                          ) : (
+                                            <Banknote className="w-3 h-3" />
+                                          )}
+                                          <span className="font-medium">{reservation.amount}€</span>
+                                          <span className={cn(
+                                            "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                            reservation.payment_status === 'paid' ? 'bg-valid/20 text-valid' :
+                                            reservation.payment_status === 'failed' ? 'bg-destructive/20 text-destructive' :
+                                            'bg-muted text-muted-foreground'
+                                          )}>
+                                            {reservation.payment_status === 'paid' ? 'Payé' : reservation.payment_status === 'failed' ? 'Échoué' : 'En attente'}
+                                          </span>
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
