@@ -762,14 +762,14 @@ const AdminContent = () => {
           transition={{ delay: 0.1 }}
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
+            <CardHeader className="px-4 py-3 md:px-6 md:py-4">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Plus className="w-4 h-4 md:w-5 md:h-5" />
                 Nouvelle réservation
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="px-4 pb-4 md:px-6 md:pb-6 space-y-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
                 {newPersons <= 1 && (
                   <div className="space-y-2">
                     <Label htmlFor="name">Nom du client *</Label>
@@ -843,7 +843,7 @@ const AdminContent = () => {
               {newPersons > 1 && (
                 <div className="space-y-3">
                   <Label>Noms des personnes *</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3">
                     {Array.from({ length: newPersons }, (_, i) => (
                       <Input
                         key={i}
@@ -877,7 +877,7 @@ const AdminContent = () => {
                 </div>
 
                 {hasBottle && (
-                  <div className="space-y-3 pl-6 border-l-2 border-primary/20">
+                  <div className="space-y-3 pl-4 md:pl-6 border-l-2 border-primary/20">
                     {bottles.map((bottle, i) => (
                       <div key={i} className="flex items-end gap-2">
                         <div className="flex-1 space-y-1">
@@ -963,7 +963,7 @@ const AdminContent = () => {
                 </div>
 
                 {hasPayment && (
-                  <div className="space-y-3 pl-6 border-l-2 border-primary/20">
+                  <div className="space-y-3 pl-4 md:pl-6 border-l-2 border-primary/20">
                     <div className="space-y-2">
                       <Label className="text-xs">Montant (€)</Label>
                       <Input
@@ -1010,7 +1010,7 @@ const AdminContent = () => {
                 )}
               </div>
 
-              <Button onClick={addReservation} disabled={isAdding} className="w-full md:w-auto">
+              <Button onClick={addReservation} disabled={isAdding} className="w-full h-12 md:h-10 md:w-auto text-sm">
                 <Send className="w-4 h-4 mr-2" />
                 {isAdding ? 'Création et envoi...' : `Créer et envoyer ${newPersons > 1 ? newPersons + ' tickets' : 'le ticket'}`}
               </Button>
