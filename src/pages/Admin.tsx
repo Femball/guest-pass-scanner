@@ -67,6 +67,7 @@ const AdminContent = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [sumupCheckoutId, setSumupCheckoutId] = useState<string | null>(null);
   const [sumupDialogOpen, setSumupDialogOpen] = useState(false);
+  const [pendingCardReservations, setPendingCardReservations] = useState<Reservation[] | null>(null);
 
   // Search/filter state
   const [searchName, setSearchName] = useState('');
@@ -346,8 +347,12 @@ const AdminContent = () => {
       }
     }
     
-    // Send ONE grouped email with all tickets
-    if (data && data.length > 0 && data[0].client_email) {
+    // For card payments, delay email until payment is confirmed
+    if (paymentMethod === 'card' && parsedAmount && data && data.length > 0) {
+      setPendingCardReservations(data as Reservation[]);
+      // Don't send email yet - will be sent after payment confirmation
+    } else if (data && data.length > 0 && data[0].client_email) {
+      // For cash or no payment, send email immediately
       await sendTicketEmail(data as Reservation[]);
     }
 
@@ -1517,13 +1522,22 @@ const AdminContent = () => {
               {sumupCheckoutId && (
                 <SumUpPaymentWidget
                   checkoutId={sumupCheckoutId}
-                  onComplete={() => {
-                    toast.success('💳 Paiement traité !');
+                  onComplete={async () => {
+                    toast.success('💳 Paiement confirmé ! Envoi du ticket en cours...');
+                    // Now send the email after successful payment
+                    if (pendingCardReservations && pendingCardReservations.length > 0 && pendingCardReservations[0].client_email) {
+                      await sendTicketEmail(pendingCardReservations);
+                    }
+                    setPendingCardReservations(null);
                     setSumupDialogOpen(false);
                     setSumupCheckoutId(null);
                     fetchReservations();
                   }}
                   onClose={() => {
+                    if (pendingCardReservations) {
+                      toast.warning('⚠️ Paiement non effectué. La réservation reste en attente.');
+                    }
+                    setPendingCardReservations(null);
                     setSumupDialogOpen(false);
                     setSumupCheckoutId(null);
                     fetchReservations();
