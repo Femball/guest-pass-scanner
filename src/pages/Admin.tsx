@@ -1515,28 +1515,20 @@ const AdminContent = () => {
             </DialogHeader>
             <div className="py-4">
               {sumupCheckoutId && (
-                <div className="space-y-4">
-                  <div id="sumup-card-widget" className="min-h-[300px] flex items-center justify-center">
-                    <div className="text-center space-y-3">
-                      <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                      <p className="text-sm text-muted-foreground">Chargement du formulaire de paiement...</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Le paiement est sécurisé et traité par SumUp. Le statut sera mis à jour automatiquement.
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      setSumupDialogOpen(false);
-                      setSumupCheckoutId(null);
-                      fetchReservations();
-                    }}
-                  >
-                    Fermer et vérifier plus tard
-                  </Button>
-                </div>
+                <SumUpPaymentWidget
+                  checkoutId={sumupCheckoutId}
+                  onComplete={() => {
+                    toast.success('💳 Paiement traité !');
+                    setSumupDialogOpen(false);
+                    setSumupCheckoutId(null);
+                    fetchReservations();
+                  }}
+                  onClose={() => {
+                    setSumupDialogOpen(false);
+                    setSumupCheckoutId(null);
+                    fetchReservations();
+                  }}
+                />
               )}
             </div>
           </DialogContent>
@@ -1546,32 +1538,71 @@ const AdminContent = () => {
   );
 };
 
-// Load SumUp Card SDK
-const SumUpWidget = ({ checkoutId, onSuccess }: { checkoutId: string; onSuccess: () => void }) => {
+// SumUp Card Payment Widget
+const SumUpPaymentWidget = ({ checkoutId, onComplete, onClose }: {
+  checkoutId: string;
+  onComplete: () => void;
+  onClose: () => void;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js';
-    script.async = true;
-    script.onload = () => {
+    let mounted = true;
+
+    const loadWidget = async () => {
+      // Load SumUp SDK if not already loaded
+      if (!(window as any).SumUpCard) {
+        const script = document.createElement('script');
+        script.src = 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js';
+        script.async = true;
+        await new Promise<void>((resolve, reject) => {
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load SumUp SDK'));
+          document.head.appendChild(script);
+        });
+      }
+
+      if (!mounted || !containerRef.current) return;
+
       const SumUpCard = (window as any).SumUpCard;
       if (SumUpCard) {
         SumUpCard.mount({
-          id: 'sumup-card-widget',
+          id: 'sumup-card-container',
           checkoutId,
-          onResponse: (type: string, body: any) => {
-            if (type === 'success') {
-              onSuccess();
+          onResponse: (_type: string, body: any) => {
+            if (body?.status === 'PAID') {
+              onComplete();
             }
           },
         });
       }
     };
-    document.body.appendChild(script);
+
+    loadWidget().catch((err) => {
+      console.error('SumUp widget error:', err);
+      toast.error('Impossible de charger le formulaire de paiement');
+    });
+
     return () => {
-      document.body.removeChild(script);
+      mounted = false;
     };
   }, [checkoutId]);
-  return null;
+
+  return (
+    <div className="space-y-4">
+      <div id="sumup-card-container" ref={containerRef} className="min-h-[300px]" />
+      <p className="text-xs text-muted-foreground text-center">
+        Paiement sécurisé traité par SumUp
+      </p>
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={onClose}
+      >
+        Fermer et vérifier plus tard
+      </Button>
+    </div>
+  );
 };
 
 
