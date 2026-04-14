@@ -1166,13 +1166,13 @@ const AdminContent = () => {
           transition={{ delay: 0.2 }}
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
+            <CardHeader className="px-4 py-3 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-2xl">
+                <Users className="w-4 h-4 md:w-5 md:h-5" />
                 Réservations ({searchFilteredReservations.length})
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 pb-4 md:px-6 md:pb-6">
               {/* Search filters */}
               <div className="flex flex-col md:flex-row gap-3 mb-4">
                 <div className="relative flex-1">
@@ -1243,7 +1243,7 @@ const AdminContent = () => {
                               <motion.div
                                 key={reservation.id}
                                 className={cn(
-                                  "p-4 rounded-lg hover:bg-secondary transition-colors border-l-4",
+                                  "p-3 md:p-4 rounded-lg hover:bg-secondary transition-colors border-l-4",
                                   reservation.amount && reservation.amount > 0
                                     ? reservation.payment_status === 'paid'
                                       ? 'bg-valid/5 border-l-valid'
@@ -1255,17 +1255,17 @@ const AdminContent = () => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                               >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-4">
-                                    <div className={`p-2 rounded-full ${reservation.is_validated ? 'bg-valid/20' : 'bg-muted'}`}>
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                                    <div className={`p-1.5 md:p-2 rounded-full shrink-0 ${reservation.is_validated ? 'bg-valid/20' : 'bg-muted'}`}>
                                       {reservation.is_validated ? (
-                                        <CheckCircle className="w-5 h-5 text-valid" />
+                                        <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-valid" />
                                       ) : (
-                                        <QrCode className="w-5 h-5 text-muted-foreground" />
+                                        <QrCode className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
                                       )}
                                     </div>
-                                    <div>
-                                      <p className="font-medium text-foreground">
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-sm md:text-base text-foreground truncate">
                                         {reservation.client_name}
                                         <span className="ml-2 text-sm text-muted-foreground">
                                           ({reservation.number_of_persons} pers.)
@@ -1340,7 +1340,7 @@ const AdminContent = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1 md:gap-2 shrink-0 self-end md:self-auto">
                                     {reservation.client_email && (
                                       <Button
                                         variant="ghost"
@@ -1375,7 +1375,7 @@ const AdminContent = () => {
                                   </div>
                                 </div>
                                 {resBottles.length > 0 && (
-                                  <div className="mt-2 ml-14 flex flex-wrap gap-2">
+                                  <div className="mt-2 ml-8 md:ml-14 flex flex-wrap gap-1.5 md:gap-2">
                                     {resBottles.map((b, i) => (
                                       <span key={i} className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary rounded-full px-2.5 py-1">
                                         <Wine className="w-3 h-3" />
