@@ -560,35 +560,79 @@ const AdminContent = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <motion.header
-        className="px-4 py-5 md:px-6 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border"
+        className="px-4 py-3 md:px-6 md:py-4 border-b border-border"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center gap-4">
-          <Link to="/">
-            <Button variant="ghost" size="icon" className="h-12 w-12 md:h-10 md:w-10">
-              <ArrowLeft className="w-6 h-6 md:w-5 md:h-5" />
+        {/* Top row: back + title + icon actions */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="icon" className="h-10 w-10">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-base md:text-lg font-bold text-foreground">Administration</h1>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Gestion des réservations</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Button
+              variant={pushSubscribed ? "default" : "outline"}
+              size="icon"
+              className="h-9 w-9 md:h-10 md:w-10"
+              onClick={async () => {
+                if (!pushSupported) {
+                  toast.error("Les notifications push ne sont pas supportées sur ce navigateur. Sur iPhone, installez l'app sur l'écran d'accueil d'abord.");
+                  return;
+                }
+                if (pushSubscribed) {
+                  await pushUnsubscribe();
+                  toast.success('Notifications push désactivées');
+                } else {
+                  await pushSubscribe();
+                  if (pushPermission === 'denied') {
+                    toast.error('Les notifications sont bloquées dans les paramètres de votre navigateur');
+                  } else {
+                    toast.success('Notifications push activées !');
+                  }
+                }
+              }}
+              disabled={pushLoading}
+              title={pushSubscribed ? 'Désactiver les notifications push' : pushSupported ? 'Activer les notifications push' : 'Notifications push non supportées'}
+            >
+              {pushSubscribed ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Administration</h1>
-            <p className="text-xs text-muted-foreground">Gestion des réservations</p>
+            <Button
+              variant="ghost" 
+              size="icon"
+              className="h-9 w-9 md:h-10 md:w-10"
+              onClick={async () => {
+                await signOut();
+                toast.success('Déconnexion réussie');
+              }}
+              title="Se déconnecter"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+
+        {/* Bottom row: action buttons — horizontal scroll on mobile */}
+        <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
           <Button
             variant="outline"
-            className="gap-2 h-12 px-4 md:h-10 text-sm flex-1 md:flex-none"
+            className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
             onClick={exportGuestList}
             disabled={reservations.length === 0}
-            title="Exporter la liste des invités"
           >
-            <Download className="w-5 h-5 md:w-4 md:h-4" />
-            <span className="md:inline">Exporter CSV</span>
+            <Download className="w-3.5 h-3.5" />
+            Exporter CSV
           </Button>
           <Button
             variant="outline"
-            className="gap-2 h-12 px-4 md:h-10 text-sm flex-1 md:flex-none"
+            className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
             onClick={() => {
               const emails = [...new Set(reservations.map(r => r.client_email).filter(Boolean))].join(', ');
               if (!emails) { toast.error('Aucune adresse email'); return; }
@@ -596,66 +640,26 @@ const AdminContent = () => {
               toast.success(`${emails.split(', ').length} emails copiés`);
             }}
             disabled={reservations.length === 0}
-            title="Copier les emails"
           >
-            <Copy className="w-5 h-5 md:w-4 md:h-4" />
-            <span className="md:inline">Copier emails</span>
+            <Copy className="w-3.5 h-3.5" />
+            Copier emails
           </Button>
           <Button
             variant="outline"
-            className="gap-2 h-12 px-4 md:h-10 text-sm flex-1 md:flex-none"
+            className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
             onClick={printBottles}
             disabled={!activeDate}
-            title="Imprimer les bouteilles"
           >
-            <Printer className="w-5 h-5 md:w-4 md:h-4" />
-            <span className="md:inline">Imprimer bouteilles</span>
+            <Printer className="w-3.5 h-3.5" />
+            Bouteilles
           </Button>
           <Button 
             variant="outline" 
-            className="gap-2 h-12 px-4 md:h-10 text-sm flex-1 md:flex-none"
+            className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
             onClick={() => setUserDialogOpen(true)}
           >
-            <UserPlus className="w-5 h-5 md:w-4 md:h-4" />
-            <span className="md:inline">Ajouter utilisateur</span>
-          </Button>
-          <Button
-            variant={pushSubscribed ? "default" : "outline"}
-            size="icon"
-            className="h-12 w-12 md:h-10 md:w-10"
-            onClick={async () => {
-              if (!pushSupported) {
-                toast.error("Les notifications push ne sont pas supportées sur ce navigateur. Sur iPhone, installez l'app sur l'écran d'accueil d'abord.");
-                return;
-              }
-              if (pushSubscribed) {
-                await pushUnsubscribe();
-                toast.success('Notifications push désactivées');
-              } else {
-                await pushSubscribe();
-                if (pushPermission === 'denied') {
-                  toast.error('Les notifications sont bloquées dans les paramètres de votre navigateur');
-                } else {
-                  toast.success('Notifications push activées !');
-                }
-              }
-            }}
-            disabled={pushLoading}
-            title={pushSubscribed ? 'Désactiver les notifications push' : pushSupported ? 'Activer les notifications push' : 'Notifications push non supportées'}
-          >
-            {pushSubscribed ? <Bell className="w-5 h-5 md:w-4 md:h-4" /> : <BellOff className="w-5 h-5 md:w-4 md:h-4" />}
-          </Button>
-          <Button
-            variant="ghost" 
-            size="icon"
-            className="h-12 w-12 md:h-10 md:w-10"
-            onClick={async () => {
-              await signOut();
-              toast.success('Déconnexion réussie');
-            }}
-            title="Se déconnecter"
-          >
-            <LogOut className="w-5 h-5 md:w-4 md:h-4" />
+            <UserPlus className="w-3.5 h-3.5" />
+            Utilisateur
           </Button>
         </div>
       </motion.header>
