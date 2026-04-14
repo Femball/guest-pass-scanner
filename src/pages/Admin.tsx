@@ -1025,14 +1025,14 @@ const AdminContent = () => {
           transition={{ delay: 0.15 }}
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Ticket className="w-5 h-5" />
+            <CardHeader className="px-4 py-3 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg md:text-2xl">
+                <Ticket className="w-4 h-4 md:w-5 md:h-5" />
                 Invitations Flyer
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="px-4 pb-4 md:px-6 md:pb-6 space-y-3 md:space-y-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
                 <div className="space-y-2">
                   <Label>Nom du flyer *</Label>
                   <Input
@@ -1088,7 +1088,7 @@ const AdminContent = () => {
                       setIsAddingFlyer(false);
                     }}
                     disabled={isAddingFlyer}
-                    className="w-full"
+                    className="w-full h-12 md:h-10"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     {isAddingFlyer ? 'Création...' : 'Créer le flyer'}
@@ -1098,24 +1098,24 @@ const AdminContent = () => {
 
               {/* List existing flyers */}
               {flyers.length > 0 && (
-                <div className="space-y-3 mt-4">
+                <div className="space-y-2 md:space-y-3 mt-3 md:mt-4">
                   {flyers.map((flyer) => (
                     <div
                       key={flyer.id}
-                      className="p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors flex items-center justify-between"
+                      className="p-3 md:p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors flex items-center justify-between gap-2"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 rounded-full bg-primary/10">
-                          <Ticket className="w-5 h-5 text-primary" />
+                      <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                        <div className="p-1.5 md:p-2 rounded-full bg-primary/10 shrink-0">
+                          <Ticket className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                         </div>
-                        <div>
-                          <p className="font-medium text-foreground">{flyer.label}</p>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm md:text-base text-foreground truncate">{flyer.label}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground truncate">
                             {format(new Date(flyer.event_date + 'T00:00:00'), 'dd/MM/yyyy')} • {flyer.scan_count} scan{flyer.scan_count !== 1 ? 's' : ''}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 md:gap-2 shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
