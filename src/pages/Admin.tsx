@@ -1025,9 +1025,9 @@ const AdminContent = () => {
           transition={{ delay: 0.15 }}
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Ticket className="w-5 h-5" />
+            <CardHeader className="px-4 py-3 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg md:text-2xl">
+                <Ticket className="w-4 h-4 md:w-5 md:h-5" />
                 Invitations Flyer
               </CardTitle>
             </CardHeader>
