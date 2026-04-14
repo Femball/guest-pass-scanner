@@ -1031,7 +1031,7 @@ const AdminContent = () => {
                 Invitations Flyer
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-4 pb-4 md:px-6 md:pb-6 space-y-3 md:space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Nom du flyer *</Label>
