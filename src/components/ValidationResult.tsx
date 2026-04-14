@@ -32,7 +32,7 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
   return (
     <AnimatePresence>
       <motion.div
-        className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-8 ${
+        className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-4 md:p-8 ${
           isValid ? 'validation-valid' : 'validation-invalid'
         }`}
         initial={{ opacity: 0 }}
@@ -51,14 +51,14 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
           }}
         >
           {isValid ? (
-            <CheckCircle className="w-32 h-32 mb-8" strokeWidth={1.5} />
+            <CheckCircle className="w-24 h-24 md:w-32 md:h-32 mb-4 md:mb-8" strokeWidth={1.5} />
           ) : (
-            <XCircle className="w-32 h-32 mb-8" strokeWidth={1.5} />
+            <XCircle className="w-24 h-24 md:w-32 md:h-32 mb-4 md:mb-8" strokeWidth={1.5} />
           )}
         </motion.div>
 
         <motion.h1
-          className="text-4xl font-bold mb-4 text-center"
+          className="text-2xl md:text-4xl font-bold mb-3 md:mb-4 text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -68,12 +68,12 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
 
         {clientName && isValid && (
           <motion.div
-            className="flex items-center gap-3 text-2xl mb-4"
+            className="flex items-center gap-2 md:gap-3 text-lg md:text-2xl mb-3 md:mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <User className="w-8 h-8" />
+            <User className="w-6 h-6 md:w-8 md:h-8" />
             <span className="font-semibold">{clientName}</span>
           </motion.div>
         )}
@@ -81,7 +81,7 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
         {/* Payment info */}
         {isValid && amount != null && amount > 0 && (
           <motion.div
-            className="flex items-center gap-3 text-xl mb-4 px-6 py-3 rounded-xl bg-white/20 backdrop-blur-sm"
+            className="flex items-center gap-2 md:gap-3 text-base md:text-xl mb-3 md:mb-4 px-4 md:px-6 py-2 md:py-3 rounded-xl bg-white/20 backdrop-blur-sm"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
@@ -92,14 +92,14 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
               <Banknote className="w-6 h-6" />
             )}
             <span className="font-bold">{amount.toFixed(2)}€</span>
-            <span className="text-lg opacity-80">
+            <span className="text-sm md:text-lg opacity-80">
               {hasPaid ? '✅ Payé' : hasPending ? '⏳ En attente' : '❌ Échoué'}
             </span>
           </motion.div>
         )}
 
         <motion.p
-          className="text-xl opacity-90 text-center mb-8"
+          className="text-base md:text-xl opacity-90 text-center mb-4 md:mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.9 }}
           transition={{ delay: 0.4 }}
@@ -117,7 +117,7 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
             variant="outline"
             onClick={handleConfirm}
             disabled={confirmed}
-            className="text-lg px-8 py-6 bg-white/20 border-white/40 hover:bg-white/30 text-current font-semibold"
+            className="text-base md:text-lg px-6 md:px-8 py-4 md:py-6 bg-white/20 border-white/40 hover:bg-white/30 text-current font-semibold"
           >
             {confirmed ? 'OK ✓' : '✋ Confirmer et scanner suivant'}
           </Button>

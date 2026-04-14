@@ -134,22 +134,22 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6">
       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-300">
         <Card className="border-border/50">
-          <CardHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center animate-in zoom-in duration-300 delay-100">
-              <QrCode className="w-8 h-8 text-primary" />
+          <CardHeader className="text-center space-y-3 md:space-y-4 px-4 md:px-6">
+            <div className="mx-auto w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-primary/10 flex items-center justify-center animate-in zoom-in duration-300 delay-100">
+              <QrCode className="w-6 h-6 md:w-8 md:h-8 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-2xl">L'Access</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-xl md:text-2xl">L'Access</CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 {isLogin ? 'Connectez-vous à votre compte' : 'Créez un nouveau compte'}
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="px-4 md:px-6">
+            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
@@ -182,13 +182,13 @@ const Auth = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full h-12 md:h-10" disabled={isLoading}>
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {isLogin ? 'Se connecter' : 'Créer un compte'}
               </Button>
             </form>
 
-            <div className="relative my-6">
+            <div className="relative my-4 md:my-6">
               <Separator />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
                 ou
@@ -197,8 +197,7 @@ const Auth = () => {
 
             <Button
               type="button"
-              variant="outline"
-              className="w-full gap-2"
+              className="w-full gap-2 h-12 md:h-10"
               onClick={handleAppleSignIn}
               disabled={isAppleLoading}>
               {isAppleLoading ? (
@@ -213,8 +212,7 @@ const Auth = () => {
 
             <Button
               type="button"
-              variant="outline"
-              className="w-full gap-2 mt-3"
+              className="w-full gap-2 mt-3 h-12 md:h-10"
               onClick={handleGoogleSignIn}
               disabled={isGoogleLoading}>
               {isGoogleLoading ? (

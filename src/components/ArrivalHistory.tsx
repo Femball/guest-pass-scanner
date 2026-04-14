@@ -70,10 +70,10 @@ const ArrivalHistory = () => {
       transition={{ delay: 0.25 }}
     >
       <Card>
-        <CardHeader>
+        <CardHeader className="px-4 py-3 md:p-6">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-base md:text-2xl">
+              <Clock className="w-4 h-4 md:w-5 md:h-5" />
               Historique des arrivées ({notifications.length})
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -114,7 +114,7 @@ const ArrivalHistory = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 pb-4 md:px-6 md:pb-6">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -128,10 +128,10 @@ const ArrivalHistory = () => {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                  className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
                 >
-                  <div className="p-2 rounded-full bg-primary/10">
-                    <User className="w-4 h-4 text-primary" />
+                  <div className="p-1.5 md:p-2 rounded-full bg-primary/10 shrink-0">
+                    <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground text-sm truncate">
@@ -145,7 +145,7 @@ const ArrivalHistory = () => {
                       </span>
                     </p>
                   </div>
-                  <div className="text-xs text-muted-foreground whitespace-nowrap">
+                  <div className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap hidden sm:block">
                     {format(new Date(n.event_date + 'T00:00:00'), 'dd/MM/yyyy')}
                   </div>
                 </div>
