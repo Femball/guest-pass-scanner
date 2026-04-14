@@ -146,7 +146,15 @@
   }
 }
 
-@layer components {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+
   .validation-valid {
     @apply bg-valid text-valid-foreground;
     box-shadow: 0 0 60px 20px hsl(var(--valid-glow) / 0.4);
