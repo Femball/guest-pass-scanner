@@ -16,6 +16,8 @@ interface TicketConfirmationProps {
   mainName?: string
   eventName?: string
   eventDate?: string
+  eventTime?: string
+  eventAddress?: string
   qrColor?: string
   tickets?: Ticket[]
   amount?: number | null
@@ -27,6 +29,8 @@ const TicketConfirmationEmail = ({
   mainName = 'Invité',
   eventName = 'Soirée',
   eventDate = '',
+  eventTime,
+  eventAddress,
   qrColor = 'c9a84c',
   tickets = [],
   amount,
@@ -77,6 +81,12 @@ const TicketConfirmationEmail = ({
                     {eventDate && (
                       <Text style={ticketDate}>
                         📅 {new Date(eventDate).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {eventTime ? ` — 🕐 ${eventTime}` : ''}
+                      </Text>
+                    )}
+                    {eventAddress && (
+                      <Text style={ticketAddress}>
+                        📍 {eventAddress}
                       </Text>
                     )}
                     <Text style={ticketCode}>{t.qrCode}</Text>
@@ -138,6 +148,8 @@ export const template = {
     mainName: 'Jean Dupont',
     eventName: 'Soirée VIP',
     eventDate: '2026-04-15',
+    eventTime: '23h00',
+    eventAddress: '12 Rue de la Paix, 75002 Paris',
     qrColor: 'c9a84c',
     amount: 50,
     paymentMethod: 'card',
@@ -272,6 +284,13 @@ const ticketDate = {
   color: GOLD_LIGHT,
   fontSize: '13px',
   margin: '4px 0 0',
+}
+
+const ticketAddress = {
+  color: TEXT_MUTED,
+  fontSize: '12px',
+  margin: '4px 0 0',
+  lineHeight: '1.4',
 }
 
 const ticketCode = {
