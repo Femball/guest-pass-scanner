@@ -286,6 +286,13 @@ const ticketDate = {
   margin: '4px 0 0',
 }
 
+const ticketAddress = {
+  color: TEXT_MUTED,
+  fontSize: '12px',
+  margin: '4px 0 0',
+  lineHeight: '1.4',
+}
+
 const ticketCode = {
   color: TEXT_LIGHT,
   fontSize: '10px',
