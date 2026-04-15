@@ -60,7 +60,8 @@ const AdminContent = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
   const [eventTime, setEventTime] = useState('');
-  const [eventAddress, setEventAddress] = useState('');
+  const [eventAddress, setEventAddress] = useState('Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+  const [eventAddressType, setEventAddressType] = useState<'default' | 'other'>('default');
   const [hasPayment, setHasPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | ''>('');
@@ -861,13 +862,33 @@ const AdminContent = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="eventAddress">Adresse du lieu</Label>
-                    <Input
-                      id="eventAddress"
-                      placeholder="12 Rue de la Paix, Paris"
-                      value={eventAddress}
-                      onChange={(e) => setEventAddress(e.target.value)}
-                    />
+                    <Label>Adresse du lieu</Label>
+                    <Select
+                      value={eventAddressType}
+                      onValueChange={(val: 'default' | 'other') => {
+                        setEventAddressType(val);
+                        if (val === 'default') {
+                          setEventAddress('Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+                        } else {
+                          setEventAddress('');
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Café Le Français, Saint-Gaudens</SelectItem>
+                        <SelectItem value="other">Autre adresse...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {eventAddressType === 'other' && (
+                      <Input
+                        placeholder="Saisir l'adresse du lieu"
+                        value={eventAddress}
+                        onChange={(e) => setEventAddress(e.target.value)}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
