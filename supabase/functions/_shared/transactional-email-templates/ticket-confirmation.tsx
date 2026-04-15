@@ -151,13 +151,16 @@ export const template = {
 
 // ─── Styles ───────────────────────────────────────────────
 
-const PRIMARY = '#0f9b6e'
-const PRIMARY_DARK = '#0a7a56'
-const TEXT_DARK = '#1a1a2e'
-const TEXT_MUTED = '#6b7280'
-const TEXT_LIGHT = '#9ca3af'
-const BG_LIGHT = '#f8faf9'
-const BORDER = '#e8ebe9'
+const GOLD = '#c9a84c'
+const GOLD_LIGHT = '#e2cc7e'
+const GOLD_DARK = '#a8872e'
+const BG_DARK = '#0d0d0d'
+const BG_CARD = '#1a1a1a'
+const BG_CARD_INNER = '#141414'
+const TEXT_WHITE = '#f5f5f5'
+const TEXT_MUTED = '#a0a0a0'
+const TEXT_LIGHT = '#6b6b6b'
+const BORDER = '#2a2a2a'
 
 const main = {
   backgroundColor: '#ffffff',
@@ -170,44 +173,46 @@ const container = {
 }
 
 const headerSection = {
-  backgroundColor: PRIMARY,
-  padding: '36px 30px 28px',
+  backgroundColor: BG_DARK,
+  padding: '40px 30px 32px',
   textAlign: 'center' as const,
   borderRadius: '16px 16px 0 0',
+  borderBottom: `2px solid ${GOLD}`,
 }
 
 const headerBrand = {
-  color: 'rgba(255,255,255,0.95)',
-  fontSize: '28px',
+  color: GOLD,
+  fontSize: '30px',
   fontWeight: '800' as const,
-  letterSpacing: '6px',
+  letterSpacing: '8px',
   margin: '0 0 16px',
   textTransform: 'uppercase' as const,
   fontFamily: 'Georgia, "Times New Roman", serif',
 }
 
 const headerTitle = {
-  color: '#ffffff',
+  color: TEXT_WHITE,
   margin: '0',
-  fontSize: '26px',
+  fontSize: '24px',
   fontWeight: '700' as const,
-  letterSpacing: '0.5px',
+  letterSpacing: '1px',
 }
 
 const headerSubtitle = {
-  color: 'rgba(255,255,255,0.85)',
-  margin: '8px 0 0',
-  fontSize: '15px',
+  color: TEXT_MUTED,
+  margin: '10px 0 0',
+  fontSize: '14px',
   fontWeight: '400' as const,
+  letterSpacing: '0.5px',
 }
 
 const contentSection = {
   padding: '32px 30px',
-  backgroundColor: '#ffffff',
+  backgroundColor: BG_CARD,
 }
 
 const greeting = {
-  color: TEXT_DARK,
+  color: TEXT_WHITE,
   fontSize: '17px',
   margin: '0 0 8px',
   lineHeight: '1.5',
@@ -225,21 +230,23 @@ const ticketCard = {
   borderRadius: '16px',
   overflow: 'hidden' as const,
   border: `1px solid ${BORDER}`,
+  boxShadow: `0 0 20px rgba(201, 168, 76, 0.08)`,
 }
 
 const ticketCardInner = {
   textAlign: 'center' as const,
   padding: '28px 24px 20px',
-  backgroundColor: BG_LIGHT,
+  backgroundColor: BG_CARD_INNER,
 }
 
 const ticketBrand = {
-  fontSize: '18px',
+  fontSize: '16px',
   fontWeight: '800' as const,
-  letterSpacing: '4px',
-  color: PRIMARY,
+  letterSpacing: '5px',
+  color: GOLD,
   margin: '0 0 4px',
   textTransform: 'uppercase' as const,
+  fontFamily: 'Georgia, "Times New Roman", serif',
 }
 
 const ticketDivider = {
@@ -250,19 +257,19 @@ const ticketDivider = {
 const qrImage = {
   borderRadius: '12px',
   margin: '0 auto',
-  border: '4px solid #ffffff',
-  boxShadow: '0 2px 12px rgba(15, 155, 110, 0.12)',
+  border: `3px solid ${GOLD}`,
+  boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
 }
 
 const ticketName = {
-  color: TEXT_DARK,
+  color: TEXT_WHITE,
   fontSize: '16px',
   fontWeight: '600' as const,
   margin: '14px 0 4px',
 }
 
 const ticketDate = {
-  color: TEXT_MUTED,
+  color: GOLD_LIGHT,
   fontSize: '13px',
   margin: '4px 0 0',
 }
@@ -276,38 +283,38 @@ const ticketCode = {
 }
 
 const ticketStub = {
-  backgroundColor: PRIMARY,
+  backgroundColor: GOLD_DARK,
   padding: '8px 24px',
   textAlign: 'center' as const,
 }
 
 const ticketStubText = {
-  color: 'rgba(255,255,255,0.9)',
+  color: '#0d0d0d',
   fontSize: '11px',
-  fontWeight: '600' as const,
+  fontWeight: '700' as const,
   letterSpacing: '3px',
   margin: '0',
   textTransform: 'uppercase' as const,
 }
 
 const warningBox = {
-  backgroundColor: '#fef9ec',
-  border: '1px solid #f5e6b8',
-  borderLeft: `4px solid #f59e0b`,
+  backgroundColor: '#1c1a12',
+  border: `1px solid ${GOLD_DARK}`,
+  borderLeft: `4px solid ${GOLD}`,
   padding: '16px 20px',
   borderRadius: '0 10px 10px 0',
   marginTop: '8px',
 }
 
 const warningTitle = {
-  color: '#92400e',
+  color: GOLD,
   fontSize: '14px',
   margin: '0',
   fontWeight: '600' as const,
 }
 
 const warningText = {
-  color: '#a16207',
+  color: GOLD_LIGHT,
   fontSize: '13px',
   margin: '6px 0 0',
   lineHeight: '1.5',
@@ -321,12 +328,13 @@ const divider = {
 const footerSection = {
   padding: '24px 30px 32px',
   textAlign: 'center' as const,
-  backgroundColor: BG_LIGHT,
+  backgroundColor: BG_DARK,
   borderRadius: '0 0 16px 16px',
+  borderTop: `1px solid ${BORDER}`,
 }
 
 const footerBrand = {
-  color: PRIMARY,
+  color: GOLD,
   fontSize: '14px',
   fontWeight: '700' as const,
   letterSpacing: '3px',
@@ -348,9 +356,9 @@ const footerCopy = {
 }
 
 const paymentBox = {
-  backgroundColor: '#f0fdf4',
-  border: '1px solid #bbf7d0',
-  borderLeft: `4px solid ${PRIMARY}`,
+  backgroundColor: '#1a1c14',
+  border: `1px solid ${BORDER}`,
+  borderLeft: `4px solid ${GOLD}`,
   padding: '16px 20px',
   borderRadius: '0 10px 10px 0',
   marginBottom: '16px',
@@ -358,14 +366,14 @@ const paymentBox = {
 }
 
 const paymentTitle = {
-  color: PRIMARY_DARK,
+  color: GOLD,
   fontSize: '14px',
   margin: '0 0 4px',
   fontWeight: '600' as const,
 }
 
 const paymentAmount = {
-  color: TEXT_DARK,
+  color: TEXT_WHITE,
   fontSize: '24px',
   fontWeight: '700' as const,
   margin: '4px 0',
