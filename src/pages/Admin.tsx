@@ -59,6 +59,8 @@ const AdminContent = () => {
   const [bottles, setBottles] = useState<{ type: string; quantity: number }[]>([{ type: '', quantity: 1 }]);
   const [isAdding, setIsAdding] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [eventTime, setEventTime] = useState('');
+  const [eventAddress, setEventAddress] = useState('');
   const [hasPayment, setHasPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | ''>('');
@@ -229,6 +231,8 @@ const AdminContent = () => {
             mainName: list[0].client_name,
             eventName: 'Soirée',
             eventDate: list[0].event_date,
+            eventTime: eventTime ? eventTime.replace(':', 'h') : undefined,
+            eventAddress: eventAddress.trim() || undefined,
             qrColor: colorHex,
             tickets,
             amount: list[0].amount,
@@ -362,6 +366,8 @@ const AdminContent = () => {
     setNewEmail('');
     setNewPersons(1);
     setPersonNames([]);
+    setEventTime('');
+    setEventAddress('');
     setHasBottle(false);
     setBottles([{ type: '', quantity: 1 }]);
     setEventDate(new Date());
@@ -842,6 +848,27 @@ const AdminContent = () => {
                       />
                     </PopoverContent>
                   </Popover>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="eventTime">Heure de l'événement</Label>
+                    <Input
+                      id="eventTime"
+                      type="time"
+                      value={eventTime}
+                      onChange={(e) => setEventTime(e.target.value)}
+                      placeholder="23:00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="eventAddress">Adresse du lieu</Label>
+                    <Input
+                      id="eventAddress"
+                      placeholder="12 Rue de la Paix, Paris"
+                      value={eventAddress}
+                      onChange={(e) => setEventAddress(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               {newPersons > 1 && (
