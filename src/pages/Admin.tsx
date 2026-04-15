@@ -368,7 +368,8 @@ const AdminContent = () => {
     setNewPersons(1);
     setPersonNames([]);
     setEventTime('');
-    setEventAddress('');
+    setEventAddress('Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+    setEventAddressType('default');
     setHasBottle(false);
     setBottles([{ type: '', quantity: 1 }]);
     setEventDate(new Date());
