@@ -32,15 +32,9 @@ const playArrivalSound = () => {
   }
 };
 
-const sendPushToAll = async (clientName: string, eventDate: string) => {
-  try {
-    await supabase.functions.invoke('send-push-notification', {
-      body: { client_name: clientName, event_date: eventDate },
-    });
-  } catch (err) {
-    console.error('Failed to trigger push notifications:', err);
-  }
-};
+// Push notifications are now triggered server-side by a DB trigger on
+// scan_notifications inserts (see migration 'notify_push_on_scan').
+// This guarantees pushes are sent even if no client device has the app open.
 
 export const useScanNotifications = () => {
   const { isStaff } = useAuth();
@@ -63,10 +57,9 @@ export const useScanNotifications = () => {
           table: 'scan_notifications',
         },
         (payload) => {
-          const { id, client_name, event_date } = payload.new as { id: string; client_name: string; event_date: string };
+          const { id, client_name } = payload.new as { id: string; client_name: string };
           playArrivalSound();
           setActiveAlert({ id, clientName: client_name });
-          sendPushToAll(client_name, event_date);
         }
       )
       .subscribe();
