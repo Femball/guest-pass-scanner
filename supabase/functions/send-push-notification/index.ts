@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VAPID_PUBLIC_KEY = 'BA2UpFJcIIExElIU0z_RKV6GIazwJ4PQb3IpGhJxtQSNh-k3kTth1iiGJeyyQhwBOqc69AXXrAonQ1SjbgS0cTo';
+const VAPID_PUBLIC_KEY = 'BEhNHO9MSP1D9aCZj7IU0xiO9CxAOSLjzcEyrhvSJ-ZQSMJHlUAh21Xam9aGiUAtclgSWn0GtoA7Kv-v-zpTyj8';
 
 const sanitize = (input: unknown, maxLen: number): string => {
   if (typeof input !== 'string') return '';
@@ -20,7 +20,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // --- Auth check: only authenticated staff users can trigger push ---
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // --- Auth check: allow either (a) authenticated staff users, or
+    //     (b) internal calls authenticated with the service-role key
+    //     (used by the DB trigger via pg_net). ---
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -29,35 +35,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const isServiceCall = token === serviceRoleKey;
+
+    if (!isServiceCall) {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
       });
+      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims?.sub) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const userId = claimsData.claims.sub;
+      const supabaseCheck = createClient(supabaseUrl, serviceRoleKey);
+      const { data: isStaff, error: staffError } = await supabaseCheck.rpc('is_staff', { _user_id: userId });
+      if (staffError || !isStaff) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
-    const userId = claimsData.claims.sub;
-
-    // Use service-role client to check role and access subscriptions
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    const { data: isStaff, error: staffError } = await supabase.rpc('is_staff', { _user_id: userId });
-    if (staffError || !isStaff) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     // --- Input validation ---
     const body = await req.json().catch(() => ({}));
