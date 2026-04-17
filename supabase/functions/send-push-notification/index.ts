@@ -8,13 +8,68 @@ const corsHeaders = {
 
 const VAPID_PUBLIC_KEY = 'BA2UpFJcIIExElIU0z_RKV6GIazwJ4PQb3IpGhJxtQSNh-k3kTth1iiGJeyyQhwBOqc69AXXrAonQ1SjbgS0cTo';
 
+const sanitize = (input: unknown, maxLen: number): string => {
+  if (typeof input !== 'string') return '';
+  // Strip control characters and trim
+  return input.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, maxLen);
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { client_name, event_date } = await req.json();
+    // --- Auth check: only authenticated staff users can trigger push ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Use service-role client to check role and access subscriptions
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: isStaff, error: staffError } = await supabase.rpc('is_staff', { _user_id: userId });
+    if (staffError || !isStaff) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- Input validation ---
+    const body = await req.json().catch(() => ({}));
+    const client_name = sanitize(body.client_name, 100);
+    const event_date = sanitize(body.event_date, 50);
+
+    if (!client_name) {
+      return new Response(JSON.stringify({ error: 'Invalid client_name' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
     if (!vapidPrivateKey) {
@@ -25,11 +80,6 @@ Deno.serve(async (req) => {
       'mailto:info@laccess.fr',
       VAPID_PUBLIC_KEY,
       vapidPrivateKey
-    );
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
     const { data: subscriptions, error } = await supabase
@@ -93,7 +143,7 @@ Deno.serve(async (req) => {
     });
   } catch (err: any) {
     console.error('Push notification error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
