@@ -14,8 +14,8 @@ const assignRoleSchema = z.object({
     .email("Invalid email format")
     .max(255, "Email must be less than 255 characters")
     .toLowerCase(),
-  role: z.enum(["admin", "agent"], {
-    errorMap: () => ({ message: "Role must be 'admin' or 'agent'" }),
+  role: z.enum(["admin", "agent", "supervisor"], {
+    errorMap: () => ({ message: "Role must be 'admin', 'agent', or 'supervisor'" }),
   }),
 });
 
