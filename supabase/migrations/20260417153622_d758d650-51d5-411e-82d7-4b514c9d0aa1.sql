@@ -1,0 +1,1 @@
+DELETE FROM public.scan_notifications WHERE client_name ILIKE '%TEST%' AND (client_name ILIKE '%Jean Dupont%' OR client_name ILIKE '%Marie Martin%' OR client_name ILIKE '%Pierre Dubois%');
