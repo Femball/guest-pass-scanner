@@ -81,7 +81,7 @@ const AdminContent = () => {
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'admin' | 'agent'>('agent');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'agent' | 'supervisor'>('agent');
   const [isAddingUser, setIsAddingUser] = useState(false);
 
   const [bottleData, setBottleData] = useState<BottleWithReservation[]>([]);
