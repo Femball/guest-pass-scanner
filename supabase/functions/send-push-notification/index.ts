@@ -121,7 +121,16 @@ Deno.serve(async (req) => {
               auth: sub.auth,
             },
           },
-          pushPayload
+          pushPayload,
+          {
+            // CRITICAL for iOS lock-screen delivery: high urgency + TTL.
+            // Without urgency:'high', Apple/APNs may delay until unlock.
+            TTL: 60,
+            urgency: 'high',
+            headers: {
+              'Topic': 'arrival-scan',
+            },
+          }
         );
         sent++;
       } catch (err: any) {
