@@ -14,9 +14,11 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   // Listen for scan notifications across all pages for staff
-  useScanNotifications();
+  const { alertElement } = useScanNotifications();
 
   return (
+    <>
+    {alertElement}
     <Routes>
       <Route path="/auth" element={<Auth />} />
       <Route
@@ -38,6 +40,7 @@ const AppContent = () => {
       <Route path="/unsubscribe" element={<Unsubscribe />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 };
 
