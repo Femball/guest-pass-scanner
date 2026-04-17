@@ -1525,12 +1525,13 @@ const AdminContent = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="user-role">Rôle</Label>
-                <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as 'admin' | 'agent')}>
+                <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as 'admin' | 'agent' | 'supervisor')}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="agent">Agent (scanner uniquement)</SelectItem>
+                    <SelectItem value="supervisor">Superviseur (gestion sans export/impression/utilisateurs)</SelectItem>
                     <SelectItem value="admin">Admin (accès complet)</SelectItem>
                   </SelectContent>
                 </Select>
