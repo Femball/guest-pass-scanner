@@ -1,16 +1,24 @@
+import { lazy, Suspense } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import Admin from "./pages/Admin";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import Unsubscribe from "./pages/Unsubscribe";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useScanNotifications } from "./hooks/useScanNotifications";
 
+const Admin = lazy(() => import("./pages/Admin"));
+const Auth = lazy(() => import("./pages/Auth"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+
 const queryClient = new QueryClient();
+
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const AppContent = () => {
   // Listen for scan notifications across all pages for staff
@@ -19,27 +27,29 @@ const AppContent = () => {
   return (
     <>
     {alertElement}
-    <Routes>
-      <Route path="/auth" element={<Auth />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute requiredRole="staff">
-            <Index />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <Admin />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/unsubscribe" element={<Unsubscribe />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute requiredRole="staff">
+              <Index />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/unsubscribe" element={<Unsubscribe />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
     </>
   );
 };
