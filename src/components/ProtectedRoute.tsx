@@ -5,11 +5,11 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: 'admin' | 'agent' | 'staff';
+  requiredRole?: 'admin' | 'agent' | 'staff' | 'adminOrSupervisor';
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, isLoading, isAdmin, isAgent, isStaff } = useAuth();
+  const { user, isLoading, isAdmin, isAgent, isStaff, hasAdminPrivileges } = useAuth();
 
   if (isLoading) {
     return (
@@ -30,6 +30,19 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
           <h1 className="text-2xl font-bold text-foreground">Accès refusé</h1>
           <p className="text-muted-foreground">
             Vous n'avez pas les droits administrateur pour accéder à cette page.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (requiredRole === 'adminOrSupervisor' && !hasAdminPrivileges) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-foreground">Accès refusé</h1>
+          <p className="text-muted-foreground">
+            Vous n'avez pas les droits pour accéder à cette page.
           </p>
         </div>
       </div>

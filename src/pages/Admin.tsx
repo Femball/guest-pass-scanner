@@ -46,7 +46,7 @@ interface BottleWithReservation {
 }
 
 const AdminContent = () => {
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
   const { playPaymentSound } = useScanSounds();
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe, permission: pushPermission } = usePushNotifications();
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -81,7 +81,7 @@ const AdminContent = () => {
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'admin' | 'agent'>('agent');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'agent' | 'supervisor'>('agent');
   const [isAddingUser, setIsAddingUser] = useState(false);
 
   const [bottleData, setBottleData] = useState<BottleWithReservation[]>([]);
@@ -629,46 +629,50 @@ const AdminContent = () => {
 
         {/* Bottom row: action buttons — horizontal scroll on mobile */}
         <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-          <Button
-            variant="outline"
-            className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
-            onClick={exportGuestList}
-            disabled={reservations.length === 0}
-          >
-            <Download className="w-3.5 h-3.5" />
-            Exporter CSV
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
-            onClick={() => {
-              const emails = [...new Set(reservations.map(r => r.client_email).filter(Boolean))].join(', ');
-              if (!emails) { toast.error('Aucune adresse email'); return; }
-              navigator.clipboard.writeText(emails);
-              toast.success(`${emails.split(', ').length} emails copiés`);
-            }}
-            disabled={reservations.length === 0}
-          >
-            <Copy className="w-3.5 h-3.5" />
-            Copier emails
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
-            onClick={printBottles}
-            disabled={!activeDate}
-          >
-            <Printer className="w-3.5 h-3.5" />
-            Bouteilles
-          </Button>
-          <Button 
-            variant="outline" 
-            className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
-            onClick={() => setUserDialogOpen(true)}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            Utilisateur
-          </Button>
+          {isAdmin && (
+            <>
+              <Button
+                variant="outline"
+                className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
+                onClick={exportGuestList}
+                disabled={reservations.length === 0}
+              >
+                <Download className="w-3.5 h-3.5" />
+                Exporter CSV
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
+                onClick={() => {
+                  const emails = [...new Set(reservations.map(r => r.client_email).filter(Boolean))].join(', ');
+                  if (!emails) { toast.error('Aucune adresse email'); return; }
+                  navigator.clipboard.writeText(emails);
+                  toast.success(`${emails.split(', ').length} emails copiés`);
+                }}
+                disabled={reservations.length === 0}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Copier emails
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
+                onClick={printBottles}
+                disabled={!activeDate}
+              >
+                <Printer className="w-3.5 h-3.5" />
+                Bouteilles
+              </Button>
+              <Button 
+                variant="outline" 
+                className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
+                onClick={() => setUserDialogOpen(true)}
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                Utilisateur
+              </Button>
+            </>
+          )}
         </div>
       </motion.header>
 
@@ -1521,12 +1525,13 @@ const AdminContent = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="user-role">Rôle</Label>
-                <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as 'admin' | 'agent')}>
+                <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as 'admin' | 'agent' | 'supervisor')}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="agent">Agent (scanner uniquement)</SelectItem>
+                    <SelectItem value="supervisor">Superviseur (gestion sans export/impression/utilisateurs)</SelectItem>
                     <SelectItem value="admin">Admin (accès complet)</SelectItem>
                   </SelectContent>
                 </Select>
