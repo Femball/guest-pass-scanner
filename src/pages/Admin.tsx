@@ -613,6 +613,27 @@ const AdminContent = () => {
               {pushSubscribed ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
             </Button>
             <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 md:h-10 md:w-10"
+              onClick={async () => {
+                const { error } = await supabase.from('scan_notifications').insert({
+                  client_name: '🔔 Test notification',
+                  event_date: new Date().toISOString().split('T')[0],
+                  source_kind: 'test',
+                  source_record_id: crypto.randomUUID(),
+                });
+                if (error) {
+                  toast.error('Erreur: ' + error.message);
+                } else {
+                  toast.success('Notification de test envoyée');
+                }
+              }}
+              title="Envoyer une notification de test"
+            >
+              <BellRing className="w-4 h-4" />
+            </Button>
+            <Button
               variant="ghost" 
               size="icon"
               className="h-9 w-9 md:h-10 md:w-10"
