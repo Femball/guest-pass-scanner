@@ -46,7 +46,7 @@ interface BottleWithReservation {
 }
 
 const AdminContent = () => {
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
   const { playPaymentSound } = useScanSounds();
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe, permission: pushPermission } = usePushNotifications();
   const [reservations, setReservations] = useState<Reservation[]>([]);
