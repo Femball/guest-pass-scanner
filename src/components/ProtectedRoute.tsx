@@ -5,11 +5,11 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: 'admin' | 'agent' | 'staff';
+  requiredRole?: 'admin' | 'agent' | 'staff' | 'adminOrSupervisor';
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, isLoading, isAdmin, isAgent, isStaff } = useAuth();
+  const { user, isLoading, isAdmin, isAgent, isStaff, hasAdminPrivileges } = useAuth();
 
   if (isLoading) {
     return (
