@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CheckCircle2, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -6,16 +6,10 @@ import { fr } from 'date-fns/locale';
 interface ArrivalAlertProps {
   clientName: string;
   onDismiss: () => void;
-  autoDismissMs?: number;
 }
 
-const ArrivalAlert = ({ clientName, onDismiss, autoDismissMs = 5000 }: ArrivalAlertProps) => {
+const ArrivalAlert = ({ clientName, onDismiss }: ArrivalAlertProps) => {
   const [now] = useState(() => new Date());
-
-  useEffect(() => {
-    const t = setTimeout(onDismiss, autoDismissMs);
-    return () => clearTimeout(t);
-  }, [onDismiss, autoDismissMs]);
 
   return (
     <div
@@ -34,7 +28,7 @@ const ArrivalAlert = ({ clientName, onDismiss, autoDismissMs = 5000 }: ArrivalAl
       <p className="text-base md:text-xl font-mono opacity-80">
         {format(now, "HH:mm:ss", { locale: fr })}
       </p>
-      <p className="mt-10 text-sm md:text-base opacity-70">Touchez l'écran pour fermer</p>
+      <p className="mt-10 text-base md:text-xl opacity-80 font-medium">👆 Touchez l'écran pour fermer</p>
     </div>
   );
 };
