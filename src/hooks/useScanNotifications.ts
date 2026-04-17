@@ -1,20 +1,19 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { createElement } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useAuth } from './useAuth';
+import ArrivalAlert from '@/components/ArrivalAlert';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const playArrivalSound = () => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-    // Two-tone doorbell chime
     const notes = [
-      { freq: 880, start: 0, end: 0.15 },    // A5
-      { freq: 1108.73, start: 0.15, end: 0.35 }, // C#6
-      { freq: 1318.51, start: 0.3, end: 0.55 },  // E6
+      { freq: 880, start: 0, end: 0.15 },
+      { freq: 1108.73, start: 0.15, end: 0.35 },
+      { freq: 1318.51, start: 0.3, end: 0.55 },
     ];
-
     notes.forEach(({ freq, start, end }) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -46,6 +45,7 @@ const sendPushToAll = async (clientName: string, eventDate: string) => {
 export const useScanNotifications = () => {
   const { isStaff } = useAuth();
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const [activeAlert, setActiveAlert] = useState<{ id: string; clientName: string } | null>(null);
 
   const subscribe = useCallback(() => {
     if (channelRef.current) {
@@ -63,13 +63,9 @@ export const useScanNotifications = () => {
           table: 'scan_notifications',
         },
         (payload) => {
-          const { client_name, event_date } = payload.new as { client_name: string; event_date: string };
+          const { id, client_name, event_date } = payload.new as { id: string; client_name: string; event_date: string };
           playArrivalSound();
-          toast.info(`🚶 Arrivée : ${client_name}`, {
-            description: "Vient de scanner son ticket à l'entrée",
-            duration: 8000,
-          });
-          // Also send push notifications to all subscribed staff
+          setActiveAlert({ id, clientName: client_name });
           sendPushToAll(client_name, event_date);
         }
       )
@@ -99,4 +95,16 @@ export const useScanNotifications = () => {
       }
     };
   }, [isStaff, subscribe]);
+
+  const alertElement = activeAlert
+    ? createPortal(
+        createElement(ArrivalAlert, {
+          clientName: activeAlert.clientName,
+          onDismiss: () => setActiveAlert(null),
+        }),
+        document.body
+      )
+    : null;
+
+  return { alertElement };
 };
