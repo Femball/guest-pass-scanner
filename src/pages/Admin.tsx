@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -611,6 +611,27 @@ const AdminContent = () => {
               title={pushSubscribed ? 'Désactiver les notifications push' : pushSupported ? 'Activer les notifications push' : 'Notifications push non supportées'}
             >
               {pushSubscribed ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 md:h-10 md:w-10"
+              onClick={async () => {
+                const { error } = await supabase.from('scan_notifications').insert({
+                  client_name: '🔔 Test notification',
+                  event_date: new Date().toISOString().split('T')[0],
+                  source_kind: 'test',
+                  source_record_id: crypto.randomUUID(),
+                });
+                if (error) {
+                  toast.error('Erreur: ' + error.message);
+                } else {
+                  toast.success('Notification de test envoyée');
+                }
+              }}
+              title="Envoyer une notification de test"
+            >
+              <BellRing className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost" 
