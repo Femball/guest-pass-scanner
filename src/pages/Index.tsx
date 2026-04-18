@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 const Index = () => {
   const [isScanning, setIsScanning] = useState(true);
-  const { isAdmin, signOut } = useAuth();
+  const { hasAdminPrivileges, signOut } = useAuth();
   const {
     isValid,
     clientName,
@@ -49,7 +49,7 @@ const Index = () => {
           </div>
         </div>
         <div className="flex items-center gap-1 md:gap-2">
-          {isAdmin &&
+          {hasAdminPrivileges &&
         <Link to="/admin">
               <Button variant="outline" size="sm" className="gap-1.5 md:gap-2 h-9 md:h-9 text-xs md:text-sm px-2.5 md:px-3">
                 <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
