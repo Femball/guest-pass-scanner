@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VAPID_PUBLIC_KEY = 'BEhNHO9MSP1D9aCZj7IU0xiO9CxAOSLjzcEyrhvSJ-ZQSMJHlUAh21Xam9aGiUAtclgSWn0GtoA7Kv-v-zpTyj8';
+const VAPID_PUBLIC_KEY = 'BLXBaU1nrghvewpZFnQyJXwIk_Va7Wo49EpP8V7iG8bOgc1HNga-l0a0pVFTa-4fKWwMQxLxVxetBeRuFe4TiOw';
 
 const sanitize = (input: unknown, maxLen: number): string => {
   if (typeof input !== 'string') return '';
