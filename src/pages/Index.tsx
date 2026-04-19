@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { QrCode, Users, LogOut } from 'lucide-react';
+import { QrCode, Users, LogOut, UserCheck } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
 import ValidationResult from '@/components/ValidationResult';
+import OccupancyGauge from '@/components/OccupancyGauge';
+import ManualEntryDialog from '@/components/ManualEntryDialog';
 import { useReservationValidator } from '@/hooks/useReservationValidator';
 import { useAuth } from '@/hooks/useAuth';
+import { useOccupancy } from '@/hooks/useOccupancy';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 const Index = () => {
   const [isScanning, setIsScanning] = useState(true);
+  const [manualOpen, setManualOpen] = useState(false);
   const { hasAdminPrivileges, signOut } = useAuth();
+  const { validated, expected, refresh: refreshOccupancy } = useOccupancy();
   const {
     isValid,
     clientName,
@@ -29,6 +34,7 @@ const Index = () => {
   const handleReset = () => {
     reset();
     setIsScanning(true);
+    refreshOccupancy();
   };
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -102,7 +108,34 @@ const Index = () => {
 
             <QRScanner onScan={handleScan} isScanning={isScanning} />
 
-            <motion.p className="mt-4 md:mt-8 text-xs md:text-sm text-muted-foreground text-center" initial={{
+            {/* Jauge d'occupation */}
+            <motion.div
+              className="w-full max-w-sm mt-4"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <OccupancyGauge validated={validated} expected={expected} />
+            </motion.div>
+
+            {/* Bouton de validation manuelle */}
+            <motion.div
+              className="w-full max-w-sm mt-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                variant="outline"
+                className="w-full gap-2 bg-background/80 backdrop-blur-sm"
+                onClick={() => setManualOpen(true)}
+              >
+                <UserCheck className="w-4 h-4" />
+                Valider sans QR (téléphone cassé, etc.)
+              </Button>
+            </motion.div>
+
+            <motion.p className="mt-4 md:mt-6 text-xs md:text-sm text-muted-foreground text-center" initial={{
           opacity: 0
         }} animate={{
           opacity: 1
@@ -113,6 +146,13 @@ const Index = () => {
             </motion.p>
           </> : null}
       </main>
+
+      {/* Modale de validation manuelle */}
+      <ManualEntryDialog
+        open={manualOpen}
+        onOpenChange={setManualOpen}
+        onValidated={refreshOccupancy}
+      />
 
       {/* Validation overlay */}
       <ValidationResult isValid={isValid} clientName={clientName} message={message} amount={amount} paymentMethod={paymentMethod} paymentStatus={paymentStatus} onReset={handleReset} />
