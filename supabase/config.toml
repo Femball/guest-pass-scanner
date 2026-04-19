@@ -7,6 +7,8 @@ project_id = "cgowurmyyrkftiqweavn"
     verify_jwt = false
   [functions.create-sumup-checkout]
     verify_jwt = false
+  [functions.sumup-diagnostic]
+    verify_jwt = false
   [functions.handle-email-suppression]
     verify_jwt = false
   [functions.handle-email-unsubscribe]
