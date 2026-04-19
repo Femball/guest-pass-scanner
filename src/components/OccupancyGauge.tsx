@@ -11,11 +11,9 @@ interface OccupancyGaugeProps {
 const OccupancyGauge = ({ validated, expected, className, compact = false }: OccupancyGaugeProps) => {
   const percent = expected > 0 ? Math.min(100, Math.round((validated / expected) * 100)) : 0;
 
-  // Couleur sémantique selon le remplissage
+  // Couleur selon le remplissage (tokens du design system)
   let barColor = 'bg-primary';
   if (percent >= 90) barColor = 'bg-destructive';
-  else if (percent >= 70) barColor = 'bg-yellow-500';
-  else if (percent >= 40) barColor = 'bg-green-500';
 
   if (compact) {
     return (

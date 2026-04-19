@@ -161,7 +161,7 @@ const ManualEntryDialog = ({ open, onOpenChange, onValidated }: ManualEntryDialo
                     className={cn(
                       'flex items-center gap-3 p-3 rounded-lg border transition-colors',
                       r.is_validated
-                        ? 'border-green-500/30 bg-green-500/5'
+                        ? 'border-primary/30 bg-primary/5'
                         : blocked
                         ? 'border-destructive/30 bg-destructive/5'
                         : 'border-border hover:border-primary/40'
@@ -182,7 +182,7 @@ const ManualEntryDialog = ({ open, onOpenChange, onValidated }: ManualEntryDialo
                         </p>
                       )}
                       {r.is_validated && (
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 flex items-center gap-1">
+                        <p className="text-xs text-primary mt-0.5 flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" />
                           Déjà entré
                           {r.validated_at &&
@@ -201,7 +201,7 @@ const ManualEntryDialog = ({ open, onOpenChange, onValidated }: ManualEntryDialo
                     </div>
 
                     {r.is_validated ? (
-                      <span className="text-xs font-medium text-green-600 dark:text-green-400 shrink-0">
+                      <span className="text-xs font-medium text-primary shrink-0">
                         ✓ Validé
                       </span>
                     ) : blocked ? (
