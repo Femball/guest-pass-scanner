@@ -11,6 +11,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const Feedback = lazy(() => import("./pages/Feedback"));
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const AppContent = () => {
           }
         />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
+        <Route path="/feedback" element={<Feedback />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>

@@ -19,3 +19,7 @@ project_id = "cgowurmyyrkftiqweavn"
     verify_jwt = false
   [functions.send-transactional-email]
     verify_jwt = false
+  [functions.send-reminder-d-minus-1]
+    verify_jwt = false
+  [functions.send-feedback-d-plus-1]
+    verify_jwt = false

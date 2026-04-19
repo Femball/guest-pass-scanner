@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useScanSounds } from '@/hooks/useScanSounds';
 import ArrivalHistory from '@/components/ArrivalHistory';
+import FeedbackList from '@/components/FeedbackList';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import QRCode from 'qrcode';
 interface Reservation {
@@ -1488,6 +1489,19 @@ const AdminContent = () => {
 
         {/* Arrival History */}
         <ArrivalHistory />
+
+        {/* Feedback (post-event satisfaction surveys) */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-primary" />
+              Retours clients (enquêtes J+1)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FeedbackList />
+          </CardContent>
+        </Card>
 
         <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
           <DialogContent className="sm:max-w-md">
