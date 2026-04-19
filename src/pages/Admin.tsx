@@ -291,6 +291,11 @@ const AdminContent = () => {
     const eventDateStr = format(eventDate, 'yyyy-MM-dd');
 
     const parsedAmount = hasPayment && paymentAmount ? parseFloat(paymentAmount) : null;
+    // Le montant saisi est le TOTAL pour le groupe : on le divise équitablement
+    // entre toutes les lignes pour que le tableau de bord affiche le bon total.
+    const perPersonAmount = parsedAmount != null
+      ? Math.round((parsedAmount / names.length) * 100) / 100
+      : null;
 
     const reservationsToInsert = names.map(name => ({
       client_name: name,
@@ -298,8 +303,8 @@ const AdminContent = () => {
       qr_code: generateQRCode(),
       number_of_persons: 1,
       event_date: eventDateStr,
-      ...(hasPayment && parsedAmount ? {
-        amount: parsedAmount,
+      ...(hasPayment && perPersonAmount ? {
+        amount: perPersonAmount,
         payment_method: paymentMethod || null,
         payment_status: paymentMethod === 'cash' ? 'paid' : 'pending',
       } : {}),
