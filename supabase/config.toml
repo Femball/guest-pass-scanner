@@ -23,3 +23,9 @@ project_id = "cgowurmyyrkftiqweavn"
     verify_jwt = false
   [functions.send-feedback-d-plus-1]
     verify_jwt = false
+  [functions.purge-old-data]
+    verify_jwt = false
+  [functions.send-weekly-report]
+    verify_jwt = false
+  [functions.send-weekly-backup]
+    verify_jwt = false
