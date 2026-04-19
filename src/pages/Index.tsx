@@ -5,9 +5,11 @@ import QRScanner from '@/components/QRScanner';
 import ValidationResult from '@/components/ValidationResult';
 import OccupancyGauge from '@/components/OccupancyGauge';
 import ManualEntryDialog from '@/components/ManualEntryDialog';
+import OfflineBanner from '@/components/OfflineBanner';
 import { useReservationValidator } from '@/hooks/useReservationValidator';
 import { useAuth } from '@/hooks/useAuth';
 import { useOccupancy } from '@/hooks/useOccupancy';
+import { useOfflineCache } from '@/hooks/useOfflineCache';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -16,6 +18,7 @@ const Index = () => {
   const [manualOpen, setManualOpen] = useState(false);
   const { hasAdminPrivileges, signOut } = useAuth();
   const { validated, expected, refresh: refreshOccupancy } = useOccupancy();
+  const { isOnline, syncedAt, reservationsCount } = useOfflineCache();
   const {
     isValid,
     clientName,
@@ -37,6 +40,7 @@ const Index = () => {
     refreshOccupancy();
   };
   return <div className="min-h-screen bg-background flex flex-col">
+      <OfflineBanner isOnline={isOnline} syncedAt={syncedAt} reservationsCount={reservationsCount} />
       {/* Header */}
       <motion.header className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between border-b border-border" initial={{
       opacity: 0,
@@ -129,9 +133,11 @@ const Index = () => {
                 variant="outline"
                 className="w-full gap-2 bg-background/80 backdrop-blur-sm"
                 onClick={() => setManualOpen(true)}
+                disabled={!isOnline}
+                title={!isOnline ? 'Indisponible hors-ligne' : undefined}
               >
                 <UserCheck className="w-4 h-4" />
-                Valider sans QR (téléphone cassé, etc.)
+                {isOnline ? 'Valider sans QR (téléphone cassé, etc.)' : 'Validation manuelle indisponible hors-ligne'}
               </Button>
             </motion.div>
 
