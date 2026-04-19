@@ -32,6 +32,35 @@ export type Database = {
         }
         Relationships: []
       }
+      email_dispatch_log: {
+        Row: {
+          dispatch_type: string
+          id: string
+          reservation_id: string
+          sent_at: string
+        }
+        Insert: {
+          dispatch_type: string
+          id?: string
+          reservation_id: string
+          sent_at?: string
+        }
+        Update: {
+          dispatch_type?: string
+          id?: string
+          reservation_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_dispatch_log_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -118,6 +147,53 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: []
+      }
+      event_feedback: {
+        Row: {
+          client_email: string
+          client_name: string
+          comment: string | null
+          created_at: string
+          event_date: string
+          id: string
+          rating: number | null
+          reservation_id: string
+          submitted_at: string | null
+          token: string
+        }
+        Insert: {
+          client_email: string
+          client_name: string
+          comment?: string | null
+          created_at?: string
+          event_date: string
+          id?: string
+          rating?: number | null
+          reservation_id: string
+          submitted_at?: string | null
+          token: string
+        }
+        Update: {
+          client_email?: string
+          client_name?: string
+          comment?: string | null
+          created_at?: string
+          event_date?: string
+          id?: string
+          rating?: number | null
+          reservation_id?: string
+          submitted_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_feedback_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flyer_invitations: {
         Row: {
