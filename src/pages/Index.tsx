@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { QrCode, Users, LogOut } from 'lucide-react';
+import { QrCode, Users, LogOut, UserCheck } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
 import ValidationResult from '@/components/ValidationResult';
+import OccupancyGauge from '@/components/OccupancyGauge';
+import ManualEntryDialog from '@/components/ManualEntryDialog';
 import { useReservationValidator } from '@/hooks/useReservationValidator';
 import { useAuth } from '@/hooks/useAuth';
+import { useOccupancy } from '@/hooks/useOccupancy';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 const Index = () => {
   const [isScanning, setIsScanning] = useState(true);
+  const [manualOpen, setManualOpen] = useState(false);
   const { hasAdminPrivileges, signOut } = useAuth();
+  const { validated, expected, refresh: refreshOccupancy } = useOccupancy();
   const {
     isValid,
     clientName,
