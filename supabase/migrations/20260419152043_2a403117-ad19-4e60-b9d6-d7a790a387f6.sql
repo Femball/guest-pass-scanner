@@ -1,0 +1,1 @@
+DELETE FROM public.scan_notifications;
