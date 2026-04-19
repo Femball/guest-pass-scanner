@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useScanSounds } from './useScanSounds';
 import { z } from 'zod';
+import { findFlyerByQr, findReservationByQr, loadCache } from '@/lib/offlineCache';
 
 const qrCodeSchema = z.string()
   .min(1, 'QR code is required')
@@ -45,6 +46,66 @@ export const useReservationValidator = () => {
     }
 
     const validatedQrCode = validationResult.data;
+
+    // Offline mode: read from cache only, block validation
+    if (!navigator.onLine) {
+      const cache = await loadCache();
+      const today = new Date().toISOString().slice(0, 10);
+
+      if (validatedQrCode.startsWith('FLYER-')) {
+        const flyer = findFlyerByQr(cache, validatedQrCode);
+        if (!flyer) {
+          playErrorSound();
+          setState({ isValid: false, message: '📵 Hors-ligne — flyer introuvable dans le cache.', isLoading: false });
+          return;
+        }
+        if (flyer.event_date !== today) {
+          playErrorSound();
+          setState({ isValid: false, message: '📵 Hors-ligne — flyer non valable aujourd\'hui.', isLoading: false });
+          return;
+        }
+        playErrorSound();
+        setState({
+          isValid: false,
+          clientName: `Invité Flyer - ${flyer.label}`,
+          message: '📵 Mode hors-ligne — validation impossible. Reconnectez-vous au réseau.',
+          isLoading: false,
+        });
+        return;
+      }
+
+      const reservation = findReservationByQr(cache, validatedQrCode);
+      if (!reservation) {
+        playErrorSound();
+        setState({ isValid: false, message: '📵 Hors-ligne — ticket introuvable dans le cache.', isLoading: false });
+        return;
+      }
+      if (reservation.event_date !== today) {
+        playErrorSound();
+        setState({
+          isValid: false,
+          clientName: reservation.client_name,
+          numberOfPersons: reservation.number_of_persons,
+          message: '📵 Hors-ligne — ce ticket n\'est pas pour aujourd\'hui.',
+          isLoading: false,
+        });
+        return;
+      }
+      playErrorSound();
+      setState({
+        isValid: false,
+        clientName: reservation.client_name,
+        numberOfPersons: reservation.number_of_persons,
+        amount: reservation.amount,
+        paymentMethod: reservation.payment_method,
+        paymentStatus: reservation.payment_status,
+        message: reservation.is_validated
+          ? '📵 Hors-ligne — ticket déjà validé précédemment.'
+          : '📵 Mode hors-ligne — validation impossible. Reconnectez-vous au réseau.',
+        isLoading: false,
+      });
+      return;
+    }
 
     try {
       // Flyer QR codes
