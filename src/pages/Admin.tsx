@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useScanSounds } from '@/hooks/useScanSounds';
 import ArrivalHistory from '@/components/ArrivalHistory';
 import FeedbackList from '@/components/FeedbackList';
+import ScanAnomalies from '@/components/ScanAnomalies';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import QRCode from 'qrcode';
 interface Reservation {
@@ -1489,6 +1490,9 @@ const AdminContent = () => {
 
         {/* Arrival History */}
         <ArrivalHistory />
+
+        {/* Scan anomalies */}
+        <ScanAnomalies />
 
         {/* Feedback (post-event satisfaction surveys) */}
         <Card className="mt-6">

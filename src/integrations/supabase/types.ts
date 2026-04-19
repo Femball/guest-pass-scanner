@@ -355,6 +355,42 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_anomalies: {
+        Row: {
+          client_name: string
+          created_at: string
+          delta_seconds: number
+          duplicate_scan_at: string
+          event_date: string
+          first_scan_at: string
+          id: string
+          source_kind: string | null
+          source_record_id: string | null
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          delta_seconds: number
+          duplicate_scan_at?: string
+          event_date: string
+          first_scan_at: string
+          id?: string
+          source_kind?: string | null
+          source_record_id?: string | null
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          delta_seconds?: number
+          duplicate_scan_at?: string
+          event_date?: string
+          first_scan_at?: string
+          id?: string
+          source_kind?: string | null
+          source_record_id?: string | null
+        }
+        Relationships: []
+      }
       scan_notifications: {
         Row: {
           client_name: string
@@ -461,6 +497,7 @@ export type Database = {
         }
         Returns: number
       }
+      purge_old_data: { Args: never; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
