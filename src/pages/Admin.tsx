@@ -533,6 +533,13 @@ const AdminContent = () => {
           td { font-size: 14px; }
           .total-row { font-weight: bold; font-size: 16px; border-top: 2px solid #111; }
           .price { text-align: right; }
+          .page-break { page-break-before: always; }
+          .labels-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
+          .label { border: 2px dashed #999; border-radius: 8px; padding: 14px; text-align: center; page-break-inside: avoid; }
+          .label-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+          .label-bottle { font-size: 13px; color: #444; margin-bottom: 8px; }
+          .label-qr { width: 140px; height: 140px; display: block; margin: 0 auto 6px; }
+          .label-date { font-size: 11px; color: #777; }
           @media print { body { padding: 20px; } }
         </style>
       </head>
