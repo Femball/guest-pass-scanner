@@ -536,8 +536,9 @@ const AdminContent = () => {
           .page-break { page-break-before: always; }
           .labels-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
           .label { border: 2px dashed #999; border-radius: 8px; padding: 14px; text-align: center; page-break-inside: avoid; position: relative; overflow: hidden; }
-          .label-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.08; width: 80px; height: 80px; pointer-events: none; z-index: 0; }
+          .label-watermark { position: absolute; top: 8px; right: 8px; opacity: 0.12; width: 44px; height: 44px; pointer-events: none; z-index: 0; }
           .label-content { position: relative; z-index: 1; }
+          .label-qr-wrap { background: #fff; display: inline-block; padding: 4px; position: relative; z-index: 2; }
           .label-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
           .label-bottle { font-size: 13px; color: #444; margin-bottom: 8px; }
           .label-qr { width: 140px; height: 140px; display: block; margin: 0 auto 6px; }
