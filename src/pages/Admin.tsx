@@ -503,6 +503,7 @@ const AdminContent = () => {
         bottle_type: b.bottle_type,
         quantity: b.quantity,
         client_name: (b.reservations as any)?.client_name || '',
+        qr_code: (b.reservations as any)?.qr_code || '',
         price: b.quantity * 60,
       }));
 
@@ -564,6 +565,37 @@ const AdminContent = () => {
             </tr>
           </tbody>
         </table>
+        ${(() => {
+          const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+          // Build labels: one label per bottle (quantity expanded)
+          const labels: { client_name: string; bottle_type: string; qr_code: string; index: number; total: number }[] = [];
+          dateBottles.forEach(b => {
+            for (let i = 0; i < b.quantity; i++) {
+              labels.push({
+                client_name: b.client_name,
+                bottle_type: b.bottle_type,
+                qr_code: b.qr_code,
+                index: i + 1,
+                total: b.quantity,
+              });
+            }
+          });
+          if (labels.length === 0) return '';
+          return `
+          <div class="page-break"></div>
+          <h1>Étiquettes Bouteilles</h1>
+          <h2>À découper et coller sur les bouteilles · ${formattedDate}</h2>
+          <div class="labels-grid">
+            ${labels.map(l => `
+              <div class="label">
+                <div class="label-name">${esc(l.client_name)}</div>
+                <div class="label-bottle">${esc(l.bottle_type)}${l.total > 1 ? ` (${l.index}/${l.total})` : ''}</div>
+                <img class="label-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(l.qr_code)}" alt="QR" />
+                <div class="label-date">${formattedDate}</div>
+              </div>
+            `).join('')}
+          </div>`;
+        })()}
       </body>
       </html>
     `);
