@@ -142,7 +142,7 @@ const AdminContent = () => {
     // Fetch bottles with reservation info
     const { data: bottles } = await supabase
       .from('reservation_bottles')
-      .select('bottle_type, quantity, reservation_id, reservations(client_name, event_date)');
+      .select('bottle_type, quantity, reservation_id, reservations(client_name, event_date, qr_code)');
     
     setBottleData((bottles as any) || []);
 
