@@ -597,10 +597,13 @@ const AdminContent = () => {
           <div class="labels-grid">
             ${labels.map(l => `
               <div class="label">
-                <div class="label-name">${esc(l.client_name)}</div>
-                <div class="label-bottle">${esc(l.bottle_type)}${l.total > 1 ? ` (${l.index}/${l.total})` : ''}</div>
-                <img class="label-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(l.qr_code)}" alt="QR" />
-                <div class="label-date">${formattedDate}</div>
+                <img class="label-watermark" src="${window.location.origin}/logo-email.png" alt="" />
+                <div class="label-content">
+                  <div class="label-name">${esc(l.client_name)}</div>
+                  <div class="label-bottle">${esc(l.bottle_type)}${l.total > 1 ? ` (${l.index}/${l.total})` : ''}</div>
+                  <img class="label-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(l.qr_code)}" alt="QR" />
+                  <div class="label-date">${formattedDate}</div>
+                </div>
               </div>
             `).join('')}
           </div>`;
