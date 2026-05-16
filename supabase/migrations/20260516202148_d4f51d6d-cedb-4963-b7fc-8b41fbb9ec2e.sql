@@ -1,0 +1,1 @@
+ALTER TABLE public.scan_notifications ADD CONSTRAINT scan_notifications_source_unique UNIQUE (source_kind, source_record_id);
