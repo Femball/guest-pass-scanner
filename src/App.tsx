@@ -1,17 +1,16 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import Admin from "./pages/Admin";
+import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
+import Unsubscribe from "./pages/Unsubscribe";
+import Feedback from "./pages/Feedback";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useScanNotifications } from "./hooks/useScanNotifications";
-
-const Admin = lazy(() => import("./pages/Admin"));
-const Auth = lazy(() => import("./pages/Auth"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
-const Feedback = lazy(() => import("./pages/Feedback"));
 
 const queryClient = new QueryClient();
 
