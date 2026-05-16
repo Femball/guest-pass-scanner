@@ -9,6 +9,30 @@ const qrCodeSchema = z.string()
   .max(100, 'QR code too long')
   .regex(/^(TICKET|FLYER)-[A-Z0-9-]+$/i, 'Invalid QR code format');
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 800;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function withRetry<T extends { error: any }>(
+  fn: () => Promise<T>,
+  onAttempt?: (attempt: number) => void,
+): Promise<{ result: T; attempts: number }> {
+  let lastResult: T | undefined;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    onAttempt?.(attempt);
+    try {
+      const result = await fn();
+      if (!result.error) return { result, attempts: attempt };
+      lastResult = result;
+    } catch (e) {
+      lastResult = { error: e } as T;
+    }
+    if (attempt < MAX_RETRIES) await sleep(RETRY_DELAY_MS * attempt);
+  }
+  return { result: lastResult as T, attempts: MAX_RETRIES };
+}
+
 interface ValidationState {
   isValid: boolean | null;
   clientName?: string;
@@ -18,6 +42,7 @@ interface ValidationState {
   paymentMethod?: string | null;
   paymentStatus?: string | null;
   isLoading: boolean;
+  retryAttempt?: number;
 }
 
 export const useReservationValidator = () => {
@@ -30,6 +55,7 @@ export const useReservationValidator = () => {
     paymentMethod: undefined,
     paymentStatus: undefined,
     isLoading: false,
+    retryAttempt: 0,
   });
   
   const { playSuccessSound, playErrorSound } = useScanSounds();
@@ -130,13 +156,19 @@ export const useReservationValidator = () => {
           return;
         }
 
-        const { error: scanError } = await supabase
-          .from('flyer_scans')
-          .insert({ flyer_invitation_id: flyer.id });
+        const { result: scanRes, attempts: scanAttempts } = await withRetry(
+          async () => await supabase.from('flyer_scans').insert({ flyer_invitation_id: flyer.id }),
+          (attempt) => setState((prev) => ({ ...prev, retryAttempt: attempt })),
+        );
+        const scanError = scanRes.error;
 
         if (scanError) {
           playErrorSound();
-          setState({ isValid: false, message: 'Erreur lors de l\'enregistrement. Réessayez.', isLoading: false });
+          setState({
+            isValid: false,
+            message: `Erreur après ${scanAttempts} tentative${scanAttempts > 1 ? 's' : ''}. Réessayez.`,
+            isLoading: false,
+          });
           return;
         }
 
@@ -213,14 +245,23 @@ export const useReservationValidator = () => {
         return;
       }
 
-      const { error: updateError } = await supabase
-        .from('reservations')
-        .update({ is_validated: true, validated_at: new Date().toISOString() })
-        .eq('id', reservation.id);
+      const { result: updateRes, attempts: updateAttempts } = await withRetry(
+        async () =>
+          await supabase
+            .from('reservations')
+            .update({ is_validated: true, validated_at: new Date().toISOString() })
+            .eq('id', reservation.id),
+        (attempt) => setState((prev) => ({ ...prev, retryAttempt: attempt, isLoading: true })),
+      );
+      const updateError = updateRes.error;
 
       if (updateError) {
         playErrorSound();
-        setState({ isValid: false, message: 'Erreur lors de la validation. Réessayez.', isLoading: false });
+        setState({
+          isValid: false,
+          message: `Échec de validation après ${updateAttempts} tentative${updateAttempts > 1 ? 's' : ''}. Réessayez.`,
+          isLoading: false,
+        });
         return;
       }
 
@@ -242,7 +283,7 @@ export const useReservationValidator = () => {
   }, [playSuccessSound, playErrorSound]);
 
   const reset = useCallback(() => {
-    setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, amount: undefined, paymentMethod: undefined, paymentStatus: undefined, isLoading: false });
+    setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, amount: undefined, paymentMethod: undefined, paymentStatus: undefined, isLoading: false, retryAttempt: 0 });
   }, []);
 
   return { ...state, validateQRCode, reset };
