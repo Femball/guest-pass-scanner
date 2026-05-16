@@ -157,7 +157,7 @@ export const useReservationValidator = () => {
         }
 
         const { result: scanRes, attempts: scanAttempts } = await withRetry(
-          () => supabase.from('flyer_scans').insert({ flyer_invitation_id: flyer.id }),
+          async () => await supabase.from('flyer_scans').insert({ flyer_invitation_id: flyer.id }),
           (attempt) => setState((prev) => ({ ...prev, retryAttempt: attempt })),
         );
         const scanError = scanRes.error;
@@ -246,8 +246,8 @@ export const useReservationValidator = () => {
       }
 
       const { result: updateRes, attempts: updateAttempts } = await withRetry(
-        () =>
-          supabase
+        async () =>
+          await supabase
             .from('reservations')
             .update({ is_validated: true, validated_at: new Date().toISOString() })
             .eq('id', reservation.id),
