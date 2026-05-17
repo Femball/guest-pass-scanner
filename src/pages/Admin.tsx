@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing, Star } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing, Star, Phone, MessageSquare, Contact } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -28,6 +28,7 @@ interface Reservation {
   id: string;
   client_name: string;
   client_email: string | null;
+  client_phone?: string | null;
   qr_code: string;
   is_validated: boolean;
   validated_at: string | null;
@@ -55,6 +56,7 @@ const AdminContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [newPersons, setNewPersons] = useState(1);
   const [personNames, setPersonNames] = useState<string[]>([]);
   const [hasBottle, setHasBottle] = useState(false);
@@ -79,6 +81,11 @@ const AdminContent = () => {
   // Search/filter state
   const [searchName, setSearchName] = useState('');
   const [searchEmail, setSearchEmail] = useState('');
+
+  // Clients directory
+  const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
+  const [clientsSearch, setClientsSearch] = useState('');
+  const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
   
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
