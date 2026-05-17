@@ -307,6 +307,7 @@ const AdminContent = () => {
     const reservationsToInsert = names.map(name => ({
       client_name: name,
       client_email: newEmail.trim(),
+      client_phone: newPhone.trim() || null,
       qr_code: generateQRCode(),
       number_of_persons: 1,
       event_date: eventDateStr,
