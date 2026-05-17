@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing, Star } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing, Star, Phone, MessageSquare, Contact } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -28,6 +28,7 @@ interface Reservation {
   id: string;
   client_name: string;
   client_email: string | null;
+  client_phone?: string | null;
   qr_code: string;
   is_validated: boolean;
   validated_at: string | null;
@@ -55,6 +56,7 @@ const AdminContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [newPersons, setNewPersons] = useState(1);
   const [personNames, setPersonNames] = useState<string[]>([]);
   const [hasBottle, setHasBottle] = useState(false);
@@ -79,6 +81,11 @@ const AdminContent = () => {
   // Search/filter state
   const [searchName, setSearchName] = useState('');
   const [searchEmail, setSearchEmail] = useState('');
+
+  // Clients directory
+  const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
+  const [clientsSearch, setClientsSearch] = useState('');
+  const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
   
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -300,6 +307,7 @@ const AdminContent = () => {
     const reservationsToInsert = names.map(name => ({
       client_name: name,
       client_email: newEmail.trim(),
+      client_phone: newPhone.trim() || null,
       qr_code: generateQRCode(),
       number_of_persons: 1,
       event_date: eventDateStr,
@@ -372,6 +380,7 @@ const AdminContent = () => {
 
     setNewName('');
     setNewEmail('');
+    setNewPhone('');
     setNewPersons(1);
     setPersonNames([]);
     setEventTime('');
@@ -744,6 +753,14 @@ const AdminContent = () => {
                 <UserPlus className="w-3.5 h-3.5" />
                 Utilisateur
               </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
+                onClick={() => setClientsDialogOpen(true)}
+              >
+                <Contact className="w-3.5 h-3.5" />
+                Clients
+              </Button>
             </>
           )}
         </div>
@@ -878,6 +895,16 @@ const AdminContent = () => {
                     placeholder="jean@example.com"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Téléphone (optionnel)</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="06 12 34 56 78"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -1749,6 +1776,165 @@ const AdminContent = () => {
                   }}
                 />
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Clients directory dialog */}
+        <Dialog open={clientsDialogOpen} onOpenChange={setClientsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Contact className="w-5 h-5" />
+                Répertoire clients
+              </DialogTitle>
+              <DialogDescription>
+                Liste unique des clients (déduplication par email/téléphone).
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Input
+                placeholder="Rechercher par nom, email ou téléphone..."
+                value={clientsSearch}
+                onChange={(e) => setClientsSearch(e.target.value)}
+              />
+              {(() => {
+                const map = new Map<string, { name: string; email: string | null; phone: string | null }>();
+                reservations.forEach((r) => {
+                  const key = (r.client_email || r.client_phone || r.client_name).toLowerCase().trim();
+                  if (!map.has(key)) {
+                    map.set(key, {
+                      name: r.client_name,
+                      email: r.client_email || null,
+                      phone: r.client_phone || null,
+                    });
+                  } else {
+                    const existing = map.get(key)!;
+                    if (!existing.phone && r.client_phone) existing.phone = r.client_phone;
+                    if (!existing.email && r.client_email) existing.email = r.client_email;
+                  }
+                });
+                const q = clientsSearch.toLowerCase().trim();
+                const clients = Array.from(map.values())
+                  .filter((c) =>
+                    !q ||
+                    c.name.toLowerCase().includes(q) ||
+                    (c.email || '').toLowerCase().includes(q) ||
+                    (c.phone || '').toLowerCase().includes(q)
+                  )
+                  .sort((a, b) => a.name.localeCompare(b.name));
+                return (
+                  <>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{clients.length} client(s) unique(s)</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          const csv = [
+                            ['Nom', 'Email', 'Téléphone'].join(';'),
+                            ...clients.map(c => [c.name, c.email || '', c.phone || ''].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')),
+                          ].join('\n');
+                          const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `clients-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        <Download className="w-3.5 h-3.5 mr-1" />
+                        Export CSV
+                      </Button>
+                    </div>
+                    <div className="border rounded-md divide-y">
+                      {clients.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-6">Aucun client trouvé</p>
+                      )}
+                      {clients.map((c, idx) => (
+                        <div key={idx} className="p-3 flex items-center justify-between gap-3 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{c.name}</p>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                              {c.email && (
+                                <span className="flex items-center gap-1 truncate">
+                                  <Mail className="w-3 h-3 shrink-0" />
+                                  {c.email}
+                                </span>
+                              )}
+                              {c.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="w-3 h-3 shrink-0" />
+                                  {c.phone}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {c.email && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                title="Copier l'email"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(c.email!);
+                                  toast.success('Email copié');
+                                }}
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {c.phone && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                title="Envoyer le QR par SMS (Free Mobile)"
+                                disabled={sendingSmsTo === c.phone}
+                                onClick={async () => {
+                                  const reservation = reservations.find(
+                                    (r) => r.client_phone === c.phone
+                                  );
+                                  if (!reservation) {
+                                    toast.error('Aucune réservation trouvée pour ce client');
+                                    return;
+                                  }
+                                  setSendingSmsTo(c.phone);
+                                  try {
+                                    const { data, error } = await supabase.functions.invoke('send-sms-ticket', {
+                                      body: {
+                                        phone: c.phone,
+                                        client_name: c.name,
+                                        qr_code: reservation.qr_code,
+                                        event_date: reservation.event_date,
+                                      },
+                                    });
+                                    if (error) throw error;
+                                    if (data?.warning) {
+                                      toast.warning(data.warning, { duration: 8000 });
+                                    } else {
+                                      toast.success('SMS envoyé');
+                                    }
+                                  } catch (err: any) {
+                                    toast.error(err?.message || 'Erreur envoi SMS');
+                                  } finally {
+                                    setSendingSmsTo(null);
+                                  }
+                                }}
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </DialogContent>
         </Dialog>

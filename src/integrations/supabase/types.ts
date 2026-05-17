@@ -312,6 +312,7 @@ export type Database = {
           amount: number | null
           client_email: string | null
           client_name: string
+          client_phone: string | null
           created_at: string
           event_date: string
           id: string
@@ -327,6 +328,7 @@ export type Database = {
           amount?: number | null
           client_email?: string | null
           client_name: string
+          client_phone?: string | null
           created_at?: string
           event_date?: string
           id?: string
@@ -342,6 +344,7 @@ export type Database = {
           amount?: number | null
           client_email?: string | null
           client_name?: string
+          client_phone?: string | null
           created_at?: string
           event_date?: string
           id?: string
