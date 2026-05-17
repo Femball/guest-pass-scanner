@@ -380,6 +380,7 @@ const AdminContent = () => {
 
     setNewName('');
     setNewEmail('');
+    setNewPhone('');
     setNewPersons(1);
     setPersonNames([]);
     setEventTime('');
