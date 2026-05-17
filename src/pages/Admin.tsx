@@ -890,6 +890,16 @@ const AdminContent = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="phone">Téléphone (optionnel)</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="06 12 34 56 78"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="persons">Nombre de personnes</Label>
                   <Input
                     id="persons"
