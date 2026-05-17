@@ -753,6 +753,14 @@ const AdminContent = () => {
                 <UserPlus className="w-3.5 h-3.5" />
                 Utilisateur
               </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5 h-8 px-3 text-xs whitespace-nowrap shrink-0"
+                onClick={() => setClientsDialogOpen(true)}
+              >
+                <Contact className="w-3.5 h-3.5" />
+                Clients
+              </Button>
             </>
           )}
         </div>
