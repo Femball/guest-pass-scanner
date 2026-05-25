@@ -35,16 +35,14 @@ const Feedback = () => {
     }
     (async () => {
       const { data, error: dbErr } = await supabase
-        .from('event_feedback')
-        .select('id, client_name, event_date, rating, comment, submitted_at')
-        .eq('token', token)
-        .maybeSingle();
+        .rpc('get_feedback_by_token', { p_token: token });
 
-      if (dbErr || !data) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (dbErr || !row) {
         setError('Lien invalide ou expiré');
       } else {
-        setRecord(data as FeedbackRecord);
-        if (data.submitted_at) setSubmitted(true);
+        setRecord(row as FeedbackRecord);
+        if (row.submitted_at) setSubmitted(true);
       }
       setLoading(false);
     })();
@@ -53,18 +51,14 @@ const Feedback = () => {
   const handleSubmit = async () => {
     if (!record || !token || rating === 0) return;
     setSubmitting(true);
-    const { error: updErr } = await supabase
-      .from('event_feedback')
-      .update({
-        rating,
-        comment: comment.trim() || null,
-        submitted_at: new Date().toISOString(),
-      })
-      .eq('token', token)
-      .is('submitted_at', null);
+    const { data: ok, error: updErr } = await supabase.rpc('submit_feedback_by_token', {
+      p_token: token,
+      p_rating: rating,
+      p_comment: comment.trim() || null,
+    });
 
     setSubmitting(false);
-    if (updErr) {
+    if (updErr || ok === false) {
       setError('Impossible d\'enregistrer votre avis. Réessayez plus tard.');
     } else {
       setSubmitted(true);
