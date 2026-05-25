@@ -269,8 +269,8 @@ const AdminContent = () => {
   };
 
   const addReservation = async () => {
-    if (!newEmail.trim()) {
-      toast.error('L\'email est requis pour envoyer le ticket');
+    if (!newEmail.trim() && !newPhone.trim()) {
+      toast.error('Renseignez au moins un email ou un téléphone pour envoyer le ticket');
       return;
     }
 
@@ -306,7 +306,7 @@ const AdminContent = () => {
 
     const reservationsToInsert = names.map(name => ({
       client_name: name,
-      client_email: newEmail.trim(),
+      client_email: newEmail.trim() || null,
       client_phone: newPhone.trim() || null,
       qr_code: generateQRCode(),
       number_of_persons: 1,
