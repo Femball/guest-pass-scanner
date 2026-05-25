@@ -88,21 +88,16 @@ const AdminContent = () => {
   const [clientsSearch, setClientsSearch] = useState('');
   const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
 
-  // SMS preview
-  const [smsPreview, setSmsPreview] = useState<{ phone: string; name: string; body: string } | null>(null);
-  const [smsPreviewBody, setSmsPreviewBody] = useState('');
-
-  const openSmsPreview = (phone: string, name: string, body: string) => {
-    setSmsPreview({ phone, name, body });
-    setSmsPreviewBody(body);
-  };
-
-  const sendSmsFromPreview = () => {
-    if (!smsPreview) return;
-    const phoneClean = smsPreview.phone.replace(/[^0-9+]/g, '');
+  // Open the native SMS app directly with prefilled recipient and message
+  const openSmsPreview = (phone: string, _name: string, body: string) => {
+    if (!phone) {
+      toast.error("Numéro de téléphone manquant");
+      return;
+    }
+    const phoneClean = phone.replace(/[^0-9+]/g, '');
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const separator = isIOS ? '&' : '?';
-    const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(smsPreviewBody)}`;
+    const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`;
     const a = document.createElement('a');
     a.href = smsUrl;
     a.target = '_self';
@@ -111,10 +106,9 @@ const AdminContent = () => {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => {
-      navigator.clipboard?.writeText(smsPreviewBody).catch(() => {});
-      toast.success('SMS prêt à envoyer (message copié en secours)');
+      navigator.clipboard?.writeText(body).catch(() => {});
+      toast.success("SMS prêt — appuyez sur Envoyer dans l'app SMS (message copié en secours)");
     }, 300);
-    setSmsPreview(null);
   };
   
   // User management
@@ -1979,41 +1973,6 @@ const AdminContent = () => {
           </DialogContent>
         </Dialog>
 
-        {/* SMS preview dialog */}
-        <Dialog open={!!smsPreview} onOpenChange={(open) => !open && setSmsPreview(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Prévisualisation du SMS</DialogTitle>
-              <DialogDescription>
-                {smsPreview ? (
-                  <>Destinataire : <span className="font-medium">{smsPreview.name}</span> — <span className="font-mono">{smsPreview.phone}</span></>
-                ) : null}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <Label htmlFor="sms-body">Message</Label>
-              <Textarea
-                id="sms-body"
-                value={smsPreviewBody}
-                onChange={(e) => setSmsPreviewBody(e.target.value)}
-                rows={7}
-                className="font-mono text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                Le bouton ouvre l'app SMS de votre téléphone avec ce message pré-rempli.
-              </p>
-              <div className="flex gap-2 justify-end pt-2">
-                <Button variant="outline" onClick={() => setSmsPreview(null)}>
-                  Annuler
-                </Button>
-                <Button onClick={sendSmsFromPreview}>
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Envoyer le SMS
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </main>
     </div>
   );
