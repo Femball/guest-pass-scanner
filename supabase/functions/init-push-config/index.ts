@@ -43,15 +43,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { error } = await admin
-      .from('app_config')
-      .upsert({ key: 'service_role_key', value: serviceRoleKey }, { onConflict: 'key' });
-
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Service role key is now stored in Supabase Vault (managed via migration).
+    // Ensure any stale plaintext copy is removed from app_config.
+    await admin.from('app_config').delete().eq('key', 'service_role_key');
 
     return new Response(JSON.stringify({ ok: true, message: 'Push trigger configured' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
