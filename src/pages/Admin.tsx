@@ -1965,6 +1965,42 @@ const AdminContent = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* SMS preview dialog */}
+        <Dialog open={!!smsPreview} onOpenChange={(open) => !open && setSmsPreview(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Prévisualisation du SMS</DialogTitle>
+              <DialogDescription>
+                {smsPreview ? (
+                  <>Destinataire : <span className="font-medium">{smsPreview.name}</span> — <span className="font-mono">{smsPreview.phone}</span></>
+                ) : null}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Label htmlFor="sms-body">Message</Label>
+              <Textarea
+                id="sms-body"
+                value={smsPreviewBody}
+                onChange={(e) => setSmsPreviewBody(e.target.value)}
+                rows={7}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Le bouton ouvre l'app SMS de votre téléphone avec ce message pré-rempli.
+              </p>
+              <div className="flex gap-2 justify-end pt-2">
+                <Button variant="outline" onClick={() => setSmsPreview(null)}>
+                  Annuler
+                </Button>
+                <Button onClick={sendSmsFromPreview}>
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Envoyer le SMS
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
