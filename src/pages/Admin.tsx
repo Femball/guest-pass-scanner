@@ -269,8 +269,8 @@ const AdminContent = () => {
   };
 
   const addReservation = async () => {
-    if (!newEmail.trim()) {
-      toast.error('L\'email est requis pour envoyer le ticket');
+    if (!newEmail.trim() && !newPhone.trim()) {
+      toast.error('Renseignez au moins un email ou un téléphone pour envoyer le ticket');
       return;
     }
 
@@ -306,7 +306,7 @@ const AdminContent = () => {
 
     const reservationsToInsert = names.map(name => ({
       client_name: name,
-      client_email: newEmail.trim(),
+      client_email: newEmail.trim() || null,
       client_phone: newPhone.trim() || null,
       qr_code: generateQRCode(),
       number_of_persons: 1,
@@ -376,6 +376,33 @@ const AdminContent = () => {
     } else if (data && data.length > 0 && data[0].client_email) {
       // For cash or no payment, send email immediately
       await sendTicketEmail(data as Reservation[]);
+    } else if (data && data.length > 0 && data[0].client_phone) {
+      // No email but a phone number: open the native SMS app prefilled with the QR link
+      const first = data[0] as Reservation;
+      const ticketUrl = `${window.location.origin}/?ticket=${encodeURIComponent(first.qr_code)}`;
+      const bodyLines = (data as Reservation[]).map((r) => {
+        const url = `${window.location.origin}/?ticket=${encodeURIComponent(r.qr_code)}`;
+        return `• ${r.client_name}: ${url}`;
+      });
+      const smsBody =
+        `🎟️ L'Access\n` +
+        `Date: ${first.event_date}\n` +
+        (data.length > 1 ? bodyLines.join('\n') : `Votre QR: ${ticketUrl}`);
+      const phoneClean = (first.client_phone || '').replace(/[^0-9+]/g, '');
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const separator = isIOS ? '&' : '?';
+      const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(smsBody)}`;
+      const a = document.createElement('a');
+      a.href = smsUrl;
+      a.target = '_self';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => {
+        navigator.clipboard?.writeText(smsBody).catch(() => {});
+        toast.success('SMS prêt à envoyer (message copié en secours)');
+      }, 300);
     }
 
     setNewName('');
@@ -888,7 +915,7 @@ const AdminContent = () => {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">Email (optionnel)</Label>
                   <Input
                     id="email"
                     type="email"
@@ -898,7 +925,7 @@ const AdminContent = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Téléphone (optionnel)</Label>
+                    <Label htmlFor="phone">Téléphone (optionnel)</Label>
                   <Input
                     id="phone"
                     type="tel"
