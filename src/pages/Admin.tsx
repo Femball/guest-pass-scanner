@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -86,6 +87,35 @@ const AdminContent = () => {
   const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
   const [clientsSearch, setClientsSearch] = useState('');
   const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
+
+  // SMS preview
+  const [smsPreview, setSmsPreview] = useState<{ phone: string; name: string; body: string } | null>(null);
+  const [smsPreviewBody, setSmsPreviewBody] = useState('');
+
+  const openSmsPreview = (phone: string, name: string, body: string) => {
+    setSmsPreview({ phone, name, body });
+    setSmsPreviewBody(body);
+  };
+
+  const sendSmsFromPreview = () => {
+    if (!smsPreview) return;
+    const phoneClean = smsPreview.phone.replace(/[^0-9+]/g, '');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isIOS ? '&' : '?';
+    const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(smsPreviewBody)}`;
+    const a = document.createElement('a');
+    a.href = smsUrl;
+    a.target = '_self';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => {
+      navigator.clipboard?.writeText(smsPreviewBody).catch(() => {});
+      toast.success('SMS prêt à envoyer (message copié en secours)');
+    }, 300);
+    setSmsPreview(null);
+  };
   
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -377,7 +407,7 @@ const AdminContent = () => {
       // For cash or no payment, send email immediately
       await sendTicketEmail(data as Reservation[]);
     } else if (data && data.length > 0 && data[0].client_phone) {
-      // No email but a phone number: open the native SMS app prefilled with the QR link
+      // No email but a phone number: show SMS preview before opening native SMS app
       const first = data[0] as Reservation;
       const ticketUrl = `${window.location.origin}/?ticket=${encodeURIComponent(first.qr_code)}`;
       const bodyLines = (data as Reservation[]).map((r) => {
@@ -388,21 +418,7 @@ const AdminContent = () => {
         `🎟️ L'Access\n` +
         `Date: ${first.event_date}\n` +
         (data.length > 1 ? bodyLines.join('\n') : `Votre QR: ${ticketUrl}`);
-      const phoneClean = (first.client_phone || '').replace(/[^0-9+]/g, '');
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const separator = isIOS ? '&' : '?';
-      const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(smsBody)}`;
-      const a = document.createElement('a');
-      a.href = smsUrl;
-      a.target = '_self';
-      a.rel = 'noopener';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => {
-        navigator.clipboard?.writeText(smsBody).catch(() => {});
-        toast.success('SMS prêt à envoyer (message copié en secours)');
-      }, 300);
+      openSmsPreview(first.client_phone || '', first.client_name, smsBody);
     }
 
     setNewName('');
@@ -1933,24 +1949,7 @@ const AdminContent = () => {
                                     `🎟️ L'Access — ${c.name}\n` +
                                     `Date: ${reservation.event_date}\n` +
                                     `Votre QR: ${ticketUrl}`;
-                                  const phoneClean = c.phone.replace(/[^0-9+]/g, '');
-                                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                                  // iOS attend `&body=`, Android attend `?body=`
-                                  const separator = isIOS ? '&' : '?';
-                                  const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`;
-                                  // <a> + click() est plus fiable que location.href pour les URI custom
-                                  const a = document.createElement('a');
-                                  a.href = smsUrl;
-                                  a.target = '_self';
-                                  a.rel = 'noopener';
-                                  document.body.appendChild(a);
-                                  a.click();
-                                  document.body.removeChild(a);
-                                  // Fallback : copier le message si l'app SMS ne s'ouvre pas (desktop)
-                                  setTimeout(() => {
-                                    navigator.clipboard?.writeText(body).catch(() => {});
-                                    toast.success('SMS prêt à envoyer (message copié en secours)');
-                                  }, 300);
+                                  openSmsPreview(c.phone, c.name, body);
                                 }}
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
@@ -1963,6 +1962,42 @@ const AdminContent = () => {
                   </>
                 );
               })()}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* SMS preview dialog */}
+        <Dialog open={!!smsPreview} onOpenChange={(open) => !open && setSmsPreview(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Prévisualisation du SMS</DialogTitle>
+              <DialogDescription>
+                {smsPreview ? (
+                  <>Destinataire : <span className="font-medium">{smsPreview.name}</span> — <span className="font-mono">{smsPreview.phone}</span></>
+                ) : null}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Label htmlFor="sms-body">Message</Label>
+              <Textarea
+                id="sms-body"
+                value={smsPreviewBody}
+                onChange={(e) => setSmsPreviewBody(e.target.value)}
+                rows={7}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Le bouton ouvre l'app SMS de votre téléphone avec ce message pré-rempli.
+              </p>
+              <div className="flex gap-2 justify-end pt-2">
+                <Button variant="outline" onClick={() => setSmsPreview(null)}>
+                  Annuler
+                </Button>
+                <Button onClick={sendSmsFromPreview}>
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Envoyer le SMS
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
