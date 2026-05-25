@@ -2018,7 +2018,15 @@ const AdminContent = () => {
             {pendingSms && (
               <div className="space-y-3">
                 <Button asChild className="w-full">
-                  <a href={pendingSms.url}>Ouvrir l'application SMS</a>
+                  <a href={pendingSms.url}>Ouvrir SMS avec message</a>
+                </Button>
+                {pendingSms.isIOS && (
+                  <Button asChild variant="outline" className="w-full">
+                    <a href={pendingSms.fallbackUrl}>Essayer le format iOS alternatif</a>
+                  </Button>
+                )}
+                <Button asChild variant="outline" className="w-full">
+                  <a href={pendingSms.recipientOnlyUrl}>Ouvrir SMS avec le numéro seul</a>
                 </Button>
                 <Button
                   type="button"
