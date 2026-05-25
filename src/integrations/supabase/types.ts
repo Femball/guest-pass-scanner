@@ -482,6 +482,17 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_feedback_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          client_name: string
+          comment: string
+          event_date: string
+          id: string
+          rating: number
+          submitted_at: string
+        }[]
+      }
       has_admin_privileges: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -508,6 +519,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      submit_feedback_by_token: {
+        Args: { p_comment: string; p_rating: number; p_token: string }
+        Returns: boolean
       }
     }
     Enums: {

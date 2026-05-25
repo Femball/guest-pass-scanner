@@ -16,10 +16,10 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    console.log("SumUp webhook received:", JSON.stringify(body));
+    console.log("SumUp webhook received (unverified):", JSON.stringify(body));
 
     // SumUp sends: { id, checkout_reference, amount, currency, status, transaction_code, ... }
-    const { id: checkoutId, status, transaction_code } = body;
+    const { id: checkoutId } = body;
 
     if (!checkoutId) {
       console.error("Missing checkout ID in webhook payload");
@@ -28,6 +28,32 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // SECURITY: never trust the webhook body for the status. Re-fetch the
+    // checkout from SumUp's API using our private API key to confirm the
+    // real payment status before mutating any reservation.
+    const sumupApiKey = Deno.env.get("SUMUP_API_KEY");
+    if (!sumupApiKey) {
+      console.error("SUMUP_API_KEY not configured");
+      return new Response(JSON.stringify({ error: "Server misconfigured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const verifyRes = await fetch(
+      `https://api.sumup.com/v0.1/checkouts/${encodeURIComponent(checkoutId)}`,
+      { headers: { Authorization: `Bearer ${sumupApiKey}` } },
+    );
+    if (!verifyRes.ok) {
+      console.error(`SumUp verify failed: ${verifyRes.status}`);
+      return new Response(JSON.stringify({ error: "Verification failed" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const verified = await verifyRes.json();
+    const status = verified?.status as string | undefined;
 
     // Map SumUp status to our payment_status
     let paymentStatus: string;
