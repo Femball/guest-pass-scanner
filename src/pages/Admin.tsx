@@ -1907,7 +1907,23 @@ const AdminContent = () => {
                                     `Date: ${reservation.event_date}\n` +
                                     `Votre QR: ${ticketUrl}`;
                                   const phoneClean = c.phone.replace(/[^0-9+]/g, '');
-                                  window.location.href = `sms:${phoneClean}?body=${encodeURIComponent(body)}`;
+                                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                                  // iOS attend `&body=`, Android attend `?body=`
+                                  const separator = isIOS ? '&' : '?';
+                                  const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`;
+                                  // <a> + click() est plus fiable que location.href pour les URI custom
+                                  const a = document.createElement('a');
+                                  a.href = smsUrl;
+                                  a.target = '_self';
+                                  a.rel = 'noopener';
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  document.body.removeChild(a);
+                                  // Fallback : copier le message si l'app SMS ne s'ouvre pas (desktop)
+                                  setTimeout(() => {
+                                    navigator.clipboard?.writeText(body).catch(() => {});
+                                    toast.success('SMS prêt à envoyer (message copié en secours)');
+                                  }, 300);
                                 }}
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
