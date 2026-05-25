@@ -91,6 +91,31 @@ const AdminContent = () => {
   // SMS preview
   const [smsPreview, setSmsPreview] = useState<{ phone: string; name: string; body: string } | null>(null);
   const [smsPreviewBody, setSmsPreviewBody] = useState('');
+
+  const openSmsPreview = (phone: string, name: string, body: string) => {
+    setSmsPreview({ phone, name, body });
+    setSmsPreviewBody(body);
+  };
+
+  const sendSmsFromPreview = () => {
+    if (!smsPreview) return;
+    const phoneClean = smsPreview.phone.replace(/[^0-9+]/g, '');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isIOS ? '&' : '?';
+    const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(smsPreviewBody)}`;
+    const a = document.createElement('a');
+    a.href = smsUrl;
+    a.target = '_self';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => {
+      navigator.clipboard?.writeText(smsPreviewBody).catch(() => {});
+      toast.success('SMS prêt à envoyer (message copié en secours)');
+    }, 300);
+    setSmsPreview(null);
+  };
   
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
