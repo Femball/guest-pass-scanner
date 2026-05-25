@@ -1892,9 +1892,8 @@ const AdminContent = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                title="Envoyer le QR par SMS (Free Mobile)"
-                                disabled={sendingSmsTo === c.phone}
-                                onClick={async () => {
+                                title="Préparer un SMS avec le QR (ouvre l'app SMS)"
+                                onClick={() => {
                                   const reservation = reservations.find(
                                     (r) => r.client_phone === c.phone
                                   );
@@ -1902,27 +1901,13 @@ const AdminContent = () => {
                                     toast.error('Aucune réservation trouvée pour ce client');
                                     return;
                                   }
-                                  setSendingSmsTo(c.phone);
-                                  try {
-                                    const { data, error } = await supabase.functions.invoke('send-sms-ticket', {
-                                      body: {
-                                        phone: c.phone,
-                                        client_name: c.name,
-                                        qr_code: reservation.qr_code,
-                                        event_date: reservation.event_date,
-                                      },
-                                    });
-                                    if (error) throw error;
-                                    if (data?.warning) {
-                                      toast.warning(data.warning, { duration: 8000 });
-                                    } else {
-                                      toast.success('SMS envoyé');
-                                    }
-                                  } catch (err: any) {
-                                    toast.error(err?.message || 'Erreur envoi SMS');
-                                  } finally {
-                                    setSendingSmsTo(null);
-                                  }
+                                  const ticketUrl = `${window.location.origin}/?ticket=${encodeURIComponent(reservation.qr_code)}`;
+                                  const body =
+                                    `🎟️ L'Access — ${c.name}\n` +
+                                    `Date: ${reservation.event_date}\n` +
+                                    `Votre QR: ${ticketUrl}`;
+                                  const phoneClean = c.phone.replace(/[^0-9+]/g, '');
+                                  window.location.href = `sms:${phoneClean}?body=${encodeURIComponent(body)}`;
                                 }}
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
