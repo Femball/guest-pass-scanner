@@ -1953,10 +1953,15 @@ const AdminContent = () => {
                                     return;
                                   }
                                   const ticketUrl = `${window.location.origin}/?ticket=${encodeURIComponent(reservation.qr_code)}`;
-                                  const body =
-                                    `🎟️ L'Access — ${c.name}\n` +
-                                    `Date: ${reservation.event_date}\n` +
-                                    `Votre QR: ${ticketUrl}`;
+                                  const formattedDate = format(new Date(reservation.event_date), 'EEEE d MMMM yyyy', { locale: fr });
+                                  const body = [
+                                    `🎟️ L'Access — Votre ticket`,
+                                    `Bonjour ${c.name},`,
+                                    `📅 ${formattedDate}`,
+                                    `📍 Café Le Français, Place Napoléon, 31800 Saint-Gaudens`,
+                                    ``,
+                                    `Votre QR code : ${ticketUrl}`,
+                                  ].join('\n');
                                   openSmsPreview(c.phone, c.name, body);
                                 }}
                               >
