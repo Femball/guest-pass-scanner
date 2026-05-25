@@ -88,21 +88,16 @@ const AdminContent = () => {
   const [clientsSearch, setClientsSearch] = useState('');
   const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
 
-  // SMS preview
-  const [smsPreview, setSmsPreview] = useState<{ phone: string; name: string; body: string } | null>(null);
-  const [smsPreviewBody, setSmsPreviewBody] = useState('');
-
-  const openSmsPreview = (phone: string, name: string, body: string) => {
-    setSmsPreview({ phone, name, body });
-    setSmsPreviewBody(body);
-  };
-
-  const sendSmsFromPreview = () => {
-    if (!smsPreview) return;
-    const phoneClean = smsPreview.phone.replace(/[^0-9+]/g, '');
+  // Open the native SMS app directly with prefilled recipient and message
+  const openSmsPreview = (phone: string, _name: string, body: string) => {
+    if (!phone) {
+      toast.error("Numéro de téléphone manquant");
+      return;
+    }
+    const phoneClean = phone.replace(/[^0-9+]/g, '');
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const separator = isIOS ? '&' : '?';
-    const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(smsPreviewBody)}`;
+    const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`;
     const a = document.createElement('a');
     a.href = smsUrl;
     a.target = '_self';
@@ -111,10 +106,9 @@ const AdminContent = () => {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => {
-      navigator.clipboard?.writeText(smsPreviewBody).catch(() => {});
-      toast.success('SMS prêt à envoyer (message copié en secours)');
+      navigator.clipboard?.writeText(body).catch(() => {});
+      toast.success("SMS prêt — appuyez sur Envoyer dans l'app SMS (message copié en secours)");
     }, 300);
-    setSmsPreview(null);
   };
   
   // User management
