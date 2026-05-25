@@ -915,7 +915,7 @@ const AdminContent = () => {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">Email (optionnel)</Label>
                   <Input
                     id="email"
                     type="email"
@@ -925,7 +925,7 @@ const AdminContent = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Téléphone (optionnel)</Label>
+                    <Label htmlFor="phone">Téléphone (optionnel)</Label>
                   <Input
                     id="phone"
                     type="tel"
