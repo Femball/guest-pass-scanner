@@ -409,16 +409,24 @@ const AdminContent = () => {
     } else if (data && data.length > 0 && data[0].client_phone) {
       // No email but a phone number: show SMS preview before opening native SMS app
       const first = data[0] as Reservation;
-      const ticketUrl = `${window.location.origin}/?ticket=${encodeURIComponent(first.qr_code)}`;
-      const bodyLines = (data as Reservation[]).map((r) => {
-        const url = `${window.location.origin}/?ticket=${encodeURIComponent(r.qr_code)}`;
-        return `• ${r.client_name}: ${url}`;
-      });
-      const smsBody =
-        `🎟️ L'Access\n` +
-        `Date: ${first.event_date}\n` +
-        (data.length > 1 ? bodyLines.join('\n') : `Votre QR: ${ticketUrl}`);
-      openSmsPreview(first.client_phone || '', first.client_name, smsBody);
+      const formattedDate = format(new Date(first.event_date), 'EEEE d MMMM yyyy', { locale: fr });
+      const lines: string[] = [`🎟️ L'Access — Votre ticket`];
+      lines.push(`Bonjour ${first.client_name},`);
+      lines.push(`📅 ${formattedDate}`);
+      if (eventTime) lines.push(`🕒 ${eventTime}`);
+      if (eventAddress) lines.push(`📍 ${eventAddress}`);
+      lines.push('');
+      if (data.length > 1) {
+        lines.push(`Vos ${data.length} QR codes :`);
+        (data as Reservation[]).forEach((r) => {
+          const url = `${window.location.origin}/?ticket=${encodeURIComponent(r.qr_code)}`;
+          lines.push(`• ${r.client_name} : ${url}`);
+        });
+      } else {
+        const url = `${window.location.origin}/?ticket=${encodeURIComponent(first.qr_code)}`;
+        lines.push(`Votre QR code : ${url}`);
+      }
+      openSmsPreview(first.client_phone || '', first.client_name, lines.join('\n'));
     }
 
     setNewName('');
@@ -1945,10 +1953,15 @@ const AdminContent = () => {
                                     return;
                                   }
                                   const ticketUrl = `${window.location.origin}/?ticket=${encodeURIComponent(reservation.qr_code)}`;
-                                  const body =
-                                    `🎟️ L'Access — ${c.name}\n` +
-                                    `Date: ${reservation.event_date}\n` +
-                                    `Votre QR: ${ticketUrl}`;
+                                  const formattedDate = format(new Date(reservation.event_date), 'EEEE d MMMM yyyy', { locale: fr });
+                                  const body = [
+                                    `🎟️ L'Access — Votre ticket`,
+                                    `Bonjour ${c.name},`,
+                                    `📅 ${formattedDate}`,
+                                    `📍 Café Le Français, Place Napoléon, 31800 Saint-Gaudens`,
+                                    ``,
+                                    `Votre QR code : ${ticketUrl}`,
+                                  ].join('\n');
                                   openSmsPreview(c.phone, c.name, body);
                                 }}
                               >
