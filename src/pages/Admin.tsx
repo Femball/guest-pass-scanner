@@ -42,6 +42,12 @@ interface Reservation {
   sumup_checkout_id: string | null;
 }
 
+interface PendingSms {
+  phone: string;
+  body: string;
+  url: string;
+}
+
 interface BottleWithReservation {
   bottle_type: string;
   quantity: number;
@@ -87,35 +93,42 @@ const AdminContent = () => {
   const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
   const [clientsSearch, setClientsSearch] = useState('');
   const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
+  const [pendingSms, setPendingSms] = useState<PendingSms | null>(null);
 
   // Open the native SMS app directly with prefilled recipient and message.
   // MUST run synchronously inside a user gesture (no await / setTimeout before navigation),
   // otherwise iOS/Android silently block the sms: scheme.
-  const openSmsPreview = (phone: string, _name: string, body: string) => {
+  const buildSmsPayload = (phone: string, body: string): PendingSms | null => {
     if (!phone) {
+      return null;
+    }
+    const phoneClean = phone.replace(/[^0-9+]/g, '');
+    if (!phoneClean) {
+      return null;
+    }
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // iOS uses '&', Android uses '?', others fall back to '?'
+    const separator = isIOS ? '&' : '?';
+    return {
+      phone: phoneClean,
+      body,
+      url: `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`,
+    };
+  };
+
+  const openSmsPreview = (phone: string, _name: string, body: string) => {
+    const smsPayload = buildSmsPayload(phone, body);
+    if (!smsPayload) {
       toast.error("Numéro de téléphone manquant");
       return;
     }
-    const phoneClean = phone.replace(/[^0-9+]/g, '');
-    const ua = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua);
-    const isAndroid = /Android/.test(ua);
-    // iOS uses '&', Android uses '?', others fall back to '?'
-    const separator = isIOS ? '&' : '?';
-    const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`;
 
-    // Copy first (sync) so the user always has the message even if the scheme is blocked
-    try { navigator.clipboard?.writeText(body); } catch {}
+    setPendingSms(smsPayload);
 
     // Direct navigation — most reliable way to trigger sms: on iOS & Android PWAs
-    if (isIOS || isAndroid) {
-      window.location.href = smsUrl;
-    } else {
-      // Desktop: open in a new tab so we don't lose the admin page
-      window.open(smsUrl, '_blank', 'noopener');
-    }
-
-    toast.success("SMS prêt — appuyez sur Envoyer dans l'app SMS (message copié en secours)");
+    window.location.href = smsPayload.url;
+    toast.success("SMS prêt — si l'app ne s'ouvre pas, utilisez le bouton affiché");
   };
   
   // User management
