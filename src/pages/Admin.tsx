@@ -88,27 +88,34 @@ const AdminContent = () => {
   const [clientsSearch, setClientsSearch] = useState('');
   const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
 
-  // Open the native SMS app directly with prefilled recipient and message
+  // Open the native SMS app directly with prefilled recipient and message.
+  // MUST run synchronously inside a user gesture (no await / setTimeout before navigation),
+  // otherwise iOS/Android silently block the sms: scheme.
   const openSmsPreview = (phone: string, _name: string, body: string) => {
     if (!phone) {
       toast.error("Numéro de téléphone manquant");
       return;
     }
     const phoneClean = phone.replace(/[^0-9+]/g, '');
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isAndroid = /Android/.test(ua);
+    // iOS uses '&', Android uses '?', others fall back to '?'
     const separator = isIOS ? '&' : '?';
     const smsUrl = `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`;
-    const a = document.createElement('a');
-    a.href = smsUrl;
-    a.target = '_self';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => {
-      navigator.clipboard?.writeText(body).catch(() => {});
-      toast.success("SMS prêt — appuyez sur Envoyer dans l'app SMS (message copié en secours)");
-    }, 300);
+
+    // Copy first (sync) so the user always has the message even if the scheme is blocked
+    try { navigator.clipboard?.writeText(body); } catch {}
+
+    // Direct navigation — most reliable way to trigger sms: on iOS & Android PWAs
+    if (isIOS || isAndroid) {
+      window.location.href = smsUrl;
+    } else {
+      // Desktop: open in a new tab so we don't lose the admin page
+      window.open(smsUrl, '_blank', 'noopener');
+    }
+
+    toast.success("SMS prêt — appuyez sur Envoyer dans l'app SMS (message copié en secours)");
   };
   
   // User management
