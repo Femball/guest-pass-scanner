@@ -1993,6 +1993,40 @@ const AdminContent = () => {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={!!pendingSms} onOpenChange={(open) => !open && setPendingSms(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                SMS prêt
+              </DialogTitle>
+              <DialogDescription>
+                Si l'application SMS ne s'est pas ouverte automatiquement, appuyez sur le bouton ci-dessous.
+              </DialogDescription>
+            </DialogHeader>
+            {pendingSms && (
+              <div className="space-y-3">
+                <Button asChild className="w-full">
+                  <a href={pendingSms.url}>Ouvrir l'application SMS</a>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(pendingSms.body)
+                      .then(() => toast.success('Message copié'))
+                      .catch(() => toast.error('Copie impossible sur cet appareil'));
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copier le message
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
       </main>
     </div>
   );
