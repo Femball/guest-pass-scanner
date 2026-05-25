@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -86,6 +87,10 @@ const AdminContent = () => {
   const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
   const [clientsSearch, setClientsSearch] = useState('');
   const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
+
+  // SMS preview
+  const [smsPreview, setSmsPreview] = useState<{ phone: string; name: string; body: string } | null>(null);
+  const [smsPreviewBody, setSmsPreviewBody] = useState('');
   
   // User management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
