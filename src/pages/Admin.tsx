@@ -46,6 +46,9 @@ interface PendingSms {
   phone: string;
   body: string;
   url: string;
+  fallbackUrl: string;
+  recipientOnlyUrl: string;
+  isIOS: boolean;
 }
 
 interface BottleWithReservation {
@@ -110,10 +113,17 @@ const AdminContent = () => {
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     // iOS uses '&', Android uses '?', others fall back to '?'
     const separator = isIOS ? '&' : '?';
+    const encodedBody = encodeURIComponent(body);
+    const standardUrl = `sms:${phoneClean}?body=${encodedBody}`;
+    const iosUrl = `sms:${phoneClean}&body=${encodedBody}`;
+    const iosFallbackUrl = `sms://open?addresses=${encodeURIComponent(phoneClean)}&body=${encodedBody}`;
     return {
       phone: phoneClean,
       body,
-      url: `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`,
+      url: isIOS ? iosUrl : standardUrl,
+      fallbackUrl: isIOS ? iosFallbackUrl : `sms:${phoneClean}${separator}body=${encodedBody}`,
+      recipientOnlyUrl: `sms:${phoneClean}`,
+      isIOS,
     };
   };
 
@@ -126,9 +136,10 @@ const AdminContent = () => {
 
     setPendingSms(smsPayload);
 
-    // Direct navigation — most reliable way to trigger sms: on iOS & Android PWAs
-    window.location.href = smsPayload.url;
-    toast.success("SMS prêt — si l'app ne s'ouvre pas, utilisez le bouton affiché");
+    if (!smsPayload.isIOS) {
+      window.location.href = smsPayload.url;
+    }
+    toast.success(smsPayload.isIOS ? "SMS prêt — appuyez sur le bouton iOS" : "SMS prêt — si l'app ne s'ouvre pas, utilisez le bouton affiché");
   };
   
   // User management
@@ -2007,7 +2018,15 @@ const AdminContent = () => {
             {pendingSms && (
               <div className="space-y-3">
                 <Button asChild className="w-full">
-                  <a href={pendingSms.url}>Ouvrir l'application SMS</a>
+                  <a href={pendingSms.url}>Ouvrir SMS avec message</a>
+                </Button>
+                {pendingSms.isIOS && (
+                  <Button asChild variant="outline" className="w-full">
+                    <a href={pendingSms.fallbackUrl}>Essayer le format iOS alternatif</a>
+                  </Button>
+                )}
+                <Button asChild variant="outline" className="w-full">
+                  <a href={pendingSms.recipientOnlyUrl}>Ouvrir SMS avec le numéro seul</a>
                 </Button>
                 <Button
                   type="button"
