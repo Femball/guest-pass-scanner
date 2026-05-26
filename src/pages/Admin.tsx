@@ -266,6 +266,37 @@ const AdminContent = () => {
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
+  const getTicketQrImageUrl = (qrCode: string): string =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=20&data=${encodeURIComponent(qrCode)}`;
+
+  const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
+    const first = reservationList[0];
+    const formattedDate = format(new Date(first.event_date), 'EEEE d MMMM yyyy', { locale: fr });
+    const lines: string[] = [
+      `🎟️ L'Access — Votre ticket`,
+      `Bonjour ${first.client_name},`,
+      `📅 ${formattedDate}`,
+    ];
+
+    if (eventTime) lines.push(`🕒 ${eventTime}`);
+    if (address) lines.push(`📍 ${address}`);
+
+    lines.push('');
+    if (reservationList.length > 1) {
+      lines.push(`Vos QR codes à ouvrir :`);
+      reservationList.forEach((reservation) => {
+        lines.push(`• ${reservation.client_name} : ${getTicketQrImageUrl(reservation.qr_code)}`);
+        lines.push(`Code secours : ${reservation.qr_code}`);
+      });
+    } else {
+      lines.push(`Votre QR code à ouvrir :`);
+      lines.push(getTicketQrImageUrl(first.qr_code));
+      lines.push(`Code secours : ${first.qr_code}`);
+    }
+
+    return lines.join('\n');
+  };
+
   const sendTicketEmail = async (reservationOrList: Reservation | Reservation[]) => {
     const list = Array.isArray(reservationOrList) ? reservationOrList : [reservationOrList];
     if (list.length === 0) return;
