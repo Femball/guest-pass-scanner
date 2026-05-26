@@ -266,6 +266,37 @@ const AdminContent = () => {
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
+  const getTicketQrImageUrl = (qrCode: string): string =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=20&data=${encodeURIComponent(qrCode)}`;
+
+  const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
+    const first = reservationList[0];
+    const formattedDate = format(new Date(first.event_date), 'EEEE d MMMM yyyy', { locale: fr });
+    const lines: string[] = [
+      `🎟️ L'Access — Votre ticket`,
+      `Bonjour ${first.client_name},`,
+      `📅 ${formattedDate}`,
+    ];
+
+    if (eventTime) lines.push(`🕒 ${eventTime}`);
+    if (address) lines.push(`📍 ${address}`);
+
+    lines.push('');
+    if (reservationList.length > 1) {
+      lines.push(`Vos QR codes à ouvrir :`);
+      reservationList.forEach((reservation) => {
+        lines.push(`• ${reservation.client_name} : ${getTicketQrImageUrl(reservation.qr_code)}`);
+        lines.push(`Code secours : ${reservation.qr_code}`);
+      });
+    } else {
+      lines.push(`Votre QR code à ouvrir :`);
+      lines.push(getTicketQrImageUrl(first.qr_code));
+      lines.push(`Code secours : ${first.qr_code}`);
+    }
+
+    return lines.join('\n');
+  };
+
   const sendTicketEmail = async (reservationOrList: Reservation | Reservation[]) => {
     const list = Array.isArray(reservationOrList) ? reservationOrList : [reservationOrList];
     if (list.length === 0) return;
@@ -434,24 +465,11 @@ const AdminContent = () => {
     } else if (data && data.length > 0 && data[0].client_phone) {
       // No email but a phone number: show SMS preview before opening native SMS app
       const first = data[0] as Reservation;
-      const formattedDate = format(new Date(first.event_date), 'EEEE d MMMM yyyy', { locale: fr });
-      const lines: string[] = [`🎟️ L'Access — Votre ticket`];
-      lines.push(`Bonjour ${first.client_name},`);
-      lines.push(`📅 ${formattedDate}`);
-      if (eventTime) lines.push(`🕒 ${eventTime}`);
-      if (eventAddress) lines.push(`📍 ${eventAddress}`);
-      lines.push('');
-      if (data.length > 1) {
-        lines.push(`Vos ${data.length} QR codes :`);
-        (data as Reservation[]).forEach((r) => {
-          const url = `${window.location.origin}/?ticket=${encodeURIComponent(r.qr_code)}`;
-          lines.push(`• ${r.client_name} : ${url}`);
-        });
-      } else {
-        const url = `${window.location.origin}/?ticket=${encodeURIComponent(first.qr_code)}`;
-        lines.push(`Votre QR code : ${url}`);
-      }
-      openSmsPreview(first.client_phone || '', first.client_name, lines.join('\n'));
+      openSmsPreview(
+        first.client_phone || '',
+        first.client_name,
+        buildTicketSmsBody(data as Reservation[], eventAddress.trim())
+      );
     }
 
     setNewName('');
@@ -1977,16 +1995,10 @@ const AdminContent = () => {
                                     toast.error('Aucune réservation trouvée pour ce client');
                                     return;
                                   }
-                                  const ticketUrl = `${window.location.origin}/?ticket=${encodeURIComponent(reservation.qr_code)}`;
-                                  const formattedDate = format(new Date(reservation.event_date), 'EEEE d MMMM yyyy', { locale: fr });
-                                  const body = [
-                                    `🎟️ L'Access — Votre ticket`,
-                                    `Bonjour ${c.name},`,
-                                    `📅 ${formattedDate}`,
-                                    `📍 Café Le Français, Place Napoléon, 31800 Saint-Gaudens`,
-                                    ``,
-                                    `Votre QR code : ${ticketUrl}`,
-                                  ].join('\n');
+                                  const body = buildTicketSmsBody(
+                                    [reservation],
+                                    'Café Le Français, Place Napoléon, 31800 Saint-Gaudens'
+                                  );
                                   openSmsPreview(c.phone, c.name, body);
                                 }}
                               >
