@@ -465,24 +465,11 @@ const AdminContent = () => {
     } else if (data && data.length > 0 && data[0].client_phone) {
       // No email but a phone number: show SMS preview before opening native SMS app
       const first = data[0] as Reservation;
-      const formattedDate = format(new Date(first.event_date), 'EEEE d MMMM yyyy', { locale: fr });
-      const lines: string[] = [`🎟️ L'Access — Votre ticket`];
-      lines.push(`Bonjour ${first.client_name},`);
-      lines.push(`📅 ${formattedDate}`);
-      if (eventTime) lines.push(`🕒 ${eventTime}`);
-      if (eventAddress) lines.push(`📍 ${eventAddress}`);
-      lines.push('');
-      if (data.length > 1) {
-        lines.push(`Vos ${data.length} QR codes :`);
-        (data as Reservation[]).forEach((r) => {
-          const url = `${window.location.origin}/?ticket=${encodeURIComponent(r.qr_code)}`;
-          lines.push(`• ${r.client_name} : ${url}`);
-        });
-      } else {
-        const url = `${window.location.origin}/?ticket=${encodeURIComponent(first.qr_code)}`;
-        lines.push(`Votre QR code : ${url}`);
-      }
-      openSmsPreview(first.client_phone || '', first.client_name, lines.join('\n'));
+      openSmsPreview(
+        first.client_phone || '',
+        first.client_name,
+        buildTicketSmsBody(data as Reservation[], eventAddress.trim())
+      );
     }
 
     setNewName('');
