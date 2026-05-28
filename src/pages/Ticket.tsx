@@ -3,13 +3,13 @@ import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import QRCode from "qrcode";
 
 const Ticket = () => {
-  const { code: pathCode } = useParams<{ code?: string }>();
+  const { code: pathCode, "*": splatCode } = useParams<{ code?: string; "*"?: string }>();
   const location = useLocation();
   const [params] = useSearchParams();
   const fallbackPathCode = decodeURIComponent(location.pathname).match(
     /^\/ticket(?:\/|\?code=|\?ticket=)([^&?#/]+)/i
   )?.[1];
-  const rawCode = pathCode ?? params.get("code") ?? params.get("ticket") ?? fallbackPathCode ?? "";
+  const rawCode = pathCode ?? splatCode ?? params.get("code") ?? params.get("ticket") ?? fallbackPathCode ?? "";
   const code = rawCode ? decodeURIComponent(rawCode) : "";
   const [dataUrl, setDataUrl] = useState<string>("");
   const [error, setError] = useState<string>("");
