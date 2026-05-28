@@ -2075,8 +2075,17 @@ const AdminContent = () => {
             </DialogHeader>
             {pendingSms && (
               <div className="space-y-3">
+                {pendingSms.qrCodes.length > 0 && (
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={() => shareQrViaNativeSheet(pendingSms)}
+                  >
+                    Partager le QR (image) via Messages
+                  </Button>
+                )}
                 <Button asChild className="w-full">
-                  <a href={pendingSms.url}>Ouvrir SMS avec message</a>
+                  <a href={pendingSms.url}>Ouvrir SMS (texte uniquement)</a>
                 </Button>
                 {pendingSms.isIOS && (
                   <Button asChild variant="outline" className="w-full">
