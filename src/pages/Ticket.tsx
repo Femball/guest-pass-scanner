@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import QRCode from "qrcode";
 
 const Ticket = () => {
+  const { code: pathCode } = useParams<{ code?: string }>();
   const [params] = useSearchParams();
-  const code = params.get("code") ?? params.get("ticket") ?? "";
+  const rawCode = pathCode ?? params.get("code") ?? params.get("ticket") ?? "";
+  const code = rawCode ? decodeURIComponent(rawCode) : "";
   const [dataUrl, setDataUrl] = useState<string>("");
   const [error, setError] = useState<string>("");
 
