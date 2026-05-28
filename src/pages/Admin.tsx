@@ -102,7 +102,11 @@ const AdminContent = () => {
   // Open the native SMS app directly with prefilled recipient and message.
   // MUST run synchronously inside a user gesture (no await / setTimeout before navigation),
   // otherwise iOS/Android silently block the sms: scheme.
-  const buildSmsPayload = (phone: string, body: string): PendingSms | null => {
+  const buildSmsPayload = (
+    phone: string,
+    body: string,
+    qrCodes: { label: string; code: string }[] = []
+  ): PendingSms | null => {
     if (!phone) {
       return null;
     }
@@ -125,11 +129,17 @@ const AdminContent = () => {
       fallbackUrl: isIOS ? iosFallbackUrl : `sms:${phoneClean}${separator}body=${encodedBody}`,
       recipientOnlyUrl: `sms:${phoneClean}`,
       isIOS,
+      qrCodes,
     };
   };
 
-  const openSmsPreview = (phone: string, _name: string, body: string) => {
-    const smsPayload = buildSmsPayload(phone, body);
+  const openSmsPreview = (
+    phone: string,
+    _name: string,
+    body: string,
+    qrCodes: { label: string; code: string }[] = []
+  ) => {
+    const smsPayload = buildSmsPayload(phone, body, qrCodes);
     if (!smsPayload) {
       toast.error("Numéro de téléphone manquant");
       return;
@@ -141,6 +151,38 @@ const AdminContent = () => {
       window.location.href = smsPayload.url;
     }
     toast.success(smsPayload.isIOS ? "SMS prêt — appuyez sur le bouton iOS" : "SMS prêt — si l'app ne s'ouvre pas, utilisez le bouton affiché");
+  };
+
+  // Generate QR PNG files and trigger native share sheet (iOS Messages, WhatsApp, etc.)
+  const shareQrViaNativeSheet = async (payload: PendingSms) => {
+    try {
+      if (!payload.qrCodes.length) {
+        toast.error("Aucun QR code à partager");
+        return;
+      }
+      const files: File[] = [];
+      for (const qr of payload.qrCodes) {
+        const dataUrl = await QRCode.toDataURL(qr.code, {
+          width: 600,
+          margin: 2,
+          errorCorrectionLevel: 'H',
+        });
+        const blob = await (await fetch(dataUrl)).blob();
+        const safeLabel = qr.label.replace(/[^a-zA-Z0-9_-]/g, '_') || 'qr';
+        files.push(new File([blob], `${safeLabel}.png`, { type: 'image/png' }));
+      }
+      const shareData: ShareData = { files, text: payload.body, title: "L'Access — Votre ticket" };
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (!nav.canShare || !nav.canShare(shareData) || !navigator.share) {
+        toast.error("Partage de fichiers non supporté sur cet appareil");
+        return;
+      }
+      await navigator.share(shareData);
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return;
+      console.error('shareQrViaNativeSheet error', err);
+      toast.error("Impossible de partager le QR");
+    }
   };
   
   // User management
