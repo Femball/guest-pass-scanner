@@ -309,8 +309,12 @@ const AdminContent = () => {
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
-  const getTicketQrImageUrl = (qrCode: string): string =>
-    `${window.location.origin}/ticket?code=${encodeURIComponent(qrCode)}`;
+  const getTicketQrImageUrl = (qrCode: string): string => {
+    const appOrigin = window.location.hostname.includes('lovable.app')
+      ? 'https://laccess.lovable.app'
+      : window.location.origin;
+    return `${appOrigin}/ticket/${encodeURIComponent(qrCode)}`;
+  };
 
   const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
     const first = reservationList[0];
@@ -326,13 +330,13 @@ const AdminContent = () => {
 
     lines.push('');
     if (reservationList.length > 1) {
-      lines.push(`Vos QR codes à ouvrir en image :`);
+      lines.push(`Vos tickets à ouvrir :`);
       reservationList.forEach((reservation) => {
         lines.push(`• ${reservation.client_name} : ${getTicketQrImageUrl(reservation.qr_code)}`);
         lines.push(`Code secours : ${reservation.qr_code}`);
       });
     } else {
-      lines.push(`Votre QR code à ouvrir en image :`);
+      lines.push(`Votre ticket à ouvrir :`);
       lines.push(getTicketQrImageUrl(first.qr_code));
       lines.push(`Code secours : ${first.qr_code}`);
     }
