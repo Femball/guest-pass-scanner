@@ -52,7 +52,7 @@ const AppContent = () => {
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/qr/:code" element={<QrView />} />
         <Route path="/ticket" element={<Ticket />} />
-        <Route path="/ticket/:code" element={<Ticket />} />
+        <Route path="/ticket/:code/*" element={<Ticket />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
