@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Unsubscribe from "./pages/Unsubscribe";
 import Feedback from "./pages/Feedback";
 import QrView from "./pages/QrView";
+import Ticket from "./pages/Ticket";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useScanNotifications } from "./hooks/useScanNotifications";
 
@@ -50,6 +51,7 @@ const AppContent = () => {
         <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/qr/:code" element={<QrView />} />
+        <Route path="/ticket" element={<Ticket />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
