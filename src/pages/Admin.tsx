@@ -310,7 +310,7 @@ const AdminContent = () => {
   };
 
   const getTicketQrImageUrl = (qrCode: string): string =>
-    `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=20&data=${encodeURIComponent(qrCode)}`;
+    `${window.location.origin}/qr/${encodeURIComponent(qrCode)}`;
 
   const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
     const first = reservationList[0];

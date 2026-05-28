@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Unsubscribe from "./pages/Unsubscribe";
 import Feedback from "./pages/Feedback";
+import QrView from "./pages/QrView";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useScanNotifications } from "./hooks/useScanNotifications";
 
@@ -48,6 +49,7 @@ const AppContent = () => {
         />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/feedback" element={<Feedback />} />
+        <Route path="/qr/:code" element={<QrView />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
