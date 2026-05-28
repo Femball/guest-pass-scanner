@@ -511,7 +511,8 @@ const AdminContent = () => {
       openSmsPreview(
         first.client_phone || '',
         first.client_name,
-        buildTicketSmsBody(data as Reservation[], eventAddress.trim())
+        buildTicketSmsBody(data as Reservation[], eventAddress.trim()),
+        (data as Reservation[]).map((r) => ({ label: r.client_name, code: r.qr_code }))
       );
     }
 
@@ -2042,7 +2043,9 @@ const AdminContent = () => {
                                     [reservation],
                                     'Café Le Français, Place Napoléon, 31800 Saint-Gaudens'
                                   );
-                                  openSmsPreview(c.phone, c.name, body);
+                                  openSmsPreview(c.phone, c.name, body, [
+                                    { label: reservation.client_name, code: reservation.qr_code },
+                                  ]);
                                 }}
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
