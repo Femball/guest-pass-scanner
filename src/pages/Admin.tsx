@@ -49,6 +49,7 @@ interface PendingSms {
   fallbackUrl: string;
   recipientOnlyUrl: string;
   isIOS: boolean;
+  qrCodes: { label: string; code: string }[];
 }
 
 interface BottleWithReservation {
