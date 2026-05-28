@@ -310,7 +310,7 @@ const AdminContent = () => {
   };
 
   const getTicketQrImageUrl = (qrCode: string): string =>
-    `${window.location.origin}/qr/${encodeURIComponent(qrCode)}`;
+    `https://api.qrserver.com/v1/create-qr-code/?size=800x800&margin=20&data=${encodeURIComponent(qrCode)}`;
 
   const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
     const first = reservationList[0];
@@ -326,13 +326,13 @@ const AdminContent = () => {
 
     lines.push('');
     if (reservationList.length > 1) {
-      lines.push(`Vos QR codes à ouvrir :`);
+      lines.push(`Vos QR codes à ouvrir en image :`);
       reservationList.forEach((reservation) => {
         lines.push(`• ${reservation.client_name} : ${getTicketQrImageUrl(reservation.qr_code)}`);
         lines.push(`Code secours : ${reservation.qr_code}`);
       });
     } else {
-      lines.push(`Votre QR code à ouvrir :`);
+      lines.push(`Votre QR code à ouvrir en image :`);
       lines.push(getTicketQrImageUrl(first.qr_code));
       lines.push(`Code secours : ${first.qr_code}`);
     }
