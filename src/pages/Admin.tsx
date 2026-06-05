@@ -309,13 +309,26 @@ const AdminContent = () => {
     return `${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
-  const getTicketQrImageUrl = (qrCode: string): string => {
-    return `https://laccess.lovable.app/ticket?code=${encodeURIComponent(qrCode)}`;
+  const getTicketQrImageUrl = (
+    qrCode: string,
+    extras?: { name?: string; date?: string; place?: string; time?: string }
+  ): string => {
+    const params = new URLSearchParams({ code: qrCode });
+    if (extras?.name) params.set('name', extras.name);
+    if (extras?.date) params.set('date', extras.date);
+    if (extras?.place) params.set('place', extras.place);
+    if (extras?.time) params.set('time', extras.time);
+    return `https://laccess.lovable.app/ticket?${params.toString()}`;
   };
 
   const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
     const first = reservationList[0];
     const formattedDate = format(new Date(first.event_date), 'EEEE d MMMM yyyy', { locale: fr });
+    const extras = {
+      date: formattedDate,
+      place: address || undefined,
+      time: eventTime || undefined,
+    };
     const lines: string[] = [
       `🎟️ L'Access — Votre ticket`,
       `Bonjour ${first.client_name},`,
@@ -329,12 +342,14 @@ const AdminContent = () => {
     if (reservationList.length > 1) {
       lines.push(`Vos tickets à ouvrir :`);
       reservationList.forEach((reservation) => {
-        lines.push(`• ${reservation.client_name} : ${getTicketQrImageUrl(reservation.qr_code)}`);
+        lines.push(
+          `• ${reservation.client_name} : ${getTicketQrImageUrl(reservation.qr_code, { ...extras, name: reservation.client_name })}`
+        );
         lines.push(`Code secours : ${reservation.qr_code}`);
       });
     } else {
       lines.push(`Votre ticket à ouvrir :`);
-      lines.push(getTicketQrImageUrl(first.qr_code));
+      lines.push(getTicketQrImageUrl(first.qr_code, { ...extras, name: first.client_name }));
       lines.push(`Code secours : ${first.qr_code}`);
     }
 
