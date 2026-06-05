@@ -1658,13 +1658,34 @@ const AdminContent = () => {
                                         size="icon"
                                         onClick={() => sendTicketEmail(reservation)}
                                         disabled={sendingEmail === reservation.id}
-                                        title="Renvoyer le ticket"
+                                        title="Renvoyer le ticket par email"
                                       >
                                         {sendingEmail === reservation.id ? (
                                           <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                         ) : (
                                           <Mail className="w-4 h-4" />
                                         )}
+                                      </Button>
+                                    )}
+                                    {reservation.client_phone && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                          const body = buildTicketSmsBody(
+                                            [reservation],
+                                            eventAddress.trim()
+                                          );
+                                          openSmsPreview(
+                                            reservation.client_phone!,
+                                            reservation.client_name,
+                                            body,
+                                            [{ label: reservation.client_name, code: reservation.qr_code }]
+                                          );
+                                        }}
+                                        title="Renvoyer le ticket par SMS"
+                                      >
+                                        <MessageSquare className="w-4 h-4" />
                                       </Button>
                                     )}
                                     <Button
