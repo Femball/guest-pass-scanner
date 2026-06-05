@@ -3,19 +3,41 @@ import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import QRCode from "qrcode";
 import { Calendar, Clock, MapPin, User } from "lucide-react";
 
+type TicketData = {
+  code?: string;
+  name?: string;
+  date?: string;
+  place?: string;
+  time?: string;
+};
+
+const decodeTicketData = (value: string | null): TicketData => {
+  if (!value) return {};
+  try {
+    const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return {};
+  }
+};
+
 const Ticket = () => {
   const { code: pathCode, "*": splatCode } = useParams<{ code?: string; "*"?: string }>();
   const location = useLocation();
   const [params] = useSearchParams();
+  const ticketData = decodeTicketData(params.get("data"));
   const fallbackPathCode = decodeURIComponent(location.pathname).match(
     /^\/ticket(?:\/|\?code=|\?ticket=)([^&?#/]+)/i
   )?.[1];
-  const rawCode = pathCode ?? splatCode ?? params.get("code") ?? params.get("ticket") ?? fallbackPathCode ?? "";
+  const rawCode = pathCode ?? splatCode ?? params.get("code") ?? params.get("ticket") ?? ticketData.code ?? fallbackPathCode ?? "";
   const code = rawCode ? decodeURIComponent(rawCode) : "";
-  const name = params.get("name") ?? "";
-  const date = params.get("date") ?? "";
-  const place = params.get("place") ?? "";
-  const time = params.get("time") ?? "";
+  const name = ticketData.name ?? params.get("name") ?? "";
+  const date = ticketData.date ?? params.get("date") ?? "";
+  const place = ticketData.place ?? params.get("place") ?? "";
+  const time = ticketData.time ?? params.get("time") ?? "";
   const [dataUrl, setDataUrl] = useState<string>("");
   const [error, setError] = useState<string>("");
 

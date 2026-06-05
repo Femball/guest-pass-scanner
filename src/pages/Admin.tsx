@@ -313,12 +313,15 @@ const AdminContent = () => {
     qrCode: string,
     extras?: { name?: string; date?: string; place?: string; time?: string }
   ): string => {
-    const params = new URLSearchParams({ code: qrCode });
-    if (extras?.name) params.set('name', extras.name);
-    if (extras?.date) params.set('date', extras.date);
-    if (extras?.place) params.set('place', extras.place);
-    if (extras?.time) params.set('time', extras.time);
-    return `https://laccess.lovable.app/ticket?${params.toString()}`;
+    const ticketData = { code: qrCode, ...extras };
+    const json = JSON.stringify(ticketData);
+    const bytes = new TextEncoder().encode(json);
+    let binary = '';
+    bytes.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    const data = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    return `https://laccess.lovable.app/ticket?data=${data}`;
   };
 
   const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
