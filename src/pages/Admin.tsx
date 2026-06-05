@@ -310,10 +310,7 @@ const AdminContent = () => {
   };
 
   const getTicketQrImageUrl = (qrCode: string): string => {
-    const appOrigin = window.location.hostname.includes('lovable.app')
-      ? 'https://laccess.lovable.app'
-      : window.location.origin;
-    return `${appOrigin}/ticket/${encodeURIComponent(qrCode)}`;
+    return `https://laccess.lovable.app/ticket?code=${encodeURIComponent(qrCode)}`;
   };
 
   const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {

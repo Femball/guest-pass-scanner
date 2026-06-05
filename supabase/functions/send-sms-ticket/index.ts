@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
 
     const freeUser = Deno.env.get("FREE_MOBILE_USER");
     const freePass = Deno.env.get("FREE_MOBILE_PASS");
+    const ticketUrl = `https://laccess.lovable.app/ticket?code=${encodeURIComponent(qrCode)}`;
 
     if (!freeUser || !freePass) {
       return new Response(
@@ -82,7 +83,8 @@ Deno.serve(async (req) => {
       `🎟️ L'Access - Votre ticket\n` +
       `${clientName}\n` +
       (eventDate ? `Date: ${eventDate}\n` : "") +
-      `Code: ${qrCode}\n` +
+      `Votre ticket: ${ticketUrl}\n` +
+      `Code secours: ${qrCode}\n` +
       `Destinataire prévu: ${phone}`;
 
     const url =
