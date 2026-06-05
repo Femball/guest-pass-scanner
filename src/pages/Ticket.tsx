@@ -28,11 +28,13 @@ const Ticket = () => {
   const { code: pathCode, "*": splatCode } = useParams<{ code?: string; "*"?: string }>();
   const location = useLocation();
   const [params] = useSearchParams();
-  const ticketData = decodeTicketData(params.get("data"));
+  const pathTicketData = pathCode === "t" || pathCode === "d" ? decodeTicketData(splatCode ?? null) : {};
+  const queryTicketData = decodeTicketData(params.get("data"));
+  const ticketData = { ...queryTicketData, ...pathTicketData };
   const fallbackPathCode = decodeURIComponent(location.pathname).match(
     /^\/ticket(?:\/|\?code=|\?ticket=)([^&?#/]+)/i
   )?.[1];
-  const rawCode = pathCode ?? splatCode ?? params.get("code") ?? params.get("ticket") ?? ticketData.code ?? fallbackPathCode ?? "";
+  const rawCode = ticketData.code ?? (pathCode === "t" || pathCode === "d" ? "" : pathCode) ?? splatCode ?? params.get("code") ?? params.get("ticket") ?? fallbackPathCode ?? "";
   const code = rawCode ? decodeURIComponent(rawCode) : "";
   const name = ticketData.name ?? params.get("name") ?? "";
   const date = ticketData.date ?? params.get("date") ?? "";
