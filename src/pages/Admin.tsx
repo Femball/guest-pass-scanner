@@ -321,7 +321,7 @@ const AdminContent = () => {
       binary += String.fromCharCode(byte);
     });
     const data = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-    return `https://laccess.lovable.app/ticket?data=${data}`;
+    return `https://laccess.lovable.app/ticket/t/${data}`;
   };
 
   const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
