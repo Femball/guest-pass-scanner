@@ -2119,7 +2119,7 @@ const AdminContent = () => {
                 Répertoire clients
               </DialogTitle>
               <DialogDescription>
-                Liste unique des clients (déduplication par email/téléphone).
+                Base de données des clients (auto-alimentée par les réservations, modifiable).
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -2129,113 +2129,90 @@ const AdminContent = () => {
                 onChange={(e) => setClientsSearch(e.target.value)}
               />
               {(() => {
-                const map = new Map<string, { name: string; email: string | null; phone: string | null }>();
-                reservations.forEach((r) => {
-                  const key = (r.client_email || r.client_phone || r.client_name).toLowerCase().trim();
-                  if (!map.has(key)) {
-                    map.set(key, {
-                      name: r.client_name,
-                      email: r.client_email || null,
-                      phone: r.client_phone || null,
-                    });
-                  } else {
-                    const existing = map.get(key)!;
-                    if (!existing.phone && r.client_phone) existing.phone = r.client_phone;
-                    if (!existing.email && r.client_email) existing.email = r.client_email;
-                  }
-                });
                 const q = clientsSearch.toLowerCase().trim();
-                const clients = Array.from(map.values())
-                  .filter((c) =>
-                    !q ||
-                    c.name.toLowerCase().includes(q) ||
-                    (c.email || '').toLowerCase().includes(q) ||
-                    (c.phone || '').toLowerCase().includes(q)
-                  )
-                  .sort((a, b) => a.name.localeCompare(b.name));
+                const filteredClients = clients.filter((c) =>
+                  !q ||
+                  c.name.toLowerCase().includes(q) ||
+                  (c.email || '').toLowerCase().includes(q) ||
+                  (c.phone || '').toLowerCase().includes(q)
+                );
                 return (
                   <>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{clients.length} client(s) unique(s)</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => {
-                          const csv = [
-                            ['Nom', 'Email', 'Téléphone'].join(';'),
-                            ...clients.map(c => [c.name, c.email || '', c.phone || ''].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')),
-                          ].join('\n');
-                          const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `clients-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        }}
-                      >
-                        <Download className="w-3.5 h-3.5 mr-1" />
-                        Export CSV
-                      </Button>
+                      <span>{filteredClients.length} client(s)</span>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openClientForm(null)}>
+                          <Plus className="w-3.5 h-3.5 mr-1" /> Ajouter
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            const csv = [
+                              ['Nom', 'Email', 'Téléphone', 'Réservations', 'Dernière venue', 'Notes'].join(';'),
+                              ...filteredClients.map(c => [
+                                c.name, c.email || '', c.phone || '',
+                                String(c.reservation_count),
+                                c.last_seen_at ? format(new Date(c.last_seen_at), 'yyyy-MM-dd') : '',
+                                c.notes || '',
+                              ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')),
+                            ].join('\n');
+                            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `clients-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1" /> CSV
+                        </Button>
+                      </div>
                     </div>
                     <div className="border rounded-md divide-y">
-                      {clients.length === 0 && (
+                      {filteredClients.length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-6">Aucun client trouvé</p>
                       )}
-                      {clients.map((c, idx) => (
-                        <div key={idx} className="p-3 flex items-center justify-between gap-3 text-sm">
+                      {filteredClients.map((c) => (
+                        <div key={c.id} className="p-3 flex items-center justify-between gap-3 text-sm">
                           <div className="min-w-0 flex-1">
                             <p className="font-medium truncate">{c.name}</p>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                               {c.email && (
                                 <span className="flex items-center gap-1 truncate">
-                                  <Mail className="w-3 h-3 shrink-0" />
-                                  {c.email}
+                                  <Mail className="w-3 h-3 shrink-0" /> {c.email}
                                 </span>
                               )}
                               {c.phone && (
                                 <span className="flex items-center gap-1">
-                                  <Phone className="w-3 h-3 shrink-0" />
-                                  {c.phone}
+                                  <Phone className="w-3 h-3 shrink-0" /> {c.phone}
                                 </span>
                               )}
+                              <span className="text-[10px] uppercase tracking-wide">
+                                {c.reservation_count} résa
+                              </span>
                             </div>
+                            {c.notes && (
+                              <p className="text-xs text-muted-foreground mt-1 italic line-clamp-2">{c.notes}</p>
+                            )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            {c.email && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                title="Copier l'email"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(c.email!);
-                                  toast.success('Email copié');
-                                }}
-                              >
-                                <Copy className="w-3.5 h-3.5" />
-                              </Button>
-                            )}
                             {c.phone && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                title="Préparer un SMS avec le QR (ouvre l'app SMS)"
+                                title="Préparer un SMS avec le QR"
                                 onClick={() => {
-                                  const reservation = reservations.find(
-                                    (r) => r.client_phone === c.phone
-                                  );
+                                  const reservation = reservations.find((r) => r.client_phone === c.phone);
                                   if (!reservation) {
                                     toast.error('Aucune réservation trouvée pour ce client');
                                     return;
                                   }
-                                  const body = buildTicketSmsBody(
-                                    [reservation],
-                                    'Café Le Français, Place Napoléon, 31800 Saint-Gaudens'
-                                  );
-                                  openSmsPreview(c.phone, c.name, body, [
+                                  const body = buildTicketSmsBody([reservation], 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+                                  openSmsPreview(c.phone!, c.name, body, [
                                     { label: reservation.client_name, code: reservation.qr_code },
                                   ]);
                                 }}
@@ -2243,6 +2220,12 @@ const AdminContent = () => {
                                 <MessageSquare className="w-3.5 h-3.5" />
                               </Button>
                             )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier" onClick={() => openClientForm(c)}>
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Supprimer" onClick={() => deleteClient(c.id)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -2251,6 +2234,149 @@ const AdminContent = () => {
                 );
               })()}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Client edit/add form */}
+        <Dialog open={clientFormOpen} onOpenChange={setClientFormOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingClient ? 'Modifier le client' : 'Ajouter un client'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Nom *</Label>
+                <Input value={clientForm.name} onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Téléphone</Label>
+                <Input type="tel" value={clientForm.phone} onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })} placeholder="+33..." />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={clientForm.email} onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Notes</Label>
+                <Textarea value={clientForm.notes} onChange={(e) => setClientForm({ ...clientForm, notes: e.target.value })} rows={3} />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setClientFormOpen(false)}>Annuler</Button>
+                <Button onClick={saveClient} disabled={savingClient}>
+                  {savingClient ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk SMS selection dialog */}
+        <Dialog open={bulkSmsOpen} onOpenChange={setBulkSmsOpen}>
+          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" /> Envoi SMS multiple
+              </DialogTitle>
+              <DialogDescription>
+                {bulkSmsDate && `Soirée du ${format(new Date(bulkSmsDate + 'T00:00:00'), 'dd/MM/yyyy')}. `}
+                Sélectionnez les clients à qui renvoyer le ticket par SMS.
+              </DialogDescription>
+            </DialogHeader>
+            {bulkSmsDate && (() => {
+              const eligible = (dateGroups[bulkSmsDate] || []).filter((r) => r.client_phone);
+              const allChecked = eligible.length > 0 && eligible.every((r) => bulkSmsSelected.has(r.id));
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{bulkSmsSelected.size} / {eligible.length} sélectionné(s)</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        if (allChecked) setBulkSmsSelected(new Set());
+                        else setBulkSmsSelected(new Set(eligible.map((r) => r.id)));
+                      }}
+                    >
+                      {allChecked ? 'Tout désélectionner' : 'Tout sélectionner'}
+                    </Button>
+                  </div>
+                  <div className="border rounded-md divide-y max-h-[50vh] overflow-y-auto">
+                    {eligible.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-6">Aucun client avec téléphone</p>
+                    )}
+                    {eligible.map((r) => (
+                      <label key={r.id} className="flex items-center gap-3 p-3 cursor-pointer hover:bg-secondary/40">
+                        <Checkbox
+                          checked={bulkSmsSelected.has(r.id)}
+                          onCheckedChange={(c) => {
+                            const next = new Set(bulkSmsSelected);
+                            if (c) next.add(r.id); else next.delete(r.id);
+                            setBulkSmsSelected(next);
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{r.client_name}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Phone className="w-3 h-3" /> {r.client_phone}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setBulkSmsOpen(false)}>Annuler</Button>
+                    <Button onClick={startBulkSmsQueue} disabled={bulkSmsSelected.size === 0}>
+                      Lancer ({bulkSmsSelected.size})
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk SMS queue dialog */}
+        <Dialog open={!!bulkSmsQueue} onOpenChange={(open) => { if (!open) { setBulkSmsQueue(null); setBulkSmsIndex(0); } }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Send className="w-5 h-5" /> Envoi en cours
+              </DialogTitle>
+              <DialogDescription>
+                Envoyez chaque SMS depuis votre app, puis passez au suivant.
+              </DialogDescription>
+            </DialogHeader>
+            {bulkSmsQueue && bulkSmsQueue[bulkSmsIndex] && (() => {
+              const current = bulkSmsQueue[bulkSmsIndex];
+              return (
+                <div className="space-y-4">
+                  <div className="text-xs text-muted-foreground text-center">
+                    Client {bulkSmsIndex + 1} sur {bulkSmsQueue.length}
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                    <div className="bg-primary h-2 transition-all" style={{ width: `${((bulkSmsIndex + 1) / bulkSmsQueue.length) * 100}%` }} />
+                  </div>
+                  <div className="p-4 rounded-lg border bg-secondary/40 text-center">
+                    <p className="font-semibold text-base">{current.client_name}</p>
+                    <p className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1">
+                      <Phone className="w-3.5 h-3.5" /> {current.client_phone}
+                    </p>
+                  </div>
+                  <Button className="w-full" onClick={sendCurrentBulkSms}>
+                    <MessageSquare className="w-4 h-4 mr-2" /> Ouvrir le SMS
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={nextBulkSms}>
+                      {bulkSmsIndex + 1 >= bulkSmsQueue.length ? 'Terminer' : 'Suivant'}
+                    </Button>
+                    <Button variant="ghost" onClick={() => { setBulkSmsQueue(null); setBulkSmsIndex(0); }}>
+                      Arrêter
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
           </DialogContent>
         </Dialog>
 
