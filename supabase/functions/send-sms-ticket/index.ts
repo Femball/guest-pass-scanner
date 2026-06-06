@@ -57,6 +57,8 @@ Deno.serve(async (req) => {
     const clientName: string = body?.client_name || "";
     const qrCode: string | undefined = body?.qr_code;
     const eventDate: string | undefined = body?.event_date;
+    const eventPlace: string | undefined = body?.event_place;
+    const eventTime: string | undefined = body?.event_time;
 
     if (!phone || !qrCode) {
       return new Response(JSON.stringify({ error: "phone and qr_code are required" }), {
@@ -67,7 +69,12 @@ Deno.serve(async (req) => {
 
     const freeUser = Deno.env.get("FREE_MOBILE_USER");
     const freePass = Deno.env.get("FREE_MOBILE_PASS");
-    const ticketUrl = `https://laccess.lovable.app/ticket?code=${encodeURIComponent(qrCode)}`;
+    const ticketLink = new URL(`/ticket/${encodeURIComponent(qrCode)}`, "https://laccess.lovable.app");
+    if (clientName) ticketLink.searchParams.set("name", clientName);
+    if (eventDate) ticketLink.searchParams.set("date", eventDate);
+    if (eventTime) ticketLink.searchParams.set("time", eventTime);
+    if (eventPlace) ticketLink.searchParams.set("place", eventPlace);
+    const ticketUrl = ticketLink.toString();
 
     if (!freeUser || !freePass) {
       return new Response(
