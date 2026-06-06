@@ -1689,6 +1689,19 @@ const AdminContent = () => {
                       return (
                         <TabsContent key={date} value={date}>
                           <div className="space-y-3">
+                            {dateGroups[date].some((r) => r.client_phone) && (
+                              <div className="flex justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1.5 h-8 text-xs"
+                                  onClick={() => openBulkSms(date)}
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  Envoyer SMS à plusieurs
+                                </Button>
+                              </div>
+                            )}
                             {dateGroups[date].map((reservation) => {
                               // Get bottles for this specific reservation
                               const resBottles = bottleData.filter(b => b.reservation_id === reservation.id);
