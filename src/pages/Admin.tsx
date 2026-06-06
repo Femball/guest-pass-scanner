@@ -285,12 +285,129 @@ const AdminContent = () => {
     setFlyers((flyerData as any) || []);
   };
 
+  const fetchClients = async () => {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('last_seen_at', { ascending: false });
+    if (error) {
+      console.error('fetchClients error', error);
+      return;
+    }
+    setClients((data as ClientRecord[]) || []);
+  };
+
+  const openClientForm = (client: ClientRecord | null) => {
+    setEditingClient(client);
+    setClientForm({
+      name: client?.name || '',
+      phone: client?.phone || '',
+      email: client?.email || '',
+      notes: client?.notes || '',
+    });
+    setClientFormOpen(true);
+  };
+
+  const saveClient = async () => {
+    const name = clientForm.name.trim();
+    if (!name) {
+      toast.error('Le nom est requis');
+      return;
+    }
+    const payload = {
+      name,
+      phone: clientForm.phone.trim() || null,
+      email: clientForm.email.trim() || null,
+      notes: clientForm.notes.trim() || null,
+    };
+    setSavingClient(true);
+    try {
+      if (editingClient) {
+        const { error } = await supabase.from('clients').update(payload).eq('id', editingClient.id);
+        if (error) throw error;
+        toast.success('Client mis à jour');
+      } else {
+        const { error } = await supabase.from('clients').insert(payload);
+        if (error) throw error;
+        toast.success('Client ajouté');
+      }
+      setClientFormOpen(false);
+      setEditingClient(null);
+      fetchClients();
+    } catch (err: any) {
+      console.error('saveClient error', err);
+      toast.error(err?.message || 'Erreur lors de l\'enregistrement');
+    } finally {
+      setSavingClient(false);
+    }
+  };
+
+  const deleteClient = async (id: string) => {
+    if (!confirm('Supprimer ce client de la base ?')) return;
+    const { error } = await supabase.from('clients').delete().eq('id', id);
+    if (error) {
+      toast.error('Erreur lors de la suppression');
+      return;
+    }
+    toast.success('Client supprimé');
+    fetchClients();
+  };
+
+  const openBulkSms = (date: string) => {
+    setBulkSmsDate(date);
+    const eligible = (dateGroups[date] || []).filter((r) => r.client_phone);
+    setBulkSmsSelected(new Set(eligible.map((r) => r.id)));
+    setBulkSmsOpen(true);
+  };
+
+  const startBulkSmsQueue = () => {
+    if (!bulkSmsDate) return;
+    const all = dateGroups[bulkSmsDate] || [];
+    const queue = all.filter((r) => bulkSmsSelected.has(r.id) && r.client_phone);
+    if (queue.length === 0) {
+      toast.error('Aucun client sélectionné avec téléphone');
+      return;
+    }
+    setBulkSmsQueue(queue);
+    setBulkSmsIndex(0);
+    setBulkSmsOpen(false);
+  };
+
+  const sendCurrentBulkSms = () => {
+    if (!bulkSmsQueue) return;
+    const r = bulkSmsQueue[bulkSmsIndex];
+    if (!r || !r.client_phone) return;
+    const body = buildTicketSmsBody([r], eventAddress.trim());
+    const payload = buildSmsPayload(r.client_phone, body, [{ label: r.client_name, code: r.qr_code }]);
+    if (!payload) {
+      toast.error('Numéro invalide');
+      return;
+    }
+    setPendingSms(payload);
+    if (!payload.isIOS) {
+      window.location.href = payload.url;
+    }
+  };
+
+  const nextBulkSms = () => {
+    if (!bulkSmsQueue) return;
+    if (bulkSmsIndex + 1 >= bulkSmsQueue.length) {
+      toast.success('Envois terminés');
+      setBulkSmsQueue(null);
+      setBulkSmsIndex(0);
+    } else {
+      setBulkSmsIndex(bulkSmsIndex + 1);
+    }
+  };
+
   useEffect(() => {
     fetchReservations();
+    fetchClients();
 
     // Poll for updates every 10 seconds
     const interval = setInterval(() => {
       fetchReservations();
+      fetchClients();
     }, 10000);
 
     return () => {
