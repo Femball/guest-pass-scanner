@@ -52,6 +52,17 @@ interface PendingSms {
   qrCodes: { label: string; code: string }[];
 }
 
+interface ClientRecord {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  reservation_count: number;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
 interface BottleWithReservation {
   bottle_type: string;
   quantity: number;
