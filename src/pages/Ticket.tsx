@@ -28,13 +28,16 @@ const Ticket = () => {
   const { code: pathCode, "*": splatCode } = useParams<{ code?: string; "*"?: string }>();
   const location = useLocation();
   const [params] = useSearchParams();
-  const pathTicketData = pathCode === "t" || pathCode === "d" ? decodeTicketData(splatCode ?? null) : {};
+  const isPackedTicketPath = (pathCode === "t" || pathCode === "d") && Boolean(splatCode);
+  const pathTicketData = isPackedTicketPath ? decodeTicketData(splatCode ?? null) : {};
   const queryTicketData = decodeTicketData(params.get("data"));
   const ticketData = { ...queryTicketData, ...pathTicketData };
   const fallbackPathCode = decodeURIComponent(location.pathname).match(
     /^\/ticket(?:\/|\?code=|\?ticket=)([^&?#/]+)/i
   )?.[1];
-  const rawCode = ticketData.code ?? (pathCode === "t" || pathCode === "d" ? "" : pathCode) ?? splatCode ?? params.get("code") ?? params.get("ticket") ?? fallbackPathCode ?? "";
+  const routeCode = pathCode && pathCode !== "t" && pathCode !== "d" ? pathCode : undefined;
+  const safeFallbackPathCode = fallbackPathCode && fallbackPathCode !== "t" && fallbackPathCode !== "d" ? fallbackPathCode : undefined;
+  const rawCode = ticketData.code ?? routeCode ?? params.get("code") ?? params.get("ticket") ?? safeFallbackPathCode ?? "";
   const code = rawCode ? decodeURIComponent(rawCode) : "";
   const name = ticketData.name ?? params.get("name") ?? "";
   const date = ticketData.date ?? params.get("date") ?? "";
