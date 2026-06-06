@@ -32,6 +32,45 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          name: string
+          notes: string | null
+          phone: string | null
+          reservation_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          reservation_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          reservation_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_dispatch_log: {
         Row: {
           dispatch_type: string
