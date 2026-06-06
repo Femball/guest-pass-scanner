@@ -107,6 +107,20 @@ const AdminContent = () => {
   // Clients directory
   const [clientsDialogOpen, setClientsDialogOpen] = useState(false);
   const [clientsSearch, setClientsSearch] = useState('');
+
+  // Clients (DB-backed)
+  const [clients, setClients] = useState<ClientRecord[]>([]);
+  const [editingClient, setEditingClient] = useState<ClientRecord | null>(null);
+  const [clientFormOpen, setClientFormOpen] = useState(false);
+  const [clientForm, setClientForm] = useState<{ name: string; phone: string; email: string; notes: string }>({ name: '', phone: '', email: '', notes: '' });
+  const [savingClient, setSavingClient] = useState(false);
+
+  // Bulk SMS
+  const [bulkSmsOpen, setBulkSmsOpen] = useState(false);
+  const [bulkSmsDate, setBulkSmsDate] = useState<string | null>(null);
+  const [bulkSmsSelected, setBulkSmsSelected] = useState<Set<string>>(new Set());
+  const [bulkSmsQueue, setBulkSmsQueue] = useState<Reservation[] | null>(null);
+  const [bulkSmsIndex, setBulkSmsIndex] = useState(0);
   const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
   const [pendingSms, setPendingSms] = useState<PendingSms | null>(null);
 
