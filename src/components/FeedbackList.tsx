@@ -1,39 +1,81 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Star } from 'lucide-react';
+import { Star, MessageSquare, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 interface FeedbackRow {
   id: string;
+  reservation_id: string;
   client_name: string;
-  client_email: string;
+  client_email: string | null;
   event_date: string;
   rating: number | null;
   comment: string | null;
   submitted_at: string | null;
   created_at: string;
+  token: string;
 }
 
 const FeedbackList = () => {
   const [rows, setRows] = useState<FeedbackRow[]>([]);
+  const [phones, setPhones] = useState<Record<string, string | null>>({});
+  const [smsSent, setSmsSent] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRows = async () => {
       const { data, error } = await supabase
         .from('event_feedback')
-        .select('id, client_name, client_email, event_date, rating, comment, submitted_at, created_at')
+        .select('id, reservation_id, client_name, client_email, event_date, rating, comment, submitted_at, created_at, token')
         .order('event_date', { ascending: false })
         .order('submitted_at', { ascending: false, nullsFirst: false });
 
-      if (!error && data) setRows(data as FeedbackRow[]);
+      if (!error && data) {
+        setRows(data as FeedbackRow[]);
+        const ids = data.map((r: any) => r.reservation_id).filter(Boolean);
+        if (ids.length) {
+          const [{ data: resv }, { data: logs }] = await Promise.all([
+            supabase.from('reservations').select('id, client_phone').in('id', ids),
+            supabase
+              .from('email_dispatch_log')
+              .select('reservation_id')
+              .in('reservation_id', ids)
+              .eq('dispatch_type', 'feedback_d_plus_1_sms'),
+          ]);
+          const map: Record<string, string | null> = {};
+          (resv ?? []).forEach((r: any) => (map[r.id] = r.client_phone));
+          setPhones(map);
+          setSmsSent(new Set((logs ?? []).map((l: any) => l.reservation_id)));
+        }
+      }
       setLoading(false);
     };
     fetchRows();
     const i = setInterval(fetchRows, 15000);
     return () => clearInterval(i);
   }, []);
+
+  const sendSms = async (row: FeedbackRow) => {
+    const phone = phones[row.reservation_id];
+    if (!phone) {
+      toast({ title: 'Pas de téléphone', description: 'Aucun numéro pour ce client.', variant: 'destructive' });
+      return;
+    }
+    const url = `${window.location.origin}/feedback?token=${row.token}`;
+    const body = `Bonjour ${row.client_name.split(' ')[0] || row.client_name}, merci d'être venu(e) à L'Access ! Votre avis nous aide : ${url}`;
+    const sep = /iPhone|iPad|iPod|Mac/i.test(navigator.userAgent) ? '&' : '?';
+    window.location.href = `sms:${phone}${sep}body=${encodeURIComponent(body)}`;
+    const { error } = await supabase
+      .from('email_dispatch_log')
+      .insert({ reservation_id: row.reservation_id, dispatch_type: 'feedback_d_plus_1_sms' });
+    if (!error) {
+      setSmsSent((prev) => new Set(prev).add(row.reservation_id));
+      toast({ title: 'SMS préparé', description: 'Envoi marqué pour éviter les doublons.' });
+    }
+  };
 
   const submitted = rows.filter((r) => r.submitted_at !== null);
   const pending = rows.filter((r) => r.submitted_at === null);
@@ -116,7 +158,20 @@ const FeedbackList = () => {
                     {new Date(r.event_date + 'T00:00:00').toLocaleDateString('fr-FR')}
                   </p>
                 </div>
-                <Badge variant="outline">En attente</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">En attente</Badge>
+                  {phones[r.reservation_id] ? (
+                    smsSent.has(r.reservation_id) ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <Check className="w-3 h-3" /> SMS envoyé
+                      </Badge>
+                    ) : (
+                      <Button size="sm" variant="outline" onClick={() => sendSms(r)} className="h-8">
+                        <MessageSquare className="w-3.5 h-3.5" /> SMS
+                      </Button>
+                    )
+                  ) : null}
+                </div>
               </div>
             </Card>
           ))}
