@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Star, MessageSquare, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -24,6 +25,32 @@ const FeedbackList = () => {
   const [phones, setPhones] = useState<Record<string, string | null>>({});
   const [smsSent, setSmsSent] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const seenSubmittedRef = useRef<Set<string> | null>(null);
+
+  const playFeedbackSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const notes = [
+        { freq: 660, start: 0, end: 0.12 },
+        { freq: 990, start: 0.12, end: 0.3 },
+      ];
+      notes.forEach(({ freq, start, end }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        gain.gain.setValueAtTime(0, ctx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + end);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + end);
+      });
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const fetchRows = async () => {
@@ -35,6 +62,28 @@ const FeedbackList = () => {
 
       if (!error && data) {
         setRows(data as FeedbackRow[]);
+        const submittedIds = new Set(
+          (data as FeedbackRow[])
+            .filter((r) => r.submitted_at !== null)
+            .map((r) => r.id),
+        );
+        if (seenSubmittedRef.current === null) {
+          seenSubmittedRef.current = submittedIds;
+        } else {
+          const newOnes = (data as FeedbackRow[]).filter(
+            (r) => r.submitted_at !== null && !seenSubmittedRef.current!.has(r.id),
+          );
+          if (newOnes.length > 0) {
+            playFeedbackSound();
+            newOnes.forEach((r) => {
+              toast({
+                title: `⭐ Nouvel avis : ${r.client_name}`,
+                description: `${r.rating ?? '?'} / 5${r.comment ? ` — « ${r.comment.slice(0, 80)}${r.comment.length > 80 ? '…' : ''} »` : ''}`,
+              });
+            });
+          }
+          seenSubmittedRef.current = submittedIds;
+        }
         const ids = data.map((r: any) => r.reservation_id).filter(Boolean);
         if (ids.length) {
           const [{ data: resv }, { data: logs }] = await Promise.all([
