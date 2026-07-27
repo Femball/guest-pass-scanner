@@ -601,6 +601,16 @@ export type Database = {
           submitted_at: string
         }[]
       }
+      get_member_card_by_uid: {
+        Args: { p_uid: string }
+        Returns: {
+          card_uid: string
+          company_logo_url: string
+          company_name: string
+          first_name: string
+          last_name: string
+        }[]
+      }
       has_admin_privileges: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
