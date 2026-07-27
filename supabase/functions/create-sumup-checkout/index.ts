@@ -39,6 +39,29 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Enforce staff-only access (admin or supervisor)
+    const userId = (claimsData.claims as { sub?: string }).sub;
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: "Non autorisé" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: isAdmin, error: roleError } = await adminClient.rpc("has_admin_privileges", {
+      _user_id: userId,
+    });
+    if (roleError || !isAdmin) {
+      return new Response(
+        JSON.stringify({ error: "Accès réservé au personnel autorisé" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const body = await req.json();
     const { amount, description, reservation_id, currency = "EUR", redirect_url } = body;
 
@@ -116,12 +139,7 @@ Deno.serve(async (req) => {
     const checkout = await checkoutRes.json();
 
     // Update reservation with checkout info
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    await serviceClient
+    await adminClient
       .from("reservations")
       .update({
         sumup_checkout_id: checkout.id,
