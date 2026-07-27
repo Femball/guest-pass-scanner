@@ -45,7 +45,7 @@ const Carte = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black via-neutral-900 to-black p-4 text-white">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         {loading && (
           <p className="text-center text-sm text-white/70">Chargement de la carte...</p>
         )}
@@ -59,8 +59,8 @@ const Carte = () => {
 
         {card && (
           <>
-            {/* The card */}
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-amber-400/30 bg-gradient-to-br from-black via-neutral-900 to-black">
+            {/* The card — credit-card aspect ratio (85.6 x 53.98 mm ≈ 1.586:1) */}
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-amber-400/30 bg-gradient-to-br from-black via-neutral-900 to-black aspect-[1.586/1] w-full">
               <div
                 className="absolute inset-0 opacity-30"
                 style={{
@@ -68,58 +68,56 @@ const Carte = () => {
                     'radial-gradient(circle at 20% 0%, rgba(212,175,55,0.35), transparent 55%), radial-gradient(circle at 100% 100%, rgba(212,175,55,0.25), transparent 55%)',
                 }}
               />
-              <div className="relative p-6 flex flex-col items-center">
-                {/* Top: L'Access logo */}
+              <div className="relative h-full w-full p-4 grid grid-cols-[1fr_auto] grid-rows-[auto_1fr_auto] gap-2">
+                {/* Top left: L'Access logo */}
                 <img
                   src={laccessLogo.url}
                   alt="L'Access"
-                  className="w-24 h-24 object-contain rounded-xl mb-4 shadow-lg"
+                  className="w-12 h-12 object-contain rounded-lg shadow-lg row-start-1 col-start-1"
                 />
 
-                {/* Name */}
-                <p className="uppercase tracking-widest text-[10px] text-amber-300/80 mb-1">
-                  Carte membre
-                </p>
-                <h1 className="text-2xl font-serif font-bold text-amber-100 text-center leading-tight">
-                  {card.first_name}
-                  <br />
-                  {card.last_name}
-                </h1>
+                {/* Top right: Entreprise logo */}
+                <div className="row-start-1 col-start-2 flex items-start justify-end">
+                  {card.company_logo_url ? (
+                    <img
+                      src={card.company_logo_url}
+                      alt={card.company_name ?? 'Entreprise'}
+                      className="max-h-12 max-w-[80px] object-contain bg-white rounded p-1"
+                    />
+                  ) : card.company_name ? (
+                    <p className="text-xs text-white/80 text-right max-w-[100px]">{card.company_name}</p>
+                  ) : null}
+                </div>
 
-                {/* Company */}
-                {(card.company_name || card.company_logo_url) && (
-                  <div className="mt-5 pt-5 border-t border-amber-400/20 w-full flex flex-col items-center">
-                    <p className="text-[10px] uppercase tracking-widest text-white/50 mb-2">
-                      Partenaire
-                    </p>
-                    {card.company_logo_url ? (
-                      <img
-                        src={card.company_logo_url}
-                        alt={card.company_name ?? 'Partenaire'}
-                        className="max-h-16 object-contain bg-white rounded p-2"
-                      />
-                    ) : (
-                      <p className="text-sm">{card.company_name}</p>
-                    )}
-                    {card.company_name && (
-                      <p className="mt-2 text-xs text-white/70">{card.company_name}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Bottom: Le Français */}
-                <div className="mt-5 pt-5 border-t border-amber-400/20 w-full flex flex-col items-center">
-                  <p className="text-[10px] uppercase tracking-widest text-white/50 mb-2">
-                    Valable chez
+                {/* Middle: Name */}
+                <div className="row-start-2 col-span-2 flex flex-col justify-center">
+                  <p className="uppercase tracking-widest text-[9px] text-amber-300/80 mb-1">
+                    Carte membre
                   </p>
+                  <h1 className="text-xl font-serif font-bold text-amber-100 leading-tight">
+                    {card.first_name} {card.last_name}
+                  </h1>
+                  {card.company_name && card.company_logo_url && (
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-white/60">
+                      Entreprise · {card.company_name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Bottom left: UID */}
+                <p className="row-start-3 col-start-1 self-end text-[9px] text-white/40 font-mono">
+                  {card.card_uid}
+                </p>
+
+                {/* Bottom right: Le Français */}
+                <div className="row-start-3 col-start-2 self-end flex flex-col items-end">
+                  <p className="text-[8px] uppercase tracking-widest text-white/50">Valable chez</p>
                   <img
                     src={leFrancaisLogo.url}
                     alt="Café Le Français"
-                    className="max-h-14 object-contain"
+                    className="max-h-8 object-contain"
                   />
                 </div>
-
-                <p className="mt-6 text-[10px] text-white/40 font-mono">{card.card_uid}</p>
               </div>
             </div>
 
