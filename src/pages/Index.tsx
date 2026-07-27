@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { QrCode, Users, LogOut, UserCheck } from 'lucide-react';
+import { QrCode, Users, LogOut, UserCheck, IdCard } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
 import ValidationResult from '@/components/ValidationResult';
 import OccupancyGauge from '@/components/OccupancyGauge';
@@ -60,12 +60,20 @@ const Index = () => {
         </div>
         <div className="flex items-center gap-1 md:gap-2">
           {hasAdminPrivileges &&
-        <Link to="/admin">
-              <Button variant="outline" size="sm" className="gap-1.5 md:gap-2 h-9 md:h-9 text-xs md:text-sm px-2.5 md:px-3">
-                <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                Admin
-              </Button>
-            </Link>
+        <>
+              <Link to="/admin">
+                <Button variant="outline" size="sm" className="gap-1.5 md:gap-2 h-9 md:h-9 text-xs md:text-sm px-2.5 md:px-3">
+                  <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Button>
+              </Link>
+              <Link to="/admin/cartes">
+                <Button variant="outline" size="sm" className="gap-1.5 md:gap-2 h-9 md:h-9 text-xs md:text-sm px-2.5 md:px-3">
+                  <IdCard className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  <span className="hidden sm:inline">Cartes</span>
+                </Button>
+              </Link>
+            </>
         }
           <Button
           variant="ghost"
