@@ -11,6 +11,8 @@ import Unsubscribe from "./pages/Unsubscribe";
 import Feedback from "./pages/Feedback";
 import QrView from "./pages/QrView";
 import Ticket from "./pages/Ticket";
+import MemberCards from "./pages/MemberCards";
+import Carte from "./pages/Carte";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useScanNotifications } from "./hooks/useScanNotifications";
 
@@ -48,6 +50,15 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/cartes"
+          element={
+            <ProtectedRoute requiredRole="adminOrSupervisor">
+              <MemberCards />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/carte/:uid" element={<Carte />} />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/qr/:code" element={<QrView />} />
