@@ -68,55 +68,55 @@ const Carte = () => {
                     'radial-gradient(circle at 20% 0%, rgba(212,175,55,0.35), transparent 55%), radial-gradient(circle at 100% 100%, rgba(212,175,55,0.25), transparent 55%)',
                 }}
               />
-              <div className="relative h-full w-full p-4 grid grid-cols-[1fr_auto] grid-rows-[auto_1fr_auto] gap-2">
-                {/* Top left: L'Access logo */}
-                <img
-                  src={laccessLogo.url}
-                  alt="L'Access"
-                  className="w-12 h-12 object-contain rounded-lg shadow-lg row-start-1 col-start-1"
-                />
-
-                {/* Top right: Entreprise logo */}
-                <div className="row-start-1 col-start-2 flex items-start justify-end">
-                  {card.company_logo_url ? (
-                    <img
-                      src={card.company_logo_url}
-                      alt={card.company_name ?? 'Entreprise'}
-                      className="max-h-12 max-w-[80px] object-contain bg-white rounded p-1"
-                    />
-                  ) : card.company_name ? (
-                    <p className="text-xs text-white/80 text-right max-w-[100px]">{card.company_name}</p>
-                  ) : null}
+              <div className="relative h-full w-full p-4 flex flex-col">
+                {/* Top center: L'Access logo */}
+                <div className="flex justify-center">
+                  <img
+                    src={laccessLogo.url}
+                    alt="L'Access"
+                    className="w-16 h-16 object-contain rounded-lg shadow-lg"
+                  />
                 </div>
 
-                {/* Middle: Name */}
-                <div className="row-start-2 col-span-2 flex flex-col justify-center">
+                {/* Middle: label + name and company logo on the same line */}
+                <div className="flex-1 flex flex-col justify-center">
                   <p className="uppercase tracking-widest text-[9px] text-amber-300/80 mb-1">
                     Carte membre
                   </p>
-                  <h1 className="text-xl font-serif font-bold text-amber-100 leading-tight">
-                    {card.first_name} {card.last_name}
-                  </h1>
-                  {card.company_name && card.company_logo_url && (
+                  <div className="flex items-center justify-between gap-3">
+                    <h1 className="text-xl font-serif font-bold text-amber-100 leading-tight">
+                      {card.first_name} {card.last_name}
+                    </h1>
+                    {card.company_logo_url ? (
+                      <img
+                        src={card.company_logo_url}
+                        alt={card.company_name ?? 'Entreprise'}
+                        className="max-h-14 max-w-[100px] object-contain bg-white rounded p-1 shrink-0"
+                      />
+                    ) : card.company_name ? (
+                      <p className="text-xs text-white/80 text-right max-w-[120px] shrink-0">{card.company_name}</p>
+                    ) : null}
+                  </div>
+                  {card.company_name && (
                     <p className="mt-1 text-[10px] uppercase tracking-wider text-white/60">
                       Entreprise · {card.company_name}
                     </p>
                   )}
                 </div>
 
-                {/* Bottom left: UID */}
-                <p className="row-start-3 col-start-1 self-end text-[9px] text-white/40 font-mono">
-                  {card.card_uid}
-                </p>
-
-                {/* Bottom right: Le Français */}
-                <div className="row-start-3 col-start-2 self-end flex flex-col items-end">
-                  <p className="text-[8px] uppercase tracking-widest text-white/50">Valable chez</p>
-                  <img
-                    src={leFrancaisLogo.url}
-                    alt="Café Le Français"
-                    className="max-h-8 object-contain"
-                  />
+                {/* Bottom row: UID left, Le Français right */}
+                <div className="flex items-end justify-between">
+                  <p className="text-[10px] font-bold font-mono text-amber-300/80">
+                    {card.card_uid}
+                  </p>
+                  <div className="flex flex-col items-end">
+                    <p className="text-[10px] uppercase tracking-widest text-white/50">Valable chez</p>
+                    <img
+                      src={leFrancaisLogo.url}
+                      alt="Café Le Français"
+                      className="max-h-10 object-contain"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
