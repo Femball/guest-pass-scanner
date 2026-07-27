@@ -10,8 +10,8 @@ interface CardData {
   card_uid: string;
   first_name: string;
   last_name: string;
-  company_id: string | null;
-  partner_companies: { name: string; logo_url: string | null } | null;
+  company_name: string | null;
+  company_logo_url: string | null;
 }
 
 const Carte = () => {
@@ -27,15 +27,12 @@ const Carte = () => {
       return;
     }
     (async () => {
-      const { data, error } = await supabase
-        .from('member_cards')
-        .select('card_uid, first_name, last_name, company_id, partner_companies(name, logo_url)')
-        .eq('card_uid', uid)
-        .maybeSingle();
-      if (error || !data) {
+      const { data, error } = await supabase.rpc('get_member_card_by_uid', { p_uid: uid });
+      const row = Array.isArray(data) ? data[0] : null;
+      if (error || !row) {
         setError('Carte introuvable');
       } else {
-        setCard(data as unknown as CardData);
+        setCard(row as CardData);
       }
       setLoading(false);
     })();
@@ -90,21 +87,23 @@ const Carte = () => {
                 </h1>
 
                 {/* Company */}
-                {card.partner_companies && (
+                {(card.company_name || card.company_logo_url) && (
                   <div className="mt-5 pt-5 border-t border-amber-400/20 w-full flex flex-col items-center">
                     <p className="text-[10px] uppercase tracking-widest text-white/50 mb-2">
                       Partenaire
                     </p>
-                    {card.partner_companies.logo_url ? (
+                    {card.company_logo_url ? (
                       <img
-                        src={card.partner_companies.logo_url}
-                        alt={card.partner_companies.name}
+                        src={card.company_logo_url}
+                        alt={card.company_name ?? 'Partenaire'}
                         className="max-h-16 object-contain bg-white rounded p-2"
                       />
                     ) : (
-                      <p className="text-sm">{card.partner_companies.name}</p>
+                      <p className="text-sm">{card.company_name}</p>
                     )}
-                    <p className="mt-2 text-xs text-white/70">{card.partner_companies.name}</p>
+                    {card.company_name && (
+                      <p className="mt-2 text-xs text-white/70">{card.company_name}</p>
+                    )}
                   </div>
                 )}
 
