@@ -941,10 +941,10 @@ const AdminContent = () => {
               <h1 className="text-base md:text-lg font-bold text-foreground">Administration</h1>
               <p className="text-[10px] md:text-xs text-muted-foreground">Gestion des réservations</p>
             </div>
-            <Link to="/admin/cartes" className="hidden sm:block">
-              <Button variant="outline" size="sm" className="ml-2">
-                <IdCard className="w-4 h-4 mr-2" />
-                Cartes membres
+            <Link to="/admin/cartes">
+              <Button variant="outline" size="sm" className="ml-2 gap-1.5">
+                <IdCard className="w-4 h-4" />
+                <span className="hidden sm:inline">Cartes membres</span>
               </Button>
             </Link>
           </div>
