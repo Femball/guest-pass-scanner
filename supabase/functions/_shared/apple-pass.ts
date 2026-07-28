@@ -80,14 +80,16 @@ export async function generateApplePass(
 
   const base = `${PROJECT_URL}/storage/v1/object/public/email-assets/wallet`;
 
-  const [iconBuf, icon2xBuf, logoBuf, logo2xBuf, thumbBuf, thumb2xBuf] = await Promise.all([
+  const [iconBuf, icon2xBuf, logoBuf, logo2xBuf, logo3xBuf, companyBuf] = await Promise.all([
     fetchImageBuffer(`${base}%2Ficon.png`),
     fetchImageBuffer(`${base}%2Ficon%402x.png`),
     fetchImageBuffer(`${base}%2Flogo.png`),
     fetchImageBuffer(`${base}%2Flogo%402x.png`),
-    fetchImageBuffer(`${base}%2Fthumbnail.png`),
-    fetchImageBuffer(`${base}%2Fthumbnail%402x.png`),
+    fetchImageBuffer(`${base}%2Flogo%403x.png`),
+    card.company_logo_url ? fetchImageBuffer(card.company_logo_url) : Promise.resolve(null),
   ]);
+
+  const thumbBuf = companyBuf ?? (await fetchImageBuffer(`${base}%2Fthumbnail.png`));
 
   if (!iconBuf) {
     throw new Error("Icône du pass introuvable");
@@ -102,6 +104,9 @@ export async function generateApplePass(
     : "—";
 
   const shortUid = card.card_uid.replace(/^CARD-/i, "").slice(0, 8).toUpperCase();
+
+  const MIDI_NOTE =
+    "Afin de vous proposer une formule midi attractive, certains plats de notre carte restent disponibles avec un supplément.";
 
   const passJson: Record<string, unknown> = {
     formatVersion: 1,
@@ -131,6 +136,15 @@ export async function generateApplePass(
       secondaryFields: [
         { key: "company", label: "Entreprise", value: card.company_name || "L'Access" },
         {
+          key: "uid",
+          label: "N° de carte",
+          value: shortUid,
+          textAlignment: "PKTextAlignmentRight",
+        },
+      ],
+      auxiliaryFields: [
+        { key: "note", label: "", value: MIDI_NOTE },
+        {
           key: "valid",
           label: "Valable jusqu'au",
           value: validLabel,
@@ -138,12 +152,10 @@ export async function generateApplePass(
           changeMessage: "Validité mise à jour : %@",
         },
       ],
-      auxiliaryFields: [
-        { key: "uid", label: "N° de carte", value: shortUid },
-      ],
       backFields: [
         { key: "fulluid", label: "Numéro de carte", value: card.card_uid },
         { key: "validback", label: "Valable jusqu'au", value: validLabel },
+        { key: "noteback", label: "Formule midi", value: MIDI_NOTE },
         {
           key: "terms",
           label: "Conditions",
@@ -163,12 +175,13 @@ export async function generateApplePass(
         ? {
             "logo.png": Buffer.from(logoBuf),
             "logo@2x.png": Buffer.from(logo2xBuf ?? logoBuf),
+            "logo@3x.png": Buffer.from(logo3xBuf ?? logo2xBuf ?? logoBuf),
           }
         : {}),
       ...(thumbBuf
         ? {
             "thumbnail.png": Buffer.from(thumbBuf),
-            "thumbnail@2x.png": Buffer.from(thumb2xBuf ?? thumbBuf),
+            "thumbnail@2x.png": Buffer.from(thumbBuf),
           }
         : {}),
     },
