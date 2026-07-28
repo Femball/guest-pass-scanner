@@ -244,7 +244,8 @@ const Carte = () => {
                 Ajouter à Google Wallet
               </Button>
               <p className="text-[10px] text-center text-white/40 mt-2">
-                Apple Wallet est actif. Google Wallet nécessite encore la configuration de l'émetteur.
+                Apple Wallet est actif : la carte se met à jour automatiquement (validité, type d'adhérent).
+                Google Wallet nécessite encore la configuration de l'émetteur.
               </p>
             </div>
 
