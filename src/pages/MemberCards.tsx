@@ -26,6 +26,7 @@ interface MemberCard {
   company_id: string | null;
   phone: string | null;
   notes: string | null;
+  valid_until: string | null;
   created_at: string;
 }
 
@@ -80,6 +81,7 @@ const MemberCards = () => {
   const [cardCompanyId, setCardCompanyId] = useState<string>('');
   const [cardPhone, setCardPhone] = useState('');
   const [cardNotes, setCardNotes] = useState('');
+  const [cardValidUntil, setCardValidUntil] = useState('');
   const [savingCard, setSavingCard] = useState(false);
 
   const fetchAll = async () => {
@@ -185,6 +187,7 @@ const MemberCards = () => {
     setCardCompanyId('');
     setCardPhone('');
     setCardNotes('');
+    setCardValidUntil('');
     setCardDialogOpen(true);
   };
   const openEditCard = (c: MemberCard) => {
@@ -194,6 +197,7 @@ const MemberCards = () => {
     setCardCompanyId(c.company_id ?? '');
     setCardPhone(c.phone ?? '');
     setCardNotes(c.notes ?? '');
+    setCardValidUntil(c.valid_until ?? '');
     setCardDialogOpen(true);
   };
   const saveCard = async () => {
@@ -210,6 +214,7 @@ const MemberCards = () => {
       company_id: cardCompanyId || null,
       phone: cardPhone.trim() || null,
       notes: cardNotes.trim() || null,
+      valid_until: cardValidUntil || null,
     };
     const { error } = editingCard
       ? await supabase.from('member_cards').update(payload).eq('id', editingCard.id)
@@ -569,6 +574,15 @@ const MemberCards = () => {
                 value={cardNotes}
                 onChange={(e) => setCardNotes(e.target.value)}
                 rows={2}
+              />
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="valid_until">Date de validité</Label>
+              <Input
+                id="valid_until"
+                type="date"
+                value={cardValidUntil}
+                onChange={(e) => setCardValidUntil(e.target.value)}
               />
             </div>
           </div>
