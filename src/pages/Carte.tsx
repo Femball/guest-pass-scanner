@@ -160,28 +160,44 @@ const Carte = () => {
               </div>
             </div>
 
-            {/* Wallet buttons (disabled) */}
+            {/* Wallet buttons */}
             <div className="mt-6 space-y-2">
+              {walletError && (
+                <p className="text-xs text-center text-red-400 bg-red-950/40 rounded-lg px-3 py-2">
+                  {walletError}
+                </p>
+              )}
               <Button
-                onClick={walletUnavailable}
+                onClick={() => callGeneratePass('apple')}
+                disabled={generating !== null}
                 variant="outline"
-                className="w-full bg-black text-white border-white/30 hover:bg-neutral-900"
+                className="w-full bg-black text-white border-white/30 hover:bg-neutral-900 disabled:opacity-50"
               >
-                <Apple className="w-4 h-4 mr-2" />
+                {generating === 'apple' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Apple className="w-4 h-4 mr-2" />
+                )}
                 Ajouter à Apple Wallet
               </Button>
               <Button
-                onClick={walletUnavailable}
+                onClick={() => callGeneratePass('google')}
+                disabled={generating !== null}
                 variant="outline"
-                className="w-full bg-black text-white border-white/30 hover:bg-neutral-900"
+                className="w-full bg-black text-white border-white/30 hover:bg-neutral-900 disabled:opacity-50"
               >
-                <Wallet className="w-4 h-4 mr-2" />
+                {generating === 'google' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Wallet className="w-4 h-4 mr-2" />
+                )}
                 Ajouter à Google Wallet
               </Button>
               <p className="text-[10px] text-center text-white/40 mt-2">
-                Bientôt disponible — en attendant, ajoutez cette page à l'écran d'accueil.
+                Nécessite les certificats développeur configurés côté Lovable Cloud.
               </p>
             </div>
+
           </>
         )}
       </div>
