@@ -300,6 +300,7 @@ export type Database = {
           phone: string | null
           updated_at: string
           valid_until: string | null
+          wallet_auth_token: string
         }
         Insert: {
           card_uid: string
@@ -313,6 +314,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           valid_until?: string | null
+          wallet_auth_token?: string
         }
         Update: {
           card_uid?: string
@@ -326,6 +328,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           valid_until?: string | null
+          wallet_auth_token?: string
         }
         Relationships: [
           {
@@ -579,6 +582,33 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_registrations: {
+        Row: {
+          created_at: string
+          device_library_identifier: string
+          id: string
+          pass_type_identifier: string
+          push_token: string
+          serial_number: string
+        }
+        Insert: {
+          created_at?: string
+          device_library_identifier: string
+          id?: string
+          pass_type_identifier: string
+          push_token: string
+          serial_number: string
+        }
+        Update: {
+          created_at?: string
+          device_library_identifier?: string
+          id?: string
+          pass_type_identifier?: string
+          push_token?: string
+          serial_number?: string
         }
         Relationships: []
       }
