@@ -13,9 +13,17 @@ interface CardData {
   company_name: string | null;
   company_logo_url: string | null;
   valid_until: string | null;
+  member_type: string | null;
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+function isExpired(validUntil: string | null): boolean {
+  if (!validUntil) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(`${validUntil}T00:00:00`) < today;
+}
 
 const Carte = () => {
   const { uid } = useParams<{ uid: string }>();
@@ -98,8 +106,23 @@ const Carte = () => {
 
         {card && (
           <>
+            {card.valid_until && (
+              <p
+                className={`mb-3 text-center text-xs font-semibold uppercase tracking-widest rounded-full px-3 py-1.5 ${
+                  isExpired(card.valid_until)
+                    ? 'bg-red-950/60 text-red-300 border border-red-500/40'
+                    : 'bg-emerald-950/50 text-emerald-300 border border-emerald-500/40'
+                }`}
+              >
+                {isExpired(card.valid_until) ? 'Carte expirée' : 'Carte valide'}
+              </p>
+            )}
             {/* The card — credit-card aspect ratio (85.6 x 53.98 mm ≈ 1.586:1) */}
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-amber-400/30 bg-gradient-to-br from-black via-neutral-900 to-black aspect-[1.586/1] w-full">
+            <div
+              className={`relative rounded-2xl overflow-hidden shadow-2xl border bg-gradient-to-br from-black via-neutral-900 to-black aspect-[1.586/1] w-full ${
+                isExpired(card.valid_until) ? 'border-red-500/50 grayscale' : 'border-amber-400/30'
+              }`}
+            >
               <div
                 className="absolute inset-0 opacity-30"
                 style={{
@@ -125,7 +148,7 @@ const Carte = () => {
                 {/* Middle: label + name and company logo on the same line */}
                 <div className="flex-1 flex flex-col justify-center">
                   <p className="uppercase tracking-widest text-[9px] text-amber-300/80 mb-1">
-                    Carte membre
+                    Carte membre{card.member_type ? ` · ${card.member_type}` : ''}
                   </p>
                   <div className="flex items-center justify-between gap-3">
                     <h1 className="text-xl font-serif font-bold text-amber-100 leading-tight">
@@ -155,7 +178,11 @@ const Carte = () => {
                 <div className="flex items-end justify-end">
                   <div className="flex flex-col items-end">
                     <p className="text-xs uppercase tracking-widest text-white/50">Valable jusqu'au</p>
-                    <p className="text-sm font-semibold text-white/90">
+                    <p
+                      className={`text-sm font-semibold ${
+                        isExpired(card.valid_until) ? 'text-red-400' : 'text-white/90'
+                      }`}
+                    >
                       {card.valid_until
                         ? new Date(card.valid_until).toLocaleDateString('fr-FR', {
                             day: 'numeric',

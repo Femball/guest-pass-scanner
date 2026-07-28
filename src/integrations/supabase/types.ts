@@ -295,6 +295,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          member_type: string
           notes: string | null
           phone: string | null
           updated_at: string
@@ -307,6 +308,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          member_type?: string
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -319,6 +321,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          member_type?: string
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -612,6 +615,7 @@ export type Database = {
           company_name: string
           first_name: string
           last_name: string
+          member_type: string
           valid_until: string
         }[]
       }

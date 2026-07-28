@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Pencil, Building2, IdCard, Send, ExternalLink, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Pencil, Building2, IdCard, Send, ExternalLink, Search, Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,10 +33,20 @@ interface MemberCard {
   phone: string | null;
   notes: string | null;
   valid_until: string | null;
+  member_type: string;
   created_at: string;
 }
 
 const MAX_LOGO_BYTES = 400 * 1024; // 400KB raw file
+
+const MEMBER_TYPES = ['Standard', 'VIP', 'Partenaire', 'Staff', 'Invité'];
+
+function cardStatus(validUntil: string | null): 'valid' | 'expired' | 'none' {
+  if (!validUntil) return 'none';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(`${validUntil}T00:00:00`) >= today ? 'valid' : 'expired';
+}
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -82,6 +98,7 @@ const MemberCards = () => {
   const [cardPhone, setCardPhone] = useState('');
   const [cardNotes, setCardNotes] = useState('');
   const [cardValidUntil, setCardValidUntil] = useState('');
+  const [cardMemberType, setCardMemberType] = useState('Standard');
   const [savingCard, setSavingCard] = useState(false);
 
   const fetchAll = async () => {
@@ -188,6 +205,7 @@ const MemberCards = () => {
     setCardPhone('');
     setCardNotes('');
     setCardValidUntil('');
+    setCardMemberType('Standard');
     setCardDialogOpen(true);
   };
   const openEditCard = (c: MemberCard) => {
@@ -198,6 +216,7 @@ const MemberCards = () => {
     setCardPhone(c.phone ?? '');
     setCardNotes(c.notes ?? '');
     setCardValidUntil(c.valid_until ?? '');
+    setCardMemberType(c.member_type ?? 'Standard');
     setCardDialogOpen(true);
   };
   const saveCard = async () => {
@@ -215,6 +234,7 @@ const MemberCards = () => {
       phone: cardPhone.trim() || null,
       notes: cardNotes.trim() || null,
       valid_until: cardValidUntil || null,
+      member_type: cardMemberType || 'Standard',
     };
     const { error } = editingCard
       ? await supabase.from('member_cards').update(payload).eq('id', editingCard.id)
@@ -321,8 +341,17 @@ const MemberCards = () => {
               <div className="grid gap-3">
                 {filteredCards.map((c) => {
                   const comp = c.company_id ? companyById.get(c.company_id) : null;
+                  const status = cardStatus(c.valid_until);
                   return (
-                    <Card key={c.id}>
+                    <Card
+                      key={c.id}
+                      className={cn(
+                        'border-l-4',
+                        status === 'valid' && 'border-l-emerald-500',
+                        status === 'expired' && 'border-l-destructive',
+                        status === 'none' && 'border-l-muted'
+                      )}
+                    >
                       <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                         {comp?.logo_url ? (
                           <img
@@ -336,9 +365,29 @@ const MemberCards = () => {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground truncate">
-                            {c.first_name} {c.last_name}
-                          </p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-foreground truncate">
+                              {c.first_name} {c.last_name}
+                            </p>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {c.member_type ?? 'Standard'}
+                            </Badge>
+                            {status === 'valid' && (
+                              <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-600 text-white">
+                                Valide jusqu'au {format(new Date(`${c.valid_until}T00:00:00`), 'dd/MM/yyyy')}
+                              </Badge>
+                            )}
+                            {status === 'expired' && (
+                              <Badge variant="destructive" className="text-[10px]">
+                                Expirée le {format(new Date(`${c.valid_until}T00:00:00`), 'dd/MM/yyyy')}
+                              </Badge>
+                            )}
+                            {status === 'none' && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Sans date
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground truncate">
                             {comp?.name ?? 'Sans entreprise'}
                             {c.phone ? ` · ${c.phone}` : ''}
@@ -578,12 +627,57 @@ const MemberCards = () => {
             </div>
             <div className="col-span-2">
               <Label htmlFor="valid_until">Date de validité</Label>
-              <Input
-                id="valid_until"
-                type="date"
-                value={cardValidUntil}
-                onChange={(e) => setCardValidUntil(e.target.value)}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="valid_until"
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !cardValidUntil && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="w-4 h-4 mr-2" />
+                    {cardValidUntil
+                      ? format(new Date(`${cardValidUntil}T00:00:00`), 'd MMMM yyyy', { locale: fr })
+                      : 'Choisir une date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={cardValidUntil ? new Date(`${cardValidUntil}T00:00:00`) : undefined}
+                    onSelect={(d) => setCardValidUntil(d ? format(d, 'yyyy-MM-dd') : '')}
+                    initialFocus
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+              {cardValidUntil && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 h-7 px-2 text-xs text-muted-foreground"
+                  onClick={() => setCardValidUntil('')}
+                >
+                  Effacer la date
+                </Button>
+              )}
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="member-type">Type d'adhérent</Label>
+              <Select value={cardMemberType} onValueChange={setCardMemberType}>
+                <SelectTrigger id="member-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEMBER_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
