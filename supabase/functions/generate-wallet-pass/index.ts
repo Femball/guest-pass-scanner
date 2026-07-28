@@ -85,13 +85,18 @@ async function generateApplePass(card: CardData): Promise<Uint8Array> {
     throw new Error("Pass Type ID introuvable dans le certificat");
   }
 
-  const logoUrl = "https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/wallet%2Flaccess-logo.jpeg";
-  const francaisUrl = "https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/wallet%2Fle-francais-logo.png";
+  const base = "https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/wallet";
 
-  const [logoBuf, francaisBuf] = await Promise.all([
-    fetchImageBuffer(logoUrl),
-    fetchImageBuffer(francaisUrl),
+  const [iconBuf, icon2xBuf, logoBuf, stripBuf] = await Promise.all([
+    fetchImageBuffer(`${base}%2Ficon.png`),
+    fetchImageBuffer(`${base}%2Ficon%402x.png`),
+    fetchImageBuffer(`${base}%2Flogo.png`),
+    fetchImageBuffer(`${base}%2Fstrip.png`),
   ]);
+
+  if (!iconBuf) {
+    throw new Error("Icône du pass introuvable");
+  }
 
   const pass = new PKPass(
     {
@@ -158,8 +163,10 @@ async function generateApplePass(card: CardData): Promise<Uint8Array> {
           },
         })
       ),
+      "icon.png": Buffer.from(iconBuf),
+      "icon@2x.png": Buffer.from(icon2xBuf ?? iconBuf),
       ...(logoBuf ? { "logo.png": Buffer.from(logoBuf), "logo@2x.png": Buffer.from(logoBuf) } : {}),
-      ...(francaisBuf ? { "strip.png": Buffer.from(francaisBuf), "strip@2x.png": Buffer.from(francaisBuf) } : {}),
+      ...(stripBuf ? { "thumbnail.png": Buffer.from(stripBuf), "thumbnail@2x.png": Buffer.from(stripBuf) } : {}),
     },
     {
       wwdr: wwdrPem,
