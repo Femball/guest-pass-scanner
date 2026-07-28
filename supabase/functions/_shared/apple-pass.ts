@@ -110,7 +110,6 @@ export async function generateApplePass(
     teamIdentifier: teamId,
     organizationName: "L'Access",
     description: `Carte membre L'Access - ${card.first_name} ${card.last_name}`,
-    logoText: "",
     foregroundColor: "rgb(255, 255, 255)",
     backgroundColor: "rgb(0, 0, 0)",
     labelColor: "rgb(212, 175, 55)",
