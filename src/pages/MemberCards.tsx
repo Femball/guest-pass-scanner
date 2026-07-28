@@ -569,6 +569,8 @@ const MemberCards = () => {
             </div>
             <div className="col-span-2">
               <Label htmlFor="notes">Notes (interne)</Label>
+            </div>
+            <div className="col-span-2">
               <Textarea
                 id="notes"
                 value={cardNotes}
