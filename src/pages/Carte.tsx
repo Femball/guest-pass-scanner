@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Apple, Wallet } from 'lucide-react';
+import { Apple, Wallet, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import laccessLogo from '@/assets/laccess-logo.jpeg.asset.json';
 import leFrancaisLogo from '@/assets/le-francais-logo.png.asset.json';
@@ -14,11 +14,15 @@ interface CardData {
   company_logo_url: string | null;
 }
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
 const Carte = () => {
   const { uid } = useParams<{ uid: string }>();
   const [card, setCard] = useState<CardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [generating, setGenerating] = useState<'apple' | 'google' | null>(null);
+  const [walletError, setWalletError] = useState<string>('');
 
   useEffect(() => {
     if (!uid) {
@@ -38,10 +42,44 @@ const Carte = () => {
     })();
   }, [uid]);
 
-  const walletUnavailable = () =>
-    alert(
-      "L'intégration Apple Wallet / Google Wallet sera disponible dès que les certificats développeur seront configurés. En attendant, ajoutez cette page à votre écran d'accueil pour un accès rapide.",
-    );
+  const callGeneratePass = async (platform: 'apple' | 'google') => {
+    if (!uid) return;
+    setGenerating(platform);
+    setWalletError('');
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-wallet-pass`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, platform }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erreur inconnue' }));
+        throw new Error(err.error || 'Erreur lors de la génération du pass');
+      }
+
+      if (platform === 'apple') {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `laccess-${uid}.pkpass`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        const { save_url } = await res.json();
+        window.location.href = save_url;
+      }
+    } catch (err) {
+      console.error('Wallet generation error:', err);
+      setWalletError(err instanceof Error ? err.message : 'Erreur inattendue');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black via-neutral-900 to-black p-4 text-white">
