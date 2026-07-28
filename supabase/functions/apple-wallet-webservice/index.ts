@@ -108,15 +108,17 @@ async function loadCard(serialNumber: string) {
   if (!data) return null;
 
   let company_name: string | null = null;
+  let company_logo_url: string | null = null;
   if (data.company_id) {
     const { data: company } = await supabase
       .from("partner_companies")
-      .select("name")
+      .select("name, logo_url")
       .eq("id", data.company_id)
       .maybeSingle();
     company_name = company?.name ?? null;
+    company_logo_url = company?.logo_url ?? null;
   }
-  return { ...data, company_name };
+  return { ...data, company_name, company_logo_url };
 }
 
 Deno.serve(async (req) => {
