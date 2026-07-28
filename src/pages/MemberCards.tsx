@@ -341,8 +341,17 @@ const MemberCards = () => {
               <div className="grid gap-3">
                 {filteredCards.map((c) => {
                   const comp = c.company_id ? companyById.get(c.company_id) : null;
+                  const status = cardStatus(c.valid_until);
                   return (
-                    <Card key={c.id}>
+                    <Card
+                      key={c.id}
+                      className={cn(
+                        'border-l-4',
+                        status === 'valid' && 'border-l-emerald-500',
+                        status === 'expired' && 'border-l-destructive',
+                        status === 'none' && 'border-l-muted'
+                      )}
+                    >
                       <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                         {comp?.logo_url ? (
                           <img
@@ -356,9 +365,29 @@ const MemberCards = () => {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground truncate">
-                            {c.first_name} {c.last_name}
-                          </p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-foreground truncate">
+                              {c.first_name} {c.last_name}
+                            </p>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {c.member_type ?? 'Standard'}
+                            </Badge>
+                            {status === 'valid' && (
+                              <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-600 text-white">
+                                Valide jusqu'au {format(new Date(`${c.valid_until}T00:00:00`), 'dd/MM/yyyy')}
+                              </Badge>
+                            )}
+                            {status === 'expired' && (
+                              <Badge variant="destructive" className="text-[10px]">
+                                Expirée le {format(new Date(`${c.valid_until}T00:00:00`), 'dd/MM/yyyy')}
+                              </Badge>
+                            )}
+                            {status === 'none' && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Sans date
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground truncate">
                             {comp?.name ?? 'Sans entreprise'}
                             {c.phone ? ` · ${c.phone}` : ''}
