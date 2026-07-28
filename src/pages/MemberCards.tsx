@@ -598,12 +598,57 @@ const MemberCards = () => {
             </div>
             <div className="col-span-2">
               <Label htmlFor="valid_until">Date de validité</Label>
-              <Input
-                id="valid_until"
-                type="date"
-                value={cardValidUntil}
-                onChange={(e) => setCardValidUntil(e.target.value)}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="valid_until"
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !cardValidUntil && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="w-4 h-4 mr-2" />
+                    {cardValidUntil
+                      ? format(new Date(`${cardValidUntil}T00:00:00`), 'd MMMM yyyy', { locale: fr })
+                      : 'Choisir une date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={cardValidUntil ? new Date(`${cardValidUntil}T00:00:00`) : undefined}
+                    onSelect={(d) => setCardValidUntil(d ? format(d, 'yyyy-MM-dd') : '')}
+                    initialFocus
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+              {cardValidUntil && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 h-7 px-2 text-xs text-muted-foreground"
+                  onClick={() => setCardValidUntil('')}
+                >
+                  Effacer la date
+                </Button>
+              )}
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="member-type">Type d'adhérent</Label>
+              <Select value={cardMemberType} onValueChange={setCardMemberType}>
+                <SelectTrigger id="member-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEMBER_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
