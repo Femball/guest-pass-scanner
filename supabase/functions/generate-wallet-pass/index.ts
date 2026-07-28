@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 
 // Apple Wallet pass generation
-import { PKPass } from "npm:passkit-generator@3.15.0";
+import { PKPass } from "npm:passkit-generator@3.5.7";
 
 // Google Wallet JWT signing
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
