@@ -569,13 +569,20 @@ const MemberCards = () => {
             </div>
             <div className="col-span-2">
               <Label htmlFor="notes">Notes (interne)</Label>
-            </div>
-            <div className="col-span-2">
               <Textarea
                 id="notes"
                 value={cardNotes}
                 onChange={(e) => setCardNotes(e.target.value)}
                 rows={2}
+              />
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="valid_until">Date de validité</Label>
+              <Input
+                id="valid_until"
+                type="date"
+                value={cardValidUntil}
+                onChange={(e) => setCardValidUntil(e.target.value)}
               />
             </div>
           </div>
