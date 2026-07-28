@@ -15,6 +15,8 @@ interface CardData {
   last_name: string;
   company_name: string | null;
   company_logo_url: string | null;
+  valid_until?: string | null;
+  member_type?: string | null;
 }
 
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -131,8 +133,14 @@ async function generateApplePass(card: CardData): Promise<Uint8Array> {
             auxiliaryFields: [
               {
                 key: "valid",
-                label: "Valable chez",
-                value: "Café Le Français",
+                label: "Valable jusqu'au",
+                value: card.valid_until
+                  ? new Date(card.valid_until).toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "—",
               },
             ],
             backFields: [

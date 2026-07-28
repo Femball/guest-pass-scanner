@@ -230,7 +230,7 @@ const Carte = () => {
                 Ajouter à Google Wallet
               </Button>
               <p className="text-[10px] text-center text-white/40 mt-2">
-                Nécessite les certificats développeur configurés côté Lovable Cloud.
+                Apple Wallet est actif. Google Wallet nécessite encore la configuration de l'émetteur.
               </p>
             </div>
 
