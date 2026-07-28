@@ -80,11 +80,13 @@ export async function generateApplePass(
 
   const base = `${PROJECT_URL}/storage/v1/object/public/email-assets/wallet`;
 
-  const [iconBuf, icon2xBuf, logoBuf, stripBuf] = await Promise.all([
+  const [iconBuf, icon2xBuf, logoBuf, logo2xBuf, thumbBuf, thumb2xBuf] = await Promise.all([
     fetchImageBuffer(`${base}%2Ficon.png`),
     fetchImageBuffer(`${base}%2Ficon%402x.png`),
     fetchImageBuffer(`${base}%2Flogo.png`),
-    fetchImageBuffer(`${base}%2Fstrip.png`),
+    fetchImageBuffer(`${base}%2Flogo%402x.png`),
+    fetchImageBuffer(`${base}%2Fthumbnail.png`),
+    fetchImageBuffer(`${base}%2Fthumbnail%402x.png`),
   ]);
 
   if (!iconBuf) {
@@ -99,6 +101,8 @@ export async function generateApplePass(
       })
     : "—";
 
+  const shortUid = card.card_uid.replace(/^CARD-/i, "").slice(0, 8).toUpperCase();
+
   const passJson: Record<string, unknown> = {
     formatVersion: 1,
     passTypeIdentifier: passTypeId,
@@ -106,7 +110,7 @@ export async function generateApplePass(
     teamIdentifier: teamId,
     organizationName: "L'Access",
     description: `Carte membre L'Access - ${card.first_name} ${card.last_name}`,
-    logoText: "L'Access",
+    logoText: "",
     foregroundColor: "rgb(255, 255, 255)",
     backgroundColor: "rgb(0, 0, 0)",
     labelColor: "rgb(212, 175, 55)",
@@ -127,17 +131,20 @@ export async function generateApplePass(
       ],
       secondaryFields: [
         { key: "company", label: "Entreprise", value: card.company_name || "L'Access" },
-      ],
-      auxiliaryFields: [
         {
           key: "valid",
           label: "Valable jusqu'au",
           value: validLabel,
+          textAlignment: "PKTextAlignmentRight",
           changeMessage: "Validité mise à jour : %@",
         },
       ],
+      auxiliaryFields: [
+        { key: "uid", label: "N° de carte", value: shortUid },
+      ],
       backFields: [
-        { key: "uid", label: "Numéro de carte", value: card.card_uid },
+        { key: "fulluid", label: "Numéro de carte", value: card.card_uid },
+        { key: "validback", label: "Valable jusqu'au", value: validLabel },
         {
           key: "terms",
           label: "Conditions",
@@ -153,9 +160,17 @@ export async function generateApplePass(
       "pass.json": Buffer.from(JSON.stringify(passJson)),
       "icon.png": Buffer.from(iconBuf),
       "icon@2x.png": Buffer.from(icon2xBuf ?? iconBuf),
-      ...(logoBuf ? { "logo.png": Buffer.from(logoBuf), "logo@2x.png": Buffer.from(logoBuf) } : {}),
-      ...(stripBuf
-        ? { "thumbnail.png": Buffer.from(stripBuf), "thumbnail@2x.png": Buffer.from(stripBuf) }
+      ...(logoBuf
+        ? {
+            "logo.png": Buffer.from(logoBuf),
+            "logo@2x.png": Buffer.from(logo2xBuf ?? logoBuf),
+          }
+        : {}),
+      ...(thumbBuf
+        ? {
+            "thumbnail.png": Buffer.from(thumbBuf),
+            "thumbnail@2x.png": Buffer.from(thumb2xBuf ?? thumbBuf),
+          }
         : {}),
     },
     { wwdr: wwdrPem, signerCert: signerCertPem, signerKey: signerKeyPem },
