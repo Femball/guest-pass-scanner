@@ -298,6 +298,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           updated_at: string
+          valid_until: string | null
         }
         Insert: {
           card_uid: string
@@ -309,6 +310,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
+          valid_until?: string | null
         }
         Update: {
           card_uid?: string
@@ -320,6 +322,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
+          valid_until?: string | null
         }
         Relationships: [
           {
@@ -609,6 +612,7 @@ export type Database = {
           company_name: string
           first_name: string
           last_name: string
+          valid_until: string
         }[]
       }
       has_admin_privileges: { Args: { _user_id: string }; Returns: boolean }
