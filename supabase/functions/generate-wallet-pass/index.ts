@@ -3,6 +3,8 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 
 // Apple Wallet pass generation
 import { PKPass } from "npm:passkit-generator@3.5.7";
+import forge from "npm:node-forge@1.3.1";
+import { Buffer } from "node:buffer";
 
 // Google Wallet JWT signing
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
@@ -36,18 +38,50 @@ async function fetchImageBuffer(url: string): Promise<Uint8Array | null> {
 }
 
 async function generateApplePass(card: CardData): Promise<Uint8Array> {
-  const passTypeId = Deno.env.get("APPLE_WALLET_PASS_TYPE_ID");
   const certBase64 = Deno.env.get("APPLE_WALLET_CERTIFICATE_P12");
   const certPassword = Deno.env.get("APPLE_WALLET_CERTIFICATE_PASSWORD") || "";
-  const wwdrBase64 = Deno.env.get("APPLE_WALLET_WWDR");
+  const wwdrRaw = Deno.env.get("APPLE_WALLET_WWDR");
   const teamId = Deno.env.get("APPLE_WALLET_TEAM_ID");
 
-  if (!passTypeId || !certBase64 || !wwdrBase64 || !teamId) {
+  if (!certBase64 || !wwdrRaw || !teamId) {
     throw new Error("Configuration Apple Wallet incomplète");
   }
 
-  const signerCert = base64ToUint8Array(certBase64);
-  const wwdrCert = base64ToUint8Array(wwdrBase64);
+  // WWDR may be stored as PEM text or base64 DER
+  const wwdrPem = wwdrRaw.includes("BEGIN CERTIFICATE")
+    ? wwdrRaw
+    : forge.pki.certificateToPem(
+        forge.pki.certificateFromAsn1(
+          forge.asn1.fromDer(forge.util.createBuffer(atob(wwdrRaw)))
+        )
+      );
+
+  // Extract signer certificate + private key from the .p12
+  const p12Der = forge.util.createBuffer(atob(certBase64));
+  const p12Asn1 = forge.asn1.fromDer(p12Der);
+  const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, certPassword);
+
+  const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ?? [];
+  const keyBags =
+    p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[forge.pki.oids.pkcs8ShroudedKeyBag] ??
+    p12.getBags({ bagType: forge.pki.oids.keyBag })[forge.pki.oids.keyBag] ??
+    [];
+
+  const certificate = certBags[0]?.cert;
+  const privateKey = keyBags[0]?.key;
+  if (!certificate || !privateKey) {
+    throw new Error("Certificat .p12 illisible (mot de passe incorrect ?)");
+  }
+
+  const signerCertPem = forge.pki.certificateToPem(certificate);
+  const signerKeyPem = forge.pki.privateKeyToPem(privateKey);
+
+  // Pass Type ID comes from the certificate subject UID when not set explicitly
+  const uidField = certificate.subject.getField({ type: "0.9.2342.19200300.100.1.1" });
+  const passTypeId = Deno.env.get("APPLE_WALLET_PASS_TYPE_ID") || uidField?.value;
+  if (!passTypeId) {
+    throw new Error("Pass Type ID introuvable dans le certificat");
+  }
 
   const logoUrl = "https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/wallet%2Flaccess-logo.jpeg";
   const francaisUrl = "https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/wallet%2Fle-francais-logo.png";
@@ -120,10 +154,9 @@ async function generateApplePass(card: CardData): Promise<Uint8Array> {
       ...(francaisBuf ? { "strip.png": Buffer.from(francaisBuf), "strip@2x.png": Buffer.from(francaisBuf) } : {}),
     },
     {
-      wwdr: Buffer.from(wwdrCert),
-      signerCert: Buffer.from(signerCert),
-      signerKey: Buffer.from(signerCert),
-      signerKeyPassphrase: certPassword,
+      wwdr: wwdrPem,
+      signerCert: signerCertPem,
+      signerKey: signerKeyPem,
     },
     {
       passTypeIdentifier: passTypeId,
