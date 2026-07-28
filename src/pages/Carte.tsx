@@ -12,6 +12,7 @@ interface CardData {
   last_name: string;
   company_name: string | null;
   company_logo_url: string | null;
+  valid_until: string | null;
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -107,17 +108,17 @@ const Carte = () => {
                 }}
               />
               <div className="relative h-full w-full p-5 flex flex-col">
-                {/* Top row: L'Access logo left, Le Français logo right */}
-                <div className="flex items-start justify-between">
+                {/* Top row: L'Access logo left, Le Français logo filling the rest */}
+                <div className="flex items-center gap-3">
                   <img
                     src={laccessLogo.url}
                     alt="L'Access"
-                    className="w-20 h-20 object-contain rounded-lg shadow-lg"
+                    className="w-20 h-20 object-contain rounded-lg shadow-lg shrink-0"
                   />
                   <img
                     src={leFrancaisLogo.url}
                     alt="Café Le Français"
-                    className="max-h-14 object-contain"
+                    className="flex-1 min-w-0 h-20 w-full object-contain"
                   />
                 </div>
 
@@ -150,11 +151,19 @@ const Carte = () => {
                   </p>
                 </div>
 
-                {/* Bottom row: Valable chez */}
+                {/* Bottom row: validity date */}
                 <div className="flex items-end justify-end">
                   <div className="flex flex-col items-end">
-                    <p className="text-xs uppercase tracking-widest text-white/50">Valable chez</p>
-                    <p className="text-sm font-semibold text-white/90">Café Le Français</p>
+                    <p className="text-xs uppercase tracking-widest text-white/50">Valable jusqu'au</p>
+                    <p className="text-sm font-semibold text-white/90">
+                      {card.valid_until
+                        ? new Date(card.valid_until).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '—'}
+                    </p>
                   </div>
                 </div>
               </div>
