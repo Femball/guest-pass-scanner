@@ -1,23 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
-
-// Apple Wallet pass generation
-import { PKPass } from "npm:passkit-generator@3.5.7";
-import forge from "npm:node-forge@1.3.1";
-import { Buffer } from "node:buffer";
+import { generateApplePass, type CardData } from "../_shared/apple-pass.ts";
 
 // Google Wallet JWT signing
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
-
-interface CardData {
-  card_uid: string;
-  first_name: string;
-  last_name: string;
-  company_name: string | null;
-  company_logo_url: string | null;
-  valid_until?: string | null;
-  member_type?: string | null;
-}
 
 function base64ToUint8Array(base64: string): Uint8Array {
   const binaryString = atob(base64);
@@ -26,160 +12,6 @@ function base64ToUint8Array(base64: string): Uint8Array {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes;
-}
-
-async function fetchImageBuffer(url: string): Promise<Uint8Array | null> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return new Uint8Array(await res.arrayBuffer());
-  } catch (err) {
-    console.error("fetchImageBuffer error:", err);
-    return null;
-  }
-}
-
-async function generateApplePass(card: CardData): Promise<Uint8Array> {
-  const certBase64 = Deno.env.get("APPLE_WALLET_CERTIFICATE_P12");
-  const certPassword = Deno.env.get("APPLE_WALLET_CERTIFICATE_PASSWORD") || "";
-  const wwdrRaw = Deno.env.get("APPLE_WALLET_WWDR");
-  const teamId = Deno.env.get("APPLE_WALLET_TEAM_ID");
-
-  if (!certBase64 || !wwdrRaw || !teamId) {
-    throw new Error("Configuration Apple Wallet incomplète");
-  }
-
-  // WWDR may be stored as PEM text or base64 DER
-  const wwdrPem = wwdrRaw.includes("BEGIN CERTIFICATE")
-    ? wwdrRaw
-    : forge.pki.certificateToPem(
-        forge.pki.certificateFromAsn1(
-          forge.asn1.fromDer(forge.util.createBuffer(atob(wwdrRaw)))
-        )
-      );
-
-  // Extract signer certificate + private key from the .p12
-  const p12Der = forge.util.createBuffer(atob(certBase64));
-  const p12Asn1 = forge.asn1.fromDer(p12Der);
-  const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, certPassword);
-
-  const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ?? [];
-  const keyBags =
-    p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[forge.pki.oids.pkcs8ShroudedKeyBag] ??
-    p12.getBags({ bagType: forge.pki.oids.keyBag })[forge.pki.oids.keyBag] ??
-    [];
-
-  const certificate = certBags[0]?.cert;
-  const privateKey = keyBags[0]?.key;
-  if (!certificate || !privateKey) {
-    throw new Error("Certificat .p12 illisible (mot de passe incorrect ?)");
-  }
-
-  const signerCertPem = forge.pki.certificateToPem(certificate);
-  const signerKeyPem = forge.pki.privateKeyToPem(privateKey);
-
-  // Pass Type ID comes from the certificate subject UID when not set explicitly
-  const uidField = certificate.subject.getField({ type: "0.9.2342.19200300.100.1.1" });
-  const passTypeId = Deno.env.get("APPLE_WALLET_PASS_TYPE_ID") || uidField?.value;
-  if (!passTypeId) {
-    throw new Error("Pass Type ID introuvable dans le certificat");
-  }
-
-  const base = "https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/wallet";
-
-  const [iconBuf, icon2xBuf, logoBuf, stripBuf] = await Promise.all([
-    fetchImageBuffer(`${base}%2Ficon.png`),
-    fetchImageBuffer(`${base}%2Ficon%402x.png`),
-    fetchImageBuffer(`${base}%2Flogo.png`),
-    fetchImageBuffer(`${base}%2Fstrip.png`),
-  ]);
-
-  if (!iconBuf) {
-    throw new Error("Icône du pass introuvable");
-  }
-
-  const pass = new PKPass(
-    {
-      "pass.json": Buffer.from(
-        JSON.stringify({
-          formatVersion: 1,
-          passTypeIdentifier: passTypeId,
-          serialNumber: card.card_uid,
-          teamIdentifier: teamId,
-          organizationName: "L'Access",
-          description: `Carte membre L'Access - ${card.first_name} ${card.last_name}`,
-          logoText: "L'Access",
-          foregroundColor: "rgb(255, 255, 255)",
-          backgroundColor: "rgb(0, 0, 0)",
-          labelColor: "rgb(212, 175, 55)",
-          generic: {
-            headerFields: [
-              {
-                key: "member",
-                label: "Carte membre",
-                value: card.card_uid,
-                textAlignment: "PKTextAlignmentRight",
-              },
-            ],
-            primaryFields: [
-              {
-                key: "name",
-                label: "Membre",
-                value: `${card.first_name} ${card.last_name}`,
-              },
-            ],
-            secondaryFields: [
-              {
-                key: "company",
-                label: "Entreprise",
-                value: card.company_name || "L'Access",
-              },
-            ],
-            auxiliaryFields: [
-              {
-                key: "valid",
-                label: "Valable jusqu'au",
-                value: card.valid_until
-                  ? new Date(card.valid_until).toLocaleDateString("fr-FR", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })
-                  : "—",
-              },
-            ],
-            backFields: [
-              {
-                key: "uid",
-                label: "Numéro de carte",
-                value: card.card_uid,
-              },
-              {
-                key: "terms",
-                label: "Conditions",
-                value: "Carte nominative, non transférable. Présentation obligatoire pour bénéficier des avantages.",
-              },
-            ],
-          },
-        })
-      ),
-      "icon.png": Buffer.from(iconBuf),
-      "icon@2x.png": Buffer.from(icon2xBuf ?? iconBuf),
-      ...(logoBuf ? { "logo.png": Buffer.from(logoBuf), "logo@2x.png": Buffer.from(logoBuf) } : {}),
-      ...(stripBuf ? { "thumbnail.png": Buffer.from(stripBuf), "thumbnail@2x.png": Buffer.from(stripBuf) } : {}),
-    },
-    {
-      wwdr: wwdrPem,
-      signerCert: signerCertPem,
-      signerKey: signerKeyPem,
-    },
-    {
-      passTypeIdentifier: passTypeId,
-      teamIdentifier: teamId,
-    }
-  );
-
-  return pass.getAsBuffer();
 }
 
 async function generateGooglePass(card: CardData): Promise<string> {
@@ -381,7 +213,19 @@ Deno.serve(async (req) => {
     const card = row as CardData;
 
     if (platform === "apple") {
-      const passBuffer = await generateApplePass(card);
+      // Read the pass authentication token with elevated privileges so Apple
+      // can call back our web service to refresh the pass.
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: tokenRow } = await admin
+        .from("member_cards")
+        .select("wallet_auth_token")
+        .eq("card_uid", uid)
+        .maybeSingle();
+
+      const passBuffer = await generateApplePass(card, tokenRow?.wallet_auth_token ?? null);
       return new Response(passBuffer, {
         headers: {
           ...corsHeaders,
