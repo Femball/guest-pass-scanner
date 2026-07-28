@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Pencil, Building2, IdCard, Send, ExternalLink, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Pencil, Building2, IdCard, Send, ExternalLink, Search, Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,10 +33,20 @@ interface MemberCard {
   phone: string | null;
   notes: string | null;
   valid_until: string | null;
+  member_type: string;
   created_at: string;
 }
 
 const MAX_LOGO_BYTES = 400 * 1024; // 400KB raw file
+
+const MEMBER_TYPES = ['Standard', 'VIP', 'Partenaire', 'Staff', 'Invité'];
+
+function cardStatus(validUntil: string | null): 'valid' | 'expired' | 'none' {
+  if (!validUntil) return 'none';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(`${validUntil}T00:00:00`) >= today ? 'valid' : 'expired';
+}
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -82,6 +98,7 @@ const MemberCards = () => {
   const [cardPhone, setCardPhone] = useState('');
   const [cardNotes, setCardNotes] = useState('');
   const [cardValidUntil, setCardValidUntil] = useState('');
+  const [cardMemberType, setCardMemberType] = useState('Standard');
   const [savingCard, setSavingCard] = useState(false);
 
   const fetchAll = async () => {
@@ -188,6 +205,7 @@ const MemberCards = () => {
     setCardPhone('');
     setCardNotes('');
     setCardValidUntil('');
+    setCardMemberType('Standard');
     setCardDialogOpen(true);
   };
   const openEditCard = (c: MemberCard) => {
@@ -198,6 +216,7 @@ const MemberCards = () => {
     setCardPhone(c.phone ?? '');
     setCardNotes(c.notes ?? '');
     setCardValidUntil(c.valid_until ?? '');
+    setCardMemberType(c.member_type ?? 'Standard');
     setCardDialogOpen(true);
   };
   const saveCard = async () => {
@@ -215,6 +234,7 @@ const MemberCards = () => {
       phone: cardPhone.trim() || null,
       notes: cardNotes.trim() || null,
       valid_until: cardValidUntil || null,
+      member_type: cardMemberType || 'Standard',
     };
     const { error } = editingCard
       ? await supabase.from('member_cards').update(payload).eq('id', editingCard.id)
