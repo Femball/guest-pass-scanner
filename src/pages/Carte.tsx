@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Apple, Wallet, Loader2 } from 'lucide-react';
+import { Apple, Wallet, Loader2, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import laccessLogo from '@/assets/laccess-logo.jpeg.asset.json';
 import leFrancaisLogo from '@/assets/le-francais-logo.png.asset.json';
@@ -32,6 +33,7 @@ const Carte = () => {
   const [error, setError] = useState<string>('');
   const [generating, setGenerating] = useState<'apple' | 'google' | null>(null);
   const [walletError, setWalletError] = useState<string>('');
+  const [walletSuccess, setWalletSuccess] = useState<string>('');
 
   useEffect(() => {
     if (!uid) {
@@ -55,6 +57,7 @@ const Carte = () => {
     if (!uid) return;
     setGenerating(platform);
     setWalletError('');
+    setWalletSuccess('');
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-wallet-pass`, {
         method: 'POST',
@@ -77,8 +80,13 @@ const Carte = () => {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+        setWalletSuccess(
+          "Carte ajoutée à Apple Wallet. Elle se mettra à jour automatiquement si sa validité change.",
+        );
+        toast.success('Carte ajoutée à Apple Wallet');
       } else {
         const { save_url } = await res.json();
+        toast.success('Ouverture de Google Wallet…');
         window.location.href = save_url;
       }
     } catch (err) {
@@ -198,6 +206,12 @@ const Carte = () => {
 
             {/* Wallet buttons */}
             <div className="mt-6 space-y-2">
+              {walletSuccess && (
+                <p className="flex items-center gap-2 text-xs text-emerald-300 bg-emerald-950/40 rounded-lg px-3 py-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  {walletSuccess}
+                </p>
+              )}
               {walletError && (
                 <p className="text-xs text-center text-red-400 bg-red-950/40 rounded-lg px-3 py-2">
                   {walletError}
