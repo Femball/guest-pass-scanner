@@ -166,7 +166,7 @@ async function generateApplePass(card: CardData): Promise<Uint8Array> {
       "icon.png": Buffer.from(iconBuf),
       "icon@2x.png": Buffer.from(icon2xBuf ?? iconBuf),
       ...(logoBuf ? { "logo.png": Buffer.from(logoBuf), "logo@2x.png": Buffer.from(logoBuf) } : {}),
-      ...(stripBuf ? { "strip.png": Buffer.from(stripBuf), "strip@2x.png": Buffer.from(stripBuf) } : {}),
+      ...(stripBuf ? { "thumbnail.png": Buffer.from(stripBuf), "thumbnail@2x.png": Buffer.from(stripBuf) } : {}),
     },
     {
       wwdr: wwdrPem,
