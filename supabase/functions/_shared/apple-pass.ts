@@ -108,6 +108,11 @@ export async function generateApplePass(
   const MIDI_NOTE =
     "Afin de vous proposer une formule midi attractive, certains plats de notre carte restent disponibles avec un supplément.";
 
+  // Version courte pour la face avant : les champs Apple Wallet tronquent au-delà
+  // de ~2 lignes. Le texte complet reste au dos du pass.
+  const MIDI_NOTE_SHORT =
+    "Formule midi attractive : certains plats de la carte restent disponibles avec supplément.";
+
   const passJson: Record<string, unknown> = {
     formatVersion: 1,
     passTypeIdentifier: passTypeId,
@@ -143,7 +148,7 @@ export async function generateApplePass(
         },
       ],
       auxiliaryFields: [
-        { key: "note", label: "", value: MIDI_NOTE },
+        { key: "note", label: "Formule midi", value: MIDI_NOTE_SHORT },
         {
           key: "valid",
           label: "Valable jusqu'au",
