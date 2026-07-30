@@ -81,11 +81,49 @@ async function generateGooglePass(card: CardData): Promise<string> {
 
   const { access_token } = await tokenRes.json();
 
+  // Ensure the Generic Class exists (created once per issuer)
+  const fullClassId = `${issuerId}.${classId}`;
+  const classRes = await fetch(
+    `https://walletobjects.googleapis.com/walletobjects/v1/genericClass/${fullClassId}`,
+    { headers: { Authorization: `Bearer ${access_token}` } },
+  );
+  if (classRes.status === 404) {
+    const createClassRes = await fetch(
+      "https://walletobjects.googleapis.com/walletobjects/v1/genericClass",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: fullClassId,
+          issuerName: "L'Access",
+          reviewStatus: "UNDER_REVIEW",
+        }),
+      },
+    );
+    if (!createClassRes.ok) {
+      const err = await createClassRes.text();
+      throw new Error(`Google Wallet class error: ${err}`);
+    }
+  } else if (!classRes.ok) {
+    const err = await classRes.text();
+    throw new Error(`Google Wallet class get error: ${err}`);
+  }
+
   // Create or update GenericObject
   const genericObject = {
     id: objectId,
-    classId: `${issuerId}.${classId}`,
+    classId: fullClassId,
     state: "ACTIVE",
+    cardTitle: { defaultValue: { language: "fr", value: "L'Access" } },
+    header: {
+      defaultValue: {
+        language: "fr",
+        value: `${card.first_name} ${card.last_name}`,
+      },
+    },
     heroImage: {
       sourceUri: {
         uri: "https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/wallet%2Flaccess-logo.jpeg",
@@ -108,6 +146,17 @@ async function generateGooglePass(card: CardData): Promise<string> {
         header: "Numéro de carte",
         body: card.card_uid,
       },
+      ...(card.valid_until
+        ? [{
+          id: "valid",
+          header: "Valable jusqu'au",
+          body: new Date(card.valid_until).toLocaleDateString("fr-FR", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+        }]
+        : []),
     ],
     linksModuleData: {
       uris: [
