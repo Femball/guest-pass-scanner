@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { Loader2, Copy, Trash2, ShieldCheck, ScrollText, UserPlus, Search, Pencil, X } from 'lucide-react';
+import { Loader2, Copy, Trash2, ShieldCheck, ScrollText, UserPlus, Search, Pencil, X, KeyRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -60,6 +64,13 @@ interface Props {
 
 const emptyForm = { first_name: '', last_name: '', phone: '', email: '', role: 'agent' as AppRole };
 
+const CATEGORY_LABEL: Record<string, string> = {
+  staff: 'Personnel',
+  reservation: 'Réservations',
+  payment: 'Paiements',
+  general: 'Général',
+};
+
 const StaffManager = ({ open, onOpenChange }: Props) => {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -69,6 +80,12 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<StaffMember | null>(null);
+  const [pendingReset, setPendingReset] = useState<StaffMember | null>(null);
+  const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [logAuthor, setLogAuthor] = useState<string>('all');
+  const [logCategory, setLogCategory] = useState<string>('all');
+  const [logSearch, setLogSearch] = useState('');
 
   const loadStaff = useCallback(async () => {
     setIsLoading(true);
@@ -163,9 +180,8 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
   };
 
   const removeStaff = async (member: StaffMember) => {
-    const label = `${member.first_name} ${member.last_name}`.trim() || member.email || 'ce compte';
-    if (!confirm(`Supprimer définitivement ${label} ?`)) return;
     try {
+      setBusyUserId(member.user_id);
       const { data, error } = await supabase.functions.invoke('manage-staff', {
         body: { action: 'delete', user_id: member.user_id },
       });
@@ -177,6 +193,49 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
       loadLogs();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Suppression impossible');
+    } finally {
+      setBusyUserId(null);
+      setPendingDelete(null);
+    }
+  };
+
+  const changeRole = async (member: StaffMember, role: AppRole) => {
+    if (member.role === role) return;
+    setBusyUserId(member.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff', {
+        body: { action: 'set_role', user_id: member.user_id, role },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setStaff((prev) => prev.map((m) => (m.user_id === member.user_id ? { ...m, role } : m)));
+      toast.success(`Rôle mis à jour : ${ROLE_SHORT[role]}`);
+      loadLogs();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Modification du rôle impossible');
+      loadStaff();
+    } finally {
+      setBusyUserId(null);
+    }
+  };
+
+  const resetPassword = async (member: StaffMember) => {
+    setBusyUserId(member.user_id);
+    setTempPassword(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff', {
+        body: { action: 'reset_password', user_id: member.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setTempPassword(data.temporary_password);
+      toast.success('Nouveau mot de passe généré — transmettez-le au membre');
+      loadLogs();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Réinitialisation impossible');
+    } finally {
+      setBusyUserId(null);
+      setPendingReset(null);
     }
   };
 
@@ -189,6 +248,15 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
           .includes(term),
       )
     : staff;
+
+  const logTerm = logSearch.trim().toLowerCase();
+  const logCategories = Array.from(new Set(logs.map((l) => l.category))).sort();
+  const filteredLogs = logs.filter((log) => {
+    if (logAuthor !== 'all' && log.user_id !== logAuthor) return false;
+    if (logCategory !== 'all' && log.category !== logCategory) return false;
+    if (logTerm && !`${log.action} ${log.actor_label ?? ''}`.toLowerCase().includes(logTerm)) return false;
+    return true;
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -232,6 +300,12 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
                 <Input id="staff-email" type="email" placeholder="agent@example.com" value={form.email}
                   disabled={!!editingUserId}
                   onChange={(e) => setForm({ ...form, email: e.target.value })} maxLength={255} />
+                {editingUserId && (
+                  <p className="text-xs text-muted-foreground">
+                    L'email sert d'identifiant de connexion : il ne peut pas être modifié. Supprimez puis recréez le
+                    compte si l'adresse doit changer.
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="staff-role">Rôle et droits</Label>
@@ -302,7 +376,7 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
                   className={`flex items-center justify-between gap-3 rounded-lg border p-3 ${
                     editingUserId === member.user_id ? 'border-primary' : 'border-border'
                   }`}>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground truncate">
                       {`${member.first_name} ${member.last_name}`.trim() || member.email}
                       {member.is_self && <span className="text-xs text-muted-foreground"> (vous)</span>}
@@ -310,16 +384,38 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
                     <p className="text-xs text-muted-foreground truncate">
                       {member.email}{member.phone ? ` • ${member.phone}` : ''}
                     </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Select
+                        value={member.role ?? undefined}
+                        onValueChange={(v) => changeRole(member, v as AppRole)}
+                        disabled={busyUserId === member.user_id}
+                      >
+                        <SelectTrigger className="h-8 w-[190px] text-xs">
+                          <SelectValue placeholder="Sans rôle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="agent">{ROLE_SHORT.agent}</SelectItem>
+                          <SelectItem value="member_control">{ROLE_SHORT.member_control}</SelectItem>
+                          <SelectItem value="supervisor">{ROLE_SHORT.supervisor}</SelectItem>
+                          <SelectItem value="admin">{ROLE_SHORT.admin}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {busyUserId === member.user_id && (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
-                      {member.role ? ROLE_SHORT[member.role] : 'Sans rôle'}
-                    </Badge>
+                  <div className="flex items-center gap-1 shrink-0 self-start">
+                    {!member.role && <Badge variant="outline">Sans rôle</Badge>}
+                    <Button size="icon" variant="ghost" onClick={() => setPendingReset(member)}
+                      title="Réinitialiser le mot de passe">
+                      <KeyRound className="w-4 h-4" />
+                    </Button>
                     <Button size="icon" variant="ghost" onClick={() => startEdit(member)} title="Modifier">
                       <Pencil className="w-4 h-4" />
                     </Button>
                     {!member.is_self && (
-                      <Button size="icon" variant="ghost" onClick={() => removeStaff(member)} title="Supprimer">
+                      <Button size="icon" variant="ghost" onClick={() => setPendingDelete(member)} title="Supprimer">
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     )}
@@ -333,16 +429,46 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
             <p className="text-xs text-muted-foreground">
               Journal réservé aux administrateurs — 200 dernières actions.
             </p>
-            {logs.length === 0 && (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Select value={logAuthor} onValueChange={setLogAuthor}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Personne" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les personnes</SelectItem>
+                  {staff.map((m) => (
+                    <SelectItem key={m.user_id} value={m.user_id}>
+                      {`${m.first_name} ${m.last_name}`.trim() || m.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={logCategory} onValueChange={setLogCategory}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les catégories</SelectItem>
+                  {logCategories.map((c) => (
+                    <SelectItem key={c} value={c}>{CATEGORY_LABEL[c] ?? c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input className="pl-9 h-9 text-xs" placeholder="Rechercher une action"
+                  value={logSearch} onChange={(e) => setLogSearch(e.target.value)} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">{filteredLogs.length} action(s) affichée(s)</p>
+            {filteredLogs.length === 0 && (
               <p className="text-sm text-muted-foreground">Aucune activité enregistrée pour le moment.</p>
             )}
-            {logs.map((log) => {
+            {filteredLogs.map((log) => {
               const author = staff.find((s) => s.user_id === log.user_id);
               return (
                 <div key={log.id} className="rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium text-foreground">{log.action}</p>
-                    <Badge variant="outline" className="shrink-0 text-[10px]">{log.category}</Badge>
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      {CATEGORY_LABEL[log.category] ?? log.category}
+                    </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {author ? `${author.first_name} ${author.last_name}` : log.actor_label ?? 'Inconnu'}
@@ -355,6 +481,47 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce compte ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete
+                ? `${`${pendingDelete.first_name} ${pendingDelete.last_name}`.trim() || pendingDelete.email} perdra définitivement son accès à l'application. Cette action est irréversible.`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => pendingDelete && removeStaff(pendingDelete)}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!pendingReset} onOpenChange={(o) => !o && setPendingReset(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Réinitialiser le mot de passe ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Un nouveau mot de passe provisoire sera généré pour{' '}
+              {pendingReset ? `${`${pendingReset.first_name} ${pendingReset.last_name}`.trim() || pendingReset.email}` : ''}.
+              L'ancien mot de passe cessera immédiatement de fonctionner.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => pendingReset && resetPassword(pendingReset)}>
+              Générer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

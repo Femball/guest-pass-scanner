@@ -2,10 +2,19 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
+const ROLES = ["admin", "agent", "supervisor", "member_control"] as const;
+
 const BodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("list") }),
   z.object({ action: z.literal("delete"), user_id: z.string().uuid() }),
+  z.object({ action: z.literal("set_role"), user_id: z.string().uuid(), role: z.enum(ROLES) }),
+  z.object({ action: z.literal("reset_password"), user_id: z.string().uuid() }),
 ]);
+
+function randomPassword() {
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  return Array.from(bytes, (b) => "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$"[b % 57]).join("");
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -62,6 +71,41 @@ Deno.serve(async (req) => {
         };
       });
       return json({ members });
+    }
+
+    if (parsed.data.action === "set_role") {
+      const { user_id: targetId, role } = parsed.data;
+      if (targetId === caller.id && role !== "admin") {
+        return json({ error: "Vous ne pouvez pas retirer votre propre accès administrateur" }, 400);
+      }
+      await admin.from("user_roles").delete().eq("user_id", targetId);
+      const { error: insertError } = await admin.from("user_roles").insert({ user_id: targetId, role });
+      if (insertError) return json({ error: "Attribution du rôle impossible" }, 400);
+
+      await admin.from("activity_logs").insert({
+        user_id: caller.id,
+        actor_label: caller.email ?? null,
+        action: "Modification du rôle d'un membre",
+        category: "staff",
+        details: { target_user_id: targetId, role },
+      });
+      return json({ success: true });
+    }
+
+    if (parsed.data.action === "reset_password") {
+      const targetId = parsed.data.user_id;
+      const password = randomPassword();
+      const { error: updateError } = await admin.auth.admin.updateUserById(targetId, { password });
+      if (updateError) return json({ error: "Réinitialisation impossible" }, 400);
+
+      await admin.from("activity_logs").insert({
+        user_id: caller.id,
+        actor_label: caller.email ?? null,
+        action: "Réinitialisation d'un mot de passe",
+        category: "staff",
+        details: { target_user_id: targetId },
+      });
+      return json({ success: true, temporary_password: password });
     }
 
     // delete
