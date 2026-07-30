@@ -429,16 +429,46 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
             <p className="text-xs text-muted-foreground">
               Journal réservé aux administrateurs — 200 dernières actions.
             </p>
-            {logs.length === 0 && (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Select value={logAuthor} onValueChange={setLogAuthor}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Personne" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les personnes</SelectItem>
+                  {staff.map((m) => (
+                    <SelectItem key={m.user_id} value={m.user_id}>
+                      {`${m.first_name} ${m.last_name}`.trim() || m.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={logCategory} onValueChange={setLogCategory}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Catégorie" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les catégories</SelectItem>
+                  {logCategories.map((c) => (
+                    <SelectItem key={c} value={c}>{CATEGORY_LABEL[c] ?? c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input className="pl-9 h-9 text-xs" placeholder="Rechercher une action"
+                  value={logSearch} onChange={(e) => setLogSearch(e.target.value)} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">{filteredLogs.length} action(s) affichée(s)</p>
+            {filteredLogs.length === 0 && (
               <p className="text-sm text-muted-foreground">Aucune activité enregistrée pour le moment.</p>
             )}
-            {logs.map((log) => {
+            {filteredLogs.map((log) => {
               const author = staff.find((s) => s.user_id === log.user_id);
               return (
                 <div key={log.id} className="rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium text-foreground">{log.action}</p>
-                    <Badge variant="outline" className="shrink-0 text-[10px]">{log.category}</Badge>
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      {CATEGORY_LABEL[log.category] ?? log.category}
+                    </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {author ? `${author.first_name} ${author.last_name}` : log.actor_label ?? 'Inconnu'}
@@ -451,6 +481,47 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce compte ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete
+                ? `${`${pendingDelete.first_name} ${pendingDelete.last_name}`.trim() || pendingDelete.email} perdra définitivement son accès à l'application. Cette action est irréversible.`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => pendingDelete && removeStaff(pendingDelete)}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!pendingReset} onOpenChange={(o) => !o && setPendingReset(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Réinitialiser le mot de passe ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Un nouveau mot de passe provisoire sera généré pour{' '}
+              {pendingReset ? `${`${pendingReset.first_name} ${pendingReset.last_name}`.trim() || pendingReset.email}` : ''}.
+              L'ancien mot de passe cessera immédiatement de fonctionner.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => pendingReset && resetPassword(pendingReset)}>
+              Générer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
