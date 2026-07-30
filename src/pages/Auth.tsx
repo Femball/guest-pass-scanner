@@ -12,7 +12,7 @@ import { lovable } from '@/integrations/lovable';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Email invalide');
-const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
+const passwordSchema = z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères');
 
 const Auth = () => {
   const navigate = useNavigate();

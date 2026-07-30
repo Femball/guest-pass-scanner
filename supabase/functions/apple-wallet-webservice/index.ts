@@ -121,6 +121,16 @@ async function loadCard(serialNumber: string) {
   return { ...data, company_name, company_logo_url };
 }
 
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  if (ab.length !== bb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   // strip the function name prefix
@@ -131,7 +141,8 @@ Deno.serve(async (req) => {
     // Internal push endpoint (called by the database trigger)
     if (parts[0] === "push") {
       const auth = req.headers.get("authorization") || "";
-      if (!auth.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)) {
+      const expected = `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`;
+      if (!timingSafeEqual(auth.trim(), expected)) {
         return json({ error: "unauthorized" }, 401);
       }
       const { serial_number } = await req.json();

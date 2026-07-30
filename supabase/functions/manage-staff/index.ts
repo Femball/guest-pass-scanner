@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { clearUserRoles, isAdmin, setUserRole } from "../_shared/roles.ts";
 
 const ROLES = ["admin", "agent", "supervisor", "member_control"] as const;
 
@@ -40,9 +41,9 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    const { data: callerRole } = await admin
-      .from("user_roles").select("role").eq("user_id", caller.id).maybeSingle();
-    if (callerRole?.role !== "admin") return json({ error: "Accès réservé aux administrateurs" }, 403);
+    if (!(await isAdmin(admin, caller.id))) {
+      return json({ error: "Accès réservé aux administrateurs" }, 403);
+    }
 
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) return json({ error: "Requête invalide" }, 400);
@@ -78,9 +79,8 @@ Deno.serve(async (req) => {
       if (targetId === caller.id && role !== "admin") {
         return json({ error: "Vous ne pouvez pas retirer votre propre accès administrateur" }, 400);
       }
-      await admin.from("user_roles").delete().eq("user_id", targetId);
-      const { error: insertError } = await admin.from("user_roles").insert({ user_id: targetId, role });
-      if (insertError) return json({ error: "Attribution du rôle impossible" }, 400);
+      const { error: roleError } = await setUserRole(admin, targetId, role);
+      if (roleError) return json({ error: roleError }, 400);
 
       await admin.from("activity_logs").insert({
         user_id: caller.id,
@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
     if (targetId === caller.id) return json({ error: "Vous ne pouvez pas supprimer votre propre compte" }, 400);
 
     await admin.from("staff_profiles").delete().eq("user_id", targetId);
-    await admin.from("user_roles").delete().eq("user_id", targetId);
+    await clearUserRoles(admin, targetId);
     const { error: deleteError } = await admin.auth.admin.deleteUser(targetId);
     if (deleteError) return json({ error: "Suppression du compte impossible" }, 400);
 

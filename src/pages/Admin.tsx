@@ -27,50 +27,13 @@ import FeedbackList from '@/components/FeedbackList';
 import ScanAnomalies from '@/components/ScanAnomalies';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import QRCode from 'qrcode';
-interface Reservation {
-  id: string;
-  client_name: string;
-  client_email: string | null;
-  client_phone?: string | null;
-  qr_code: string;
-  is_validated: boolean;
-  validated_at: string | null;
-  created_at: string;
-  number_of_persons: number;
-  event_date: string;
-  amount: number | null;
-  payment_method: string | null;
-  payment_status: string | null;
-  sumup_checkout_id: string | null;
-}
+import { buildSmsPayload, shareQrFiles } from '@/lib/sms';
+import SumUpPaymentWidget from '@/components/admin/SumUpPaymentWidget';
+import ClientsDirectoryDialog from '@/components/admin/ClientsDirectoryDialog';
+import ClientFormDialog from '@/components/admin/ClientFormDialog';
+import { BulkSmsSelectDialog, BulkSmsQueueDialog, PendingSmsDialog } from '@/components/admin/BulkSmsDialogs';
+import type { Reservation, PendingSms, ClientRecord, BottleWithReservation, FlyerInvitation } from '@/types/admin';
 
-interface PendingSms {
-  phone: string;
-  body: string;
-  url: string;
-  fallbackUrl: string;
-  recipientOnlyUrl: string;
-  isIOS: boolean;
-  qrCodes: { label: string; code: string }[];
-}
-
-interface ClientRecord {
-  id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  notes: string | null;
-  reservation_count: number;
-  first_seen_at: string;
-  last_seen_at: string;
-}
-
-interface BottleWithReservation {
-  bottle_type: string;
-  quantity: number;
-  reservation_id: string;
-  reservations: { client_name: string; event_date: string } | null;
-}
 
 const AdminContent = () => {
   const { signOut, isAdmin } = useAuth();
@@ -126,39 +89,6 @@ const AdminContent = () => {
   const [sendingSmsTo, setSendingSmsTo] = useState<string | null>(null);
   const [pendingSms, setPendingSms] = useState<PendingSms | null>(null);
 
-  // Open the native SMS app directly with prefilled recipient and message.
-  // MUST run synchronously inside a user gesture (no await / setTimeout before navigation),
-  // otherwise iOS/Android silently block the sms: scheme.
-  const buildSmsPayload = (
-    phone: string,
-    body: string,
-    qrCodes: { label: string; code: string }[] = []
-  ): PendingSms | null => {
-    if (!phone) {
-      return null;
-    }
-    const phoneClean = phone.replace(/[^0-9+]/g, '');
-    if (!phoneClean) {
-      return null;
-    }
-    const ua = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    // iOS uses '&', Android uses '?', others fall back to '?'
-    const separator = isIOS ? '&' : '?';
-    const encodedBody = encodeURIComponent(body);
-    const standardUrl = `sms:${phoneClean}?body=${encodedBody}`;
-    const iosUrl = `sms:${phoneClean}&body=${encodedBody}`;
-    const iosFallbackUrl = `sms://open?addresses=${encodeURIComponent(phoneClean)}&body=${encodedBody}`;
-    return {
-      phone: phoneClean,
-      body,
-      url: isIOS ? iosUrl : standardUrl,
-      fallbackUrl: isIOS ? iosFallbackUrl : `sms:${phoneClean}${separator}body=${encodedBody}`,
-      recipientOnlyUrl: `sms:${phoneClean}`,
-      isIOS,
-      qrCodes,
-    };
-  };
 
   const openSmsPreview = (
     phone: string,
@@ -182,35 +112,26 @@ const AdminContent = () => {
 
   // Generate QR PNG files and trigger native share sheet (iOS Messages, WhatsApp, etc.)
   const shareQrViaNativeSheet = async (payload: PendingSms) => {
-    try {
-      if (!payload.qrCodes.length) {
-        toast.error("Aucun QR code à partager");
-        return;
-      }
-      const files: File[] = [];
-      for (const qr of payload.qrCodes) {
-        const dataUrl = await QRCode.toDataURL(qr.code, {
-          width: 600,
-          margin: 2,
-          errorCorrectionLevel: 'H',
-        });
-        const blob = await (await fetch(dataUrl)).blob();
-        const safeLabel = qr.label.replace(/[^a-zA-Z0-9_-]/g, '_') || 'qr';
-        files.push(new File([blob], `${safeLabel}.png`, { type: 'image/png' }));
-      }
-      const shareData: ShareData = { files, text: payload.body, title: "L'Access — Votre ticket" };
-      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
-      if (!nav.canShare || !nav.canShare(shareData) || !navigator.share) {
-        toast.error("Partage de fichiers non supporté sur cet appareil");
-        return;
-      }
-      await navigator.share(shareData);
-    } catch (err) {
-      if ((err as Error)?.name === 'AbortError') return;
-      console.error('shareQrViaNativeSheet error', err);
-      toast.error("Impossible de partager le QR");
-    }
+    const result = await shareQrFiles(payload);
+    if (result.ok || result.reason === 'aborted') return;
+    if (result.reason === 'no-qr') toast.error("Aucun QR code à partager");
+    else if (result.reason === 'unsupported') toast.error("Partage de fichiers non supporté sur cet appareil");
+    else toast.error("Impossible de partager le QR");
   };
+
+  // Prépare un SMS de ticket pour un client du répertoire
+  const sendClientSms = (client: ClientRecord) => {
+    const reservation = reservations.find((r) => r.client_phone === client.phone);
+    if (!reservation) {
+      toast.error('Aucune réservation trouvée pour ce client');
+      return;
+    }
+    const body = buildTicketSmsBody([reservation], 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+    openSmsPreview(client.phone!, client.name, body, [
+      { label: reservation.client_name, code: reservation.qr_code },
+    ]);
+  };
+
   
   // Staff management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -219,14 +140,6 @@ const AdminContent = () => {
   const prevPaymentStatusesRef = useRef<Map<string, string | null>>(new Map());
 
   // Flyer invitations
-  interface FlyerInvitation {
-    id: string;
-    label: string;
-    event_date: string;
-    qr_code: string;
-    scan_count: number;
-    created_at: string;
-  }
   const [flyers, setFlyers] = useState<FlyerInvitation[]>([]);
   const [newFlyerLabel, setNewFlyerLabel] = useState('');
   const [flyerDate, setFlyerDate] = useState<Date>(new Date());
@@ -764,6 +677,8 @@ const AdminContent = () => {
 
   const activeDate = selectedDate && dateGroups[selectedDate] ? selectedDate : sortedDates[0] || null;
   const filteredReservations = activeDate ? dateGroups[activeDate] : [];
+
+  const bulkSmsEligible = bulkSmsDate ? (dateGroups[bulkSmsDate] || []).filter((r) => r.client_phone) : [];
 
   const validatedCount = filteredReservations.filter(r => r.is_validated).length;
   const pendingCount = filteredReservations.filter(r => !r.is_validated).length;
@@ -2063,398 +1978,58 @@ const AdminContent = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Clients directory dialog */}
-        <Dialog open={clientsDialogOpen} onOpenChange={setClientsDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Contact className="w-5 h-5" />
-                Répertoire clients
-              </DialogTitle>
-              <DialogDescription>
-                Base de données des clients (auto-alimentée par les réservations, modifiable).
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <Input
-                placeholder="Rechercher par nom, email ou téléphone..."
-                value={clientsSearch}
-                onChange={(e) => setClientsSearch(e.target.value)}
-              />
-              {(() => {
-                const q = clientsSearch.toLowerCase().trim();
-                const filteredClients = clients.filter((c) =>
-                  !q ||
-                  c.name.toLowerCase().includes(q) ||
-                  (c.email || '').toLowerCase().includes(q) ||
-                  (c.phone || '').toLowerCase().includes(q)
-                );
-                return (
-                  <>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{filteredClients.length} client(s)</span>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openClientForm(null)}>
-                          <Plus className="w-3.5 h-3.5 mr-1" /> Ajouter
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            const csv = [
-                              ['Nom', 'Email', 'Téléphone', 'Réservations', 'Dernière venue', 'Notes'].join(';'),
-                              ...filteredClients.map(c => [
-                                c.name, c.email || '', c.phone || '',
-                                String(c.reservation_count),
-                                c.last_seen_at ? format(new Date(c.last_seen_at), 'yyyy-MM-dd') : '',
-                                c.notes || '',
-                              ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')),
-                            ].join('\n');
-                            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `clients-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                          }}
-                        >
-                          <Download className="w-3.5 h-3.5 mr-1" /> CSV
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="border rounded-md divide-y">
-                      {filteredClients.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-6">Aucun client trouvé</p>
-                      )}
-                      {filteredClients.map((c) => (
-                        <div key={c.id} className="p-3 flex items-center justify-between gap-3 text-sm">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium truncate">{c.name}</p>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                              {c.email && (
-                                <span className="flex items-center gap-1 truncate">
-                                  <Mail className="w-3 h-3 shrink-0" /> {c.email}
-                                </span>
-                              )}
-                              {c.phone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="w-3 h-3 shrink-0" /> {c.phone}
-                                </span>
-                              )}
-                              <span className="text-[10px] uppercase tracking-wide">
-                                {c.reservation_count} résa
-                              </span>
-                            </div>
-                            {c.notes && (
-                              <p className="text-xs text-muted-foreground mt-1 italic line-clamp-2">{c.notes}</p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {c.phone && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                title="Préparer un SMS avec le QR"
-                                onClick={() => {
-                                  const reservation = reservations.find((r) => r.client_phone === c.phone);
-                                  if (!reservation) {
-                                    toast.error('Aucune réservation trouvée pour ce client');
-                                    return;
-                                  }
-                                  const body = buildTicketSmsBody([reservation], 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
-                                  openSmsPreview(c.phone!, c.name, body, [
-                                    { label: reservation.client_name, code: reservation.qr_code },
-                                  ]);
-                                }}
-                              >
-                                <MessageSquare className="w-3.5 h-3.5" />
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier" onClick={() => openClientForm(c)}>
-                              <Eye className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Supprimer" onClick={() => deleteClient(c.id)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ClientsDirectoryDialog
+          open={clientsDialogOpen}
+          onOpenChange={setClientsDialogOpen}
+          clients={clients}
+          search={clientsSearch}
+          onSearchChange={setClientsSearch}
+          onAdd={() => openClientForm(null)}
+          onEdit={openClientForm}
+          onDelete={deleteClient}
+          onSms={sendClientSms}
+        />
 
-        {/* Client edit/add form */}
-        <Dialog open={clientFormOpen} onOpenChange={setClientFormOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingClient ? 'Modifier le client' : 'Ajouter un client'}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Nom *</Label>
-                <Input value={clientForm.name} onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })} />
-              </div>
-              <div>
-                <Label>Téléphone</Label>
-                <Input type="tel" value={clientForm.phone} onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })} placeholder="+33..." />
-              </div>
-              <div>
-                <Label>Email</Label>
-                <Input type="email" value={clientForm.email} onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })} />
-              </div>
-              <div>
-                <Label>Notes</Label>
-                <Textarea value={clientForm.notes} onChange={(e) => setClientForm({ ...clientForm, notes: e.target.value })} rows={3} />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setClientFormOpen(false)}>Annuler</Button>
-                <Button onClick={saveClient} disabled={savingClient}>
-                  {savingClient ? 'Enregistrement...' : 'Enregistrer'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ClientFormDialog
+          open={clientFormOpen}
+          onOpenChange={setClientFormOpen}
+          isEditing={!!editingClient}
+          values={clientForm}
+          onChange={setClientForm}
+          onSave={saveClient}
+          saving={savingClient}
+        />
 
-        {/* Bulk SMS selection dialog */}
-        <Dialog open={bulkSmsOpen} onOpenChange={setBulkSmsOpen}>
-          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" /> Envoi SMS multiple
-              </DialogTitle>
-              <DialogDescription>
-                {bulkSmsDate && `Soirée du ${format(new Date(bulkSmsDate + 'T00:00:00'), 'dd/MM/yyyy')}. `}
-                Sélectionnez les clients à qui renvoyer le ticket par SMS.
-              </DialogDescription>
-            </DialogHeader>
-            {bulkSmsDate && (() => {
-              const eligible = (dateGroups[bulkSmsDate] || []).filter((r) => r.client_phone);
-              const allChecked = eligible.length > 0 && eligible.every((r) => bulkSmsSelected.has(r.id));
-              return (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{bulkSmsSelected.size} / {eligible.length} sélectionné(s)</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => {
-                        if (allChecked) setBulkSmsSelected(new Set());
-                        else setBulkSmsSelected(new Set(eligible.map((r) => r.id)));
-                      }}
-                    >
-                      {allChecked ? 'Tout désélectionner' : 'Tout sélectionner'}
-                    </Button>
-                  </div>
-                  <div className="border rounded-md divide-y max-h-[50vh] overflow-y-auto">
-                    {eligible.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-6">Aucun client avec téléphone</p>
-                    )}
-                    {eligible.map((r) => (
-                      <label key={r.id} className="flex items-center gap-3 p-3 cursor-pointer hover:bg-secondary/40">
-                        <Checkbox
-                          checked={bulkSmsSelected.has(r.id)}
-                          onCheckedChange={(c) => {
-                            const next = new Set(bulkSmsSelected);
-                            if (c) next.add(r.id); else next.delete(r.id);
-                            setBulkSmsSelected(next);
-                          }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{r.client_name}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="w-3 h-3" /> {r.client_phone}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setBulkSmsOpen(false)}>Annuler</Button>
-                    <Button onClick={startBulkSmsQueue} disabled={bulkSmsSelected.size === 0}>
-                      Lancer ({bulkSmsSelected.size})
-                    </Button>
-                  </div>
-                </div>
-              );
-            })()}
-          </DialogContent>
-        </Dialog>
+        <BulkSmsSelectDialog
+          open={bulkSmsOpen}
+          onOpenChange={setBulkSmsOpen}
+          eventDate={bulkSmsDate}
+          eligible={bulkSmsEligible}
+          selected={bulkSmsSelected}
+          onSelectedChange={setBulkSmsSelected}
+          onStart={startBulkSmsQueue}
+        />
 
-        {/* Bulk SMS queue dialog */}
-        <Dialog open={!!bulkSmsQueue} onOpenChange={(open) => { if (!open) { setBulkSmsQueue(null); setBulkSmsIndex(0); } }}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Send className="w-5 h-5" /> Envoi en cours
-              </DialogTitle>
-              <DialogDescription>
-                Envoyez chaque SMS depuis votre app, puis passez au suivant.
-              </DialogDescription>
-            </DialogHeader>
-            {bulkSmsQueue && bulkSmsQueue[bulkSmsIndex] && (() => {
-              const current = bulkSmsQueue[bulkSmsIndex];
-              return (
-                <div className="space-y-4">
-                  <div className="text-xs text-muted-foreground text-center">
-                    Client {bulkSmsIndex + 1} sur {bulkSmsQueue.length}
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                    <div className="bg-primary h-2 transition-all" style={{ width: `${((bulkSmsIndex + 1) / bulkSmsQueue.length) * 100}%` }} />
-                  </div>
-                  <div className="p-4 rounded-lg border bg-secondary/40 text-center">
-                    <p className="font-semibold text-base">{current.client_name}</p>
-                    <p className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1">
-                      <Phone className="w-3.5 h-3.5" /> {current.client_phone}
-                    </p>
-                  </div>
-                  <Button className="w-full" onClick={sendCurrentBulkSms}>
-                    <MessageSquare className="w-4 h-4 mr-2" /> Ouvrir le SMS
-                  </Button>
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1" onClick={nextBulkSms}>
-                      {bulkSmsIndex + 1 >= bulkSmsQueue.length ? 'Terminer' : 'Suivant'}
-                    </Button>
-                    <Button variant="ghost" onClick={() => { setBulkSmsQueue(null); setBulkSmsIndex(0); }}>
-                      Arrêter
-                    </Button>
-                  </div>
-                </div>
-              );
-            })()}
-          </DialogContent>
-        </Dialog>
+        <BulkSmsQueueDialog
+          queue={bulkSmsQueue}
+          index={bulkSmsIndex}
+          onStop={() => { setBulkSmsQueue(null); setBulkSmsIndex(0); }}
+          onSend={sendCurrentBulkSms}
+          onNext={nextBulkSms}
+        />
 
-        <Dialog open={!!pendingSms} onOpenChange={(open) => !open && setPendingSms(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                SMS prêt
-              </DialogTitle>
-              <DialogDescription>
-                Si l'application SMS ne s'est pas ouverte automatiquement, appuyez sur le bouton ci-dessous.
-              </DialogDescription>
-            </DialogHeader>
-            {pendingSms && (
-              <div className="space-y-3">
-                {pendingSms.qrCodes.length > 0 && (
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={() => shareQrViaNativeSheet(pendingSms)}
-                  >
-                    Partager le QR (image) via Messages
-                  </Button>
-                )}
-                <Button asChild className="w-full">
-                  <a href={pendingSms.url}>Ouvrir SMS (texte uniquement)</a>
-                </Button>
-                {pendingSms.isIOS && (
-                  <Button asChild variant="outline" className="w-full">
-                    <a href={pendingSms.fallbackUrl}>Essayer le format iOS alternatif</a>
-                  </Button>
-                )}
-                <Button asChild variant="outline" className="w-full">
-                  <a href={pendingSms.recipientOnlyUrl}>Ouvrir SMS avec le numéro seul</a>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(pendingSms.body)
-                      .then(() => toast.success('Message copié'))
-                      .catch(() => toast.error('Copie impossible sur cet appareil'));
-                  }}
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copier le message
-                </Button>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <PendingSmsDialog
+          pendingSms={pendingSms}
+          onClose={() => setPendingSms(null)}
+          onShareQr={shareQrViaNativeSheet}
+        />
+
 
       </main>
     </div>
   );
 };
 
-// SumUp Card Payment Widget
-const SumUpPaymentWidget = ({ checkoutId, onComplete, onClose }: {
-  checkoutId: string;
-  onComplete: () => void;
-  onClose: () => void;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadWidget = async () => {
-      // Load SumUp SDK if not already loaded
-      if (!(window as any).SumUpCard) {
-        const script = document.createElement('script');
-        script.src = 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js';
-        script.async = true;
-        await new Promise<void>((resolve, reject) => {
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load SumUp SDK'));
-          document.head.appendChild(script);
-        });
-      }
-
-      if (!mounted || !containerRef.current) return;
-
-      const SumUpCard = (window as any).SumUpCard;
-      if (SumUpCard) {
-        SumUpCard.mount({
-          id: 'sumup-card-container',
-          checkoutId,
-          onResponse: (_type: string, body: any) => {
-            if (body?.status === 'PAID') {
-              onComplete();
-            }
-          },
-        });
-      }
-    };
-
-    loadWidget().catch((err) => {
-      console.error('SumUp widget error:', err);
-      toast.error('Impossible de charger le formulaire de paiement');
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [checkoutId]);
-
-  return (
-    <div className="space-y-4">
-      <div id="sumup-card-container" ref={containerRef} className="min-h-[300px]" />
-      <p className="text-xs text-muted-foreground text-center">
-        Paiement sécurisé traité par SumUp
-      </p>
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={onClose}
-      >
-        Fermer et vérifier plus tard
-      </Button>
-    </div>
-  );
-};
 
 
 // Admin now uses ProtectedRoute for authentication
