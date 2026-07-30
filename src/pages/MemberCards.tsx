@@ -296,6 +296,11 @@ const MemberCards = () => {
             Cartes nominatives partenaires
           </p>
         </div>
+        <Link to="/admin/wallet-diagnostic" className="ml-auto">
+          <Button variant="outline" size="sm">
+            Diagnostic Wallet
+          </Button>
+        </Link>
       </header>
 
       <div className="px-4 py-4 md:px-6 md:py-6 max-w-5xl mx-auto">
