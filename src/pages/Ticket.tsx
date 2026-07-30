@@ -115,7 +115,7 @@ const Ticket = () => {
           </p>
         )}
       </div>
-    </div>
+    </main>
   );
 };
 

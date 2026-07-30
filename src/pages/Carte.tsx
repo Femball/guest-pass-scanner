@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Apple, Wallet, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import Seo from '@/components/Seo';
 import laccessLogo from '@/assets/laccess-logo.jpeg.asset.json';
 import leFrancaisLogo from '@/assets/le-francais-logo.png.asset.json';
 
@@ -99,7 +100,12 @@ const Carte = () => {
 
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black via-neutral-900 to-black p-4 text-white">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black via-neutral-900 to-black p-4 text-white">
+      <Seo
+        title="Carte de membre — L'Access × Le Français"
+        description="Votre carte de membre nominative L'Access pour le restaurant Le Français : validité, entreprise et ajout à Apple ou Google Wallet."
+        noindex
+      />
       <div className="w-full max-w-md">
         {loading && (
           <p className="text-center text-sm text-white/70">Chargement de la carte...</p>
@@ -143,12 +149,12 @@ const Carte = () => {
                 <div className="flex items-center gap-3">
                   <img
                     src={laccessLogo.url}
-                    alt="L'Access"
+                    alt="Logo L'Access, club privé"
                     className="w-20 h-20 object-contain rounded-lg shadow-lg shrink-0"
                   />
                   <img
                     src={leFrancaisLogo.url}
-                    alt="Café Le Français"
+                    alt="Logo du restaurant Café Le Français"
                     className="flex-1 min-w-0 h-20 w-full object-contain"
                   />
                 </div>
@@ -165,7 +171,7 @@ const Carte = () => {
                     {card.company_logo_url ? (
                       <img
                         src={card.company_logo_url}
-                        alt={card.company_name ?? 'Entreprise'}
+                        alt={`Logo de l'entreprise ${card.company_name ?? 'du membre'}`}
                         className="max-h-16 max-w-[110px] object-contain bg-white rounded p-1 shrink-0"
                       />
                     ) : card.company_name ? (
@@ -252,7 +258,7 @@ const Carte = () => {
           </>
         )}
       </div>
-    </div>
+    </main>
   );
 };
 
