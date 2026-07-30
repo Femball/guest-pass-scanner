@@ -14,6 +14,17 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
+function base64url(bytes: Uint8Array): string {
+  return encodeBase64(bytes)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function base64urlText(text: string): string {
+  return base64url(new TextEncoder().encode(text));
+}
+
 async function generateGooglePass(card: CardData): Promise<string> {
   const issuerId = Deno.env.get("GOOGLE_WALLET_ISSUER_ID");
   const classId = Deno.env.get("GOOGLE_WALLET_CLASS_ID");
@@ -38,8 +49,8 @@ async function generateGooglePass(card: CardData): Promise<string> {
   };
 
   // Sign JWT for Google OAuth
-  const headerB64 = encodeBase64(new TextEncoder().encode(JSON.stringify(jwtHeader))).replace(/=/g, "");
-  const payloadB64 = encodeBase64(new TextEncoder().encode(JSON.stringify(jwtPayload))).replace(/=/g, "");
+  const headerB64 = base64urlText(JSON.stringify(jwtHeader));
+  const payloadB64 = base64urlText(JSON.stringify(jwtPayload));
   const signingInput = `${headerB64}.${payloadB64}`;
 
   // Import private key
@@ -62,7 +73,7 @@ async function generateGooglePass(card: CardData): Promise<string> {
     new TextEncoder().encode(signingInput)
   );
 
-  const jwt = `${signingInput}.${encodeBase64(new Uint8Array(signature)).replace(/=/g, "")}`;
+  const jwt = `${signingInput}.${base64url(new Uint8Array(signature))}`;
 
   // Exchange for access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -216,14 +227,14 @@ async function generateGooglePass(card: CardData): Promise<string> {
     },
   };
 
-  const savePayloadB64 = encodeBase64(new TextEncoder().encode(JSON.stringify(saveLinkJwtPayload))).replace(/=/g, "");
+  const savePayloadB64 = base64urlText(JSON.stringify(saveLinkJwtPayload));
   const saveSigningInput = `${headerB64}.${savePayloadB64}`;
   const saveSignature = await crypto.subtle.sign(
     "RSASSA-PKCS1-v1_5",
     privateKey,
     new TextEncoder().encode(saveSigningInput)
   );
-  const saveJwt = `${saveSigningInput}.${encodeBase64(new Uint8Array(saveSignature)).replace(/=/g, "")}`;
+  const saveJwt = `${saveSigningInput}.${base64url(new Uint8Array(saveSignature))}`;
 
   return `https://pay.google.com/gp/v/save/${saveJwt}`;
 }
