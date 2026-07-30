@@ -48,6 +48,11 @@ const Index = () => {
     refreshOccupancy();
   };
   return <div className="min-h-screen bg-background flex flex-col">
+      <Seo
+        title="L'Access — Contrôle d'accès événementiel par QR code"
+        description="Scannez les QR codes de réservation, suivez l'occupation en temps réel et gérez les cartes membres L'Access depuis un seul écran."
+        noindex
+      />
       <OfflineBanner isOnline={isOnline} syncedAt={syncedAt} reservationsCount={reservationsCount} />
       {/* Header */}
       <motion.header className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between border-b border-border" initial={{
@@ -62,8 +67,10 @@ const Index = () => {
             <QrCode className="w-5 h-5 md:w-6 md:h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-base md:text-lg font-bold text-foreground">L'Access</h1>
-            <p className="text-[10px] md:text-xs text-muted-foreground">Contrôle d'accès</p>
+            <h1 className="text-base md:text-lg font-bold text-foreground">
+              L'Access — Contrôle d'accès événementiel
+            </h1>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Scan des tickets et cartes membres</p>
           </div>
         </div>
         <div className="flex items-center gap-1 md:gap-2">
@@ -105,7 +112,8 @@ const Index = () => {
             await signOut();
             toast.success('Déconnexion réussie');
           }}
-          title="Se déconnecter">
+          title="Se déconnecter"
+          aria-label="Se déconnecter de L'Access">
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
