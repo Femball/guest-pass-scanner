@@ -124,10 +124,14 @@ async function generateGooglePass(card: CardData): Promise<string> {
   }
 
   // Create or update GenericObject
+  const cardImageUrl =
+    `${Deno.env.get("SUPABASE_URL")}/functions/v1/member-card-image?uid=${encodeURIComponent(card.card_uid)}`;
+
   const genericObject = {
     id: objectId,
     classId: fullClassId,
     state: "ACTIVE",
+    hexBackgroundColor: "#0a0a0a",
     cardTitle: { defaultValue: { language: "fr", value: "L'Access" } },
     header: {
       defaultValue: {
@@ -137,9 +141,9 @@ async function generateGooglePass(card: CardData): Promise<string> {
     },
     heroImage: {
       sourceUri: {
-        uri: "https://cgowurmyyrkftiqweavn.supabase.co/storage/v1/object/public/email-assets/wallet%2Flaccess-logo.jpeg",
+        uri: cardImageUrl,
       },
-      contentDescription: { defaultValue: { language: "fr", value: "L'Access" } },
+      contentDescription: { defaultValue: { language: "fr", value: "Carte membre L'Access" } },
     },
     textModulesData: [
       {
