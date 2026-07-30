@@ -678,6 +678,8 @@ const AdminContent = () => {
   const activeDate = selectedDate && dateGroups[selectedDate] ? selectedDate : sortedDates[0] || null;
   const filteredReservations = activeDate ? dateGroups[activeDate] : [];
 
+  const bulkSmsEligible = bulkSmsDate ? (dateGroups[bulkSmsDate] || []).filter((r) => r.client_phone) : [];
+
   const validatedCount = filteredReservations.filter(r => r.is_validated).length;
   const pendingCount = filteredReservations.filter(r => !r.is_validated).length;
 
