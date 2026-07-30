@@ -14,13 +14,13 @@ export const logActivity = async (
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('activity_logs').insert({
+    await supabase.from('activity_logs').insert([{
       user_id: user.id,
-      actor_label: user.email ?? null,
+      actor_label: user.email ?? undefined,
       action,
       category,
-      details: details ?? null,
-    });
+      details: (details ?? null) as never,
+    }]);
   } catch (err) {
     console.warn('logActivity failed', err);
   }
