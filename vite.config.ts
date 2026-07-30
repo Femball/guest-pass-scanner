@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "script-defer",
-      includeAssets: ["favicon.ico"],
+      includeAssets: ["favicon.png", "apple-touch-icon.png"],
       manifest: {
         name: "L'Access - Contrôle d'accès",
         short_name: "L'Access",
