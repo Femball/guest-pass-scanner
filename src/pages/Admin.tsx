@@ -25,6 +25,7 @@ import { useScanSounds } from '@/hooks/useScanSounds';
 import ArrivalHistory from '@/components/ArrivalHistory';
 import FeedbackList from '@/components/FeedbackList';
 import ScanAnomalies from '@/components/ScanAnomalies';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import QRCode from 'qrcode';
 import { buildSmsPayload, shareQrFiles } from '@/lib/sms';
 import SumUpPaymentWidget from '@/components/admin/SumUpPaymentWidget';
@@ -33,7 +34,6 @@ import ClientFormDialog from '@/components/admin/ClientFormDialog';
 import { BulkSmsSelectDialog, BulkSmsQueueDialog, PendingSmsDialog } from '@/components/admin/BulkSmsDialogs';
 import type { Reservation, PendingSms, ClientRecord, BottleWithReservation, FlyerInvitation } from '@/types/admin';
 
-}
 
 const AdminContent = () => {
   const { signOut, isAdmin } = useAuth();
