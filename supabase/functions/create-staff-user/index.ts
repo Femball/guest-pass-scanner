@@ -7,7 +7,7 @@ const BodySchema = z.object({
   first_name: z.string().trim().min(1).max(60),
   last_name: z.string().trim().min(1).max(60),
   phone: z.string().trim().max(30).regex(/^[0-9 +().-]{6,30}$/).optional().or(z.literal("")),
-  role: z.enum(["admin", "agent", "supervisor"]),
+  role: z.enum(["admin", "agent", "supervisor", "member_control"]),
   password: z.string().min(8).max(72).optional(),
 });
 
