@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import type { PendingSms } from '@/types/admin';
 
-/** Single source of truth for iOS detection (Safari iPhone/iPad, including iPadOS desktop UA). */
+/** Single source of truth for iOS detection (iPhone/iPad, including iPadOS desktop UA). */
 export const isIOSDevice = (): boolean => {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
@@ -10,7 +10,7 @@ export const isIOSDevice = (): boolean => {
 
 /**
  * Builds the native SMS deep links for a recipient.
- * The returned URL must be navigated to synchronously inside a user gesture,
+ * Navigation to `url` MUST happen synchronously inside a user gesture,
  * otherwise iOS/Android silently block the sms: scheme.
  */
 export const buildSmsPayload = (
@@ -26,31 +26,27 @@ export const buildSmsPayload = (
   // iOS uses '&', Android uses '?', others fall back to '?'
   const separator = isIOS ? '&' : '?';
   const encodedBody = encodeURIComponent(body);
+  const standardUrl = `sms:${phoneClean}?body=${encodedBody}`;
+  const iosUrl = `sms:${phoneClean}&body=${encodedBody}`;
+  const iosFallbackUrl = `sms://open?addresses=${encodeURIComponent(phoneClean)}&body=${encodedBody}`;
 
   return {
     phone: phoneClean,
     body,
-    url: isIOS ? `sms:${phoneClean}&body=${encodedBody}` : `sms:${phoneClean}?body=${encodedBody}`,
-    fallbackUrl: isIOS
-      ? `sms://open?addresses=${encodeURIComponent(phoneClean)}&body=${encodedBody}`
-      : `sms:${phoneClean}${separator}body=${encodedBody}`,
+    url: isIOS ? iosUrl : standardUrl,
+    fallbackUrl: isIOS ? iosFallbackUrl : `sms:${phoneClean}${separator}body=${encodedBody}`,
     recipientOnlyUrl: `sms:${phoneClean}`,
     isIOS,
     qrCodes,
   };
 };
 
-/** Builds a simple sms: link (recipient + body) for one-off shares. */
-export const buildSmsLink = (phone: string, body: string): string => {
-  const phoneClean = phone.replace(/[^0-9+]/g, '');
-  const separator = isIOSDevice() ? '&' : '?';
-  return `sms:${phoneClean}${separator}body=${encodeURIComponent(body)}`;
-};
+export type ShareQrResult =
+  | { ok: true }
+  | { ok: false; reason: 'no-qr' | 'unsupported' | 'aborted' | 'error' };
 
-/** Generates QR PNG files and opens the native share sheet (iOS Messages, WhatsApp, ...). */
-export const shareQrViaNativeSheet = async (payload: PendingSms): Promise<
-  { ok: true } | { ok: false; reason: 'no-qr' | 'unsupported' | 'aborted' | 'error' }
-> => {
+/** Generates QR PNG files and opens the native share sheet (iOS Messages, WhatsApp, etc.). */
+export const shareQrFiles = async (payload: PendingSms): Promise<ShareQrResult> => {
   if (!payload.qrCodes.length) return { ok: false, reason: 'no-qr' };
   try {
     const files: File[] = [];
@@ -69,6 +65,7 @@ export const shareQrViaNativeSheet = async (payload: PendingSms): Promise<
     return { ok: true };
   } catch (err) {
     if ((err as Error)?.name === 'AbortError') return { ok: false, reason: 'aborted' };
+    console.error('shareQrFiles error', err);
     return { ok: false, reason: 'error' };
   }
 };
