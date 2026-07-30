@@ -190,6 +190,9 @@ const Index = () => {
         onValidated={refreshOccupancy}
       />
 
+      {/* Gestion du personnel */}
+      <StaffManager open={staffManagerOpen} onOpenChange={setStaffManagerOpen} />
+
       {/* Validation overlay */}
       <ValidationResult isValid={isValid} clientName={clientName} message={message} amount={amount} paymentMethod={paymentMethod} paymentStatus={paymentStatus} onReset={handleReset} />
     </div>;
