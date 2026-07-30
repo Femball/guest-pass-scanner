@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { Loader2, Copy, Trash2, ShieldCheck, ScrollText, UserPlus } from 'lucide-react';
+import { Loader2, Copy, Trash2, ShieldCheck, ScrollText, UserPlus, Search, Pencil, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,28 +16,31 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
-type AppRole = 'admin' | 'agent' | 'supervisor';
+type AppRole = 'admin' | 'agent' | 'supervisor' | 'member_control';
 
 const ROLE_LABEL: Record<AppRole, string> = {
   admin: 'Admin — accès complet',
   supervisor: 'Superviseur — gestion sans export/utilisateurs',
-  agent: 'Agent — scan des tickets uniquement',
+  agent: "Agent d'accueil — scan des tickets uniquement",
+  member_control: 'Contrôle membres — consultation des cartes membres uniquement',
 };
 
 const ROLE_SHORT: Record<AppRole, string> = {
   admin: 'Admin',
   supervisor: 'Superviseur',
-  agent: 'Agent',
+  agent: "Agent d'accueil",
+  member_control: 'Contrôle membres',
 };
 
 interface StaffMember {
-  id: string;
   user_id: string;
+  profile_id: string | null;
   first_name: string;
   last_name: string;
   phone: string | null;
   email: string | null;
   role: AppRole | null;
+  is_self: boolean;
 }
 
 interface ActivityLog {
