@@ -29,3 +29,7 @@ project_id = "cgowurmyyrkftiqweavn"
     verify_jwt = false
   [functions.send-weekly-backup]
     verify_jwt = false
+  [functions.sync-google-wallet]
+    verify_jwt = false
+  [functions.create-staff-user]
+    verify_jwt = false

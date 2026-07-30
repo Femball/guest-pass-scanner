@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          actor_label: string | null
+          category: string
+          created_at: string
+          details: Json | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_label?: string | null
+          category?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_label?: string | null
+          category?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           key: string
@@ -537,6 +567,39 @@ export type Database = {
           scanned_by?: string | null
           source_kind?: string | null
           source_record_id?: string | null
+        }
+        Relationships: []
+      }
+      staff_profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import StaffManager from '@/components/StaffManager';
+import { logActivity } from '@/lib/activityLog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -210,11 +212,8 @@ const AdminContent = () => {
     }
   };
   
-  // User management
+  // Staff management
   const [userDialogOpen, setUserDialogOpen] = useState(false);
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'admin' | 'agent' | 'supervisor'>('agent');
-  const [isAddingUser, setIsAddingUser] = useState(false);
 
   const [bottleData, setBottleData] = useState<BottleWithReservation[]>([]);
   const prevPaymentStatusesRef = useRef<Map<string, string | null>>(new Map());
@@ -690,6 +689,13 @@ const AdminContent = () => {
     setPaymentMethod('');
     setIsAdding(false);
     fetchReservations();
+    if (data && data.length > 0) {
+      logActivity('Création de réservation', 'reservation', {
+        client: data[0].client_name,
+        event_date: data[0].event_date,
+        persons: data.length,
+      });
+    }
   };
 
   const markAsPaid = async (id: string) => {
@@ -705,6 +711,7 @@ const AdminContent = () => {
 
     toast.success('Paiement marqué comme payé');
     fetchReservations();
+    logActivity('Paiement marqué comme payé', 'reservation', { reservation_id: id });
   };
 
   const deleteReservation = async (id: string) => {
@@ -717,6 +724,7 @@ const AdminContent = () => {
 
     toast.success('Réservation supprimée');
     fetchReservations();
+    logActivity('Suppression de réservation', 'reservation', { reservation_id: id });
   };
 
   const showQRCode = async (reservation: Reservation) => {
@@ -1053,7 +1061,7 @@ const AdminContent = () => {
                 onClick={() => setUserDialogOpen(true)}
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                Utilisateur
+                Personnel
               </Button>
               <Button
                 variant="outline"
@@ -1954,69 +1962,8 @@ const AdminContent = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Add User Dialog */}
-        <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Ajouter un utilisateur</DialogTitle>
-              <DialogDescription>
-                L'utilisateur doit d'abord créer un compte sur la page de connexion.
-                Ensuite, entrez son email ici pour lui attribuer un rôle.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="user-email">Email de l'utilisateur</Label>
-                <Input
-                  id="user-email"
-                  type="email"
-                  placeholder="agent@example.com"
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="user-role">Rôle</Label>
-                <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as 'admin' | 'agent' | 'supervisor')}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="agent">Agent (scanner uniquement)</SelectItem>
-                    <SelectItem value="supervisor">Superviseur (gestion sans export/impression/utilisateurs)</SelectItem>
-                    <SelectItem value="admin">Admin (accès complet)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button 
-                className="w-full"
-                disabled={isAddingUser || !newUserEmail}
-                onClick={async () => {
-                  setIsAddingUser(true);
-                  try {
-                    // Find user by email via auth admin API (need edge function)
-                    const { data, error } = await supabase.functions.invoke('assign-user-role', {
-                      body: { email: newUserEmail, role: newUserRole }
-                    });
-                    
-                    if (error) throw error;
-                    if (!data.success) throw new Error(data.error);
-                    
-                    toast.success(`Rôle "${newUserRole}" attribué à ${newUserEmail}`);
-                    setNewUserEmail('');
-                    setUserDialogOpen(false);
-                  } catch (err: any) {
-                    toast.error(err.message || 'Erreur lors de l\'attribution du rôle');
-                  } finally {
-                    setIsAddingUser(false);
-                  }
-                }}
-              >
-                {isAddingUser ? 'Attribution...' : 'Attribuer le rôle'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Staff & activity log */}
+        <StaffManager open={userDialogOpen} onOpenChange={setUserDialogOpen} />
 
         {/* Flyer QR Code Dialog */}
         <Dialog open={flyerQrDialogOpen} onOpenChange={setFlyerQrDialogOpen}>
