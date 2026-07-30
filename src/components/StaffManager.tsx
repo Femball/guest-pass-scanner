@@ -237,6 +237,7 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
                   <SelectTrigger id="staff-role"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="agent">{ROLE_LABEL.agent}</SelectItem>
+                    <SelectItem value="member_control">{ROLE_LABEL.member_control}</SelectItem>
                     <SelectItem value="supervisor">{ROLE_LABEL.supervisor}</SelectItem>
                     <SelectItem value="admin">{ROLE_LABEL.admin}</SelectItem>
                   </SelectContent>
@@ -244,10 +245,21 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
               </div>
             </div>
 
-            <Button className="w-full gap-2" onClick={submit} disabled={isSaving}>
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-              {isSaving ? 'Enregistrement...' : 'Créer / mettre à jour le membre'}
-            </Button>
+            <div className="flex gap-2">
+              <Button className="flex-1 gap-2" onClick={submit} disabled={isSaving}>
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                {isSaving
+                  ? 'Enregistrement...'
+                  : editingUserId
+                    ? 'Enregistrer les modifications'
+                    : 'Créer le membre'}
+              </Button>
+              {editingUserId && (
+                <Button variant="outline" className="gap-1.5" onClick={cancelEdit}>
+                  <X className="w-4 h-4" /> Annuler
+                </Button>
+              )}
+            </div>
 
             {tempPassword && (
               <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-2">
@@ -265,31 +277,50 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
             )}
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Membres ({staff.length})
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Membres ({filteredStaff.length}/{staff.length})
+                </p>
+              </div>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Rechercher un membre (nom, email, rôle...)"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
               {isLoading && <p className="text-sm text-muted-foreground">Chargement...</p>}
-              {!isLoading && staff.length === 0 && (
-                <p className="text-sm text-muted-foreground">Aucun membre enregistré.</p>
+              {!isLoading && filteredStaff.length === 0 && (
+                <p className="text-sm text-muted-foreground">Aucun membre trouvé.</p>
               )}
-              {staff.map((member) => (
-                <div key={member.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+              {filteredStaff.map((member) => (
+                <div key={member.user_id}
+                  className={`flex items-center justify-between gap-3 rounded-lg border p-3 ${
+                    editingUserId === member.user_id ? 'border-primary' : 'border-border'
+                  }`}>
                   <div className="min-w-0">
                     <p className="font-medium text-foreground truncate">
-                      {member.first_name} {member.last_name}
+                      {`${member.first_name} ${member.last_name}`.trim() || member.email}
+                      {member.is_self && <span className="text-xs text-muted-foreground"> (vous)</span>}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
                       {member.email}{member.phone ? ` • ${member.phone}` : ''}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
                       {member.role ? ROLE_SHORT[member.role] : 'Sans rôle'}
                     </Badge>
-                    <Button size="icon" variant="ghost" onClick={() => removeStaff(member)}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
+                    <Button size="icon" variant="ghost" onClick={() => startEdit(member)} title="Modifier">
+                      <Pencil className="w-4 h-4" />
                     </Button>
+                    {!member.is_self && (
+                      <Button size="icon" variant="ghost" onClick={() => removeStaff(member)} title="Supprimer">
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
