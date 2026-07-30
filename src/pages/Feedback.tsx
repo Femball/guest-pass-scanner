@@ -113,12 +113,13 @@ const Feedback = () => {
             Votre retour nous aide à améliorer nos prochaines soirées.
           </p>
         </motion.div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6">
+    <main className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6">
+      {feedbackSeo}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
