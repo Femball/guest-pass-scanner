@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 const Index = () => {
   const [isScanning, setIsScanning] = useState(true);
   const [manualOpen, setManualOpen] = useState(false);
+  const [staffManagerOpen, setStaffManagerOpen] = useState(false);
   const { hasAdminPrivileges, signOut } = useAuth();
   const { validated, expected, refresh: refreshOccupancy } = useOccupancy();
   const { isOnline, syncedAt, reservationsCount } = useOfflineCache();
