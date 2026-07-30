@@ -12,5 +12,10 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /carte/
+Disallow: /qr/
+Disallow: /ticket/
 
 Sitemap: https://laccess.lovable.app/sitemap.xml
