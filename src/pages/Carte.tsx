@@ -165,9 +165,9 @@ const Carte = () => {
                     Carte membre{card.member_type ? ` · ${card.member_type}` : ''}
                   </p>
                   <div className="flex items-center justify-between gap-3">
-                    <h1 className="text-xl font-serif font-bold text-amber-100 leading-tight">
+                    <h2 className="text-xl font-serif font-bold text-amber-100 leading-tight">
                       {card.first_name} {card.last_name}
-                    </h1>
+                    </h2>
                     {card.company_logo_url ? (
                       <img
                         src={card.company_logo_url}
