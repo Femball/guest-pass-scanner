@@ -184,7 +184,7 @@ const Feedback = () => {
           {submitting ? 'Envoi…' : 'Envoyer mon avis'}
         </Button>
       </motion.div>
-    </div>
+    </main>
   );
 };
 
