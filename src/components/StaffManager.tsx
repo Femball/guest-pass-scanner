@@ -64,27 +64,33 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
   const loadStaff = useCallback(async () => {
     setIsLoading(true);
-    const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from('staff_profiles').select('*').order('last_name'),
-      supabase.from('user_roles').select('user_id, role'),
-    ]);
-    const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role as AppRole]));
-    setStaff((profiles ?? []).map((p) => ({
-      id: p.id,
-      user_id: p.user_id,
-      first_name: p.first_name,
-      last_name: p.last_name,
-      phone: p.phone,
-      email: p.email,
-      role: roleMap.get(p.user_id) ?? null,
-    })));
-    setIsLoading(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff', {
+        body: { action: 'list' },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const members = (data?.members ?? []) as StaffMember[];
+      members.sort((a, b) =>
+        `${a.last_name} ${a.first_name} ${a.email ?? ''}`.localeCompare(
+          `${b.last_name} ${b.first_name} ${b.email ?? ''}`,
+          'fr',
+        ),
+      );
+      setStaff(members);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Chargement du personnel impossible');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const loadLogs = useCallback(async () => {
