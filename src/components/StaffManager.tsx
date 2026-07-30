@@ -180,9 +180,8 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
   };
 
   const removeStaff = async (member: StaffMember) => {
-    const label = `${member.first_name} ${member.last_name}`.trim() || member.email || 'ce compte';
-    if (!confirm(`Supprimer définitivement ${label} ?`)) return;
     try {
+      setBusyUserId(member.user_id);
       const { data, error } = await supabase.functions.invoke('manage-staff', {
         body: { action: 'delete', user_id: member.user_id },
       });
@@ -194,6 +193,49 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
       loadLogs();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Suppression impossible');
+    } finally {
+      setBusyUserId(null);
+      setPendingDelete(null);
+    }
+  };
+
+  const changeRole = async (member: StaffMember, role: AppRole) => {
+    if (member.role === role) return;
+    setBusyUserId(member.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff', {
+        body: { action: 'set_role', user_id: member.user_id, role },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setStaff((prev) => prev.map((m) => (m.user_id === member.user_id ? { ...m, role } : m)));
+      toast.success(`Rôle mis à jour : ${ROLE_SHORT[role]}`);
+      loadLogs();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Modification du rôle impossible');
+      loadStaff();
+    } finally {
+      setBusyUserId(null);
+    }
+  };
+
+  const resetPassword = async (member: StaffMember) => {
+    setBusyUserId(member.user_id);
+    setTempPassword(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff', {
+        body: { action: 'reset_password', user_id: member.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setTempPassword(data.temporary_password);
+      toast.success('Nouveau mot de passe généré — transmettez-le au membre');
+      loadLogs();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Réinitialisation impossible');
+    } finally {
+      setBusyUserId(null);
+      setPendingReset(null);
     }
   };
 
@@ -206,6 +248,15 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
           .includes(term),
       )
     : staff;
+
+  const logTerm = logSearch.trim().toLowerCase();
+  const logCategories = Array.from(new Set(logs.map((l) => l.category))).sort();
+  const filteredLogs = logs.filter((log) => {
+    if (logAuthor !== 'all' && log.user_id !== logAuthor) return false;
+    if (logCategory !== 'all' && log.category !== logCategory) return false;
+    if (logTerm && !`${log.action} ${log.actor_label ?? ''}`.toLowerCase().includes(logTerm)) return false;
+    return true;
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
