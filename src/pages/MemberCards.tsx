@@ -78,6 +78,7 @@ function buildCardSmsBody(card: MemberCard, url: string): string {
 }
 
 const MemberCards = () => {
+  const { hasAdminPrivileges: canManage } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [cards, setCards] = useState<MemberCard[]>([]);
   const [loading, setLoading] = useState(true);
