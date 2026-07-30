@@ -287,11 +287,13 @@ const MemberCards = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="px-4 py-3 md:px-6 md:py-4 border-b border-border flex items-center gap-3">
-        <Link to="/admin">
-          <Button variant="ghost" size="icon" className="h-10 w-10">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
+        {canManage && (
+          <Link to="/admin">
+            <Button variant="ghost" size="icon" className="h-10 w-10">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+        )}
         <div>
           <h1 className="text-base md:text-lg font-bold">Cartes membres</h1>
           <p className="text-[10px] md:text-xs text-muted-foreground">
