@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { QrCode, Users, LogOut, UserCheck, IdCard } from 'lucide-react';
+import { QrCode, Users, LogOut, UserCheck, IdCard, UserCog, ShieldCheck } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
 import ValidationResult from '@/components/ValidationResult';
 import OccupancyGauge from '@/components/OccupancyGauge';
@@ -11,6 +11,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOccupancy } from '@/hooks/useOccupancy';
 import { useOfflineCache } from '@/hooks/useOfflineCache';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import StaffManager from '@/components/StaffManager';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 const Index = () => {
