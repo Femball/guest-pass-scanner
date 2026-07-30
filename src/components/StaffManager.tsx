@@ -300,6 +300,12 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
                 <Input id="staff-email" type="email" placeholder="agent@example.com" value={form.email}
                   disabled={!!editingUserId}
                   onChange={(e) => setForm({ ...form, email: e.target.value })} maxLength={255} />
+                {editingUserId && (
+                  <p className="text-xs text-muted-foreground">
+                    L'email sert d'identifiant de connexion : il ne peut pas être modifié. Supprimez puis recréez le
+                    compte si l'adresse doit changer.
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="staff-role">Rôle et droits</Label>
