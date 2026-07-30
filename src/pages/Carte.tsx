@@ -107,6 +107,7 @@ const Carte = () => {
         noindex
       />
       <div className="w-full max-w-md">
+        <h1 className="sr-only">Votre carte de membre L'Access × Le Français</h1>
         {loading && (
           <p className="text-center text-sm text-white/70">Chargement de la carte...</p>
         )}
