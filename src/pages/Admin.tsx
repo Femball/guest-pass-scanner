@@ -113,7 +113,8 @@ const AdminContent = () => {
   // Generate QR PNG files and trigger native share sheet (iOS Messages, WhatsApp, etc.)
   const shareQrViaNativeSheet = async (payload: PendingSms) => {
     const result = await shareQrFiles(payload);
-    if (result.ok || result.reason === 'aborted') return;
+    if (result.ok) return;
+    if (result.reason === 'aborted') return;
     if (result.reason === 'no-qr') toast.error("Aucun QR code à partager");
     else if (result.reason === 'unsupported') toast.error("Partage de fichiers non supporté sur cet appareil");
     else toast.error("Impossible de partager le QR");
