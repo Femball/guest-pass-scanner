@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import Seo from '@/components/Seo';
 import { lovable } from '@/integrations/lovable';
 import { z } from 'zod';
 
@@ -117,7 +118,12 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6">
+    <main className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6">
+      <Seo
+        title="Connexion — L'Access"
+        description="Espace de connexion réservé au personnel L'Access : scan des tickets, gestion des réservations et cartes membres."
+        noindex
+      />
       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-300">
         <Card className="border-border/50">
           <CardHeader className="text-center space-y-3 md:space-y-4 px-4 md:px-6">
@@ -125,7 +131,9 @@ const Auth = () => {
               <QrCode className="w-6 h-6 md:w-8 md:h-8 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl md:text-2xl">L'Access</CardTitle>
+              <CardTitle asChild className="text-xl md:text-2xl">
+                <h1>L'Access — Connexion au personnel</h1>
+              </CardTitle>
               <CardDescription className="text-xs md:text-sm">
                 Connectez-vous à votre compte
               </CardDescription>
@@ -217,7 +225,7 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 };
 
