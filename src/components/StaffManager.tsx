@@ -144,14 +144,50 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
     }
   };
 
-  const removeStaff = async (member: StaffMember) => {
-    if (!confirm(`Retirer ${member.first_name} ${member.last_name} du personnel ?`)) return;
-    const { error } = await supabase.from('staff_profiles').delete().eq('id', member.id);
-    if (error) { toast.error('Suppression impossible'); return; }
-    await supabase.from('user_roles').delete().eq('user_id', member.user_id);
-    toast.success('Membre retiré');
-    loadStaff();
+  const startEdit = (member: StaffMember) => {
+    setEditingUserId(member.user_id);
+    setTempPassword(null);
+    setForm({
+      first_name: member.first_name,
+      last_name: member.last_name,
+      phone: member.phone ?? '',
+      email: member.email ?? '',
+      role: member.role ?? 'agent',
+    });
   };
+
+  const cancelEdit = () => {
+    setEditingUserId(null);
+    setForm(emptyForm);
+  };
+
+  const removeStaff = async (member: StaffMember) => {
+    const label = `${member.first_name} ${member.last_name}`.trim() || member.email || 'ce compte';
+    if (!confirm(`Supprimer définitivement ${label} ?`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-staff', {
+        body: { action: 'delete', user_id: member.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('Compte supprimé');
+      if (editingUserId === member.user_id) cancelEdit();
+      loadStaff();
+      loadLogs();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Suppression impossible');
+    }
+  };
+
+  const term = search.trim().toLowerCase();
+  const filteredStaff = term
+    ? staff.filter((m) =>
+        [m.first_name, m.last_name, m.email ?? '', m.phone ?? '', m.role ? ROLE_SHORT[m.role] : '']
+          .join(' ')
+          .toLowerCase()
+          .includes(term),
+      )
+    : staff;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
