@@ -135,6 +135,7 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
         toast.success('Membre du personnel mis à jour');
       }
       setForm(emptyForm);
+      setEditingUserId(null);
       loadStaff();
       loadLogs();
     } catch (err) {
