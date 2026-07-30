@@ -230,6 +230,7 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
               <div className="space-y-1.5">
                 <Label htmlFor="staff-email">Email (identifiant de connexion)</Label>
                 <Input id="staff-email" type="email" placeholder="agent@example.com" value={form.email}
+                  disabled={!!editingUserId}
                   onChange={(e) => setForm({ ...form, email: e.target.value })} maxLength={255} />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
