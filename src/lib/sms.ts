@@ -1,5 +1,6 @@
 import QRCode from 'qrcode';
 import type { PendingSms } from '@/types/admin';
+import laccessMark from '@/assets/laccess-mark.png';
 
 /** Single source of truth for iOS detection (iPhone/iPad, including iPadOS desktop UA). */
 export const isIOSDevice = (): boolean => {
@@ -45,6 +46,40 @@ export type ShareQrResult =
   | { ok: true }
   | { ok: false; reason: 'no-qr' | 'unsupported' | 'aborted' | 'error' };
 
+/** Draws the L'Access logo in the middle of a QR code data URL. */
+const withCenterLogo = (qrDataUrl: string, size = 600): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return reject(new Error('canvas unsupported'));
+
+    const qrImg = new Image();
+    qrImg.onload = () => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(qrImg, 0, 0, size, size);
+
+      const logo = new Image();
+      logo.onload = () => {
+        const logoSize = Math.round(size * 0.22);
+        const pad = Math.round(logoSize * 0.1);
+        const x = Math.round((size - logoSize) / 2);
+        const y = Math.round((size - logoSize) / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x - pad, y - pad, logoSize + pad * 2, logoSize + pad * 2);
+        ctx.drawImage(logo, x, y, logoSize, logoSize);
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+      };
+      logo.onerror = () =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+      logo.src = laccessMark;
+    };
+    qrImg.onerror = () => reject(new Error('qr load failed'));
+    qrImg.src = qrDataUrl;
+  });
+
 /** Generates QR PNG files and opens the native share sheet (iOS Messages, WhatsApp, etc.). */
 export const shareQrFiles = async (payload: PendingSms): Promise<ShareQrResult> => {
   if (!payload.qrCodes.length) return { ok: false, reason: 'no-qr' };
@@ -52,7 +87,12 @@ export const shareQrFiles = async (payload: PendingSms): Promise<ShareQrResult> 
     const files: File[] = [];
     for (const qr of payload.qrCodes) {
       const dataUrl = await QRCode.toDataURL(qr.code, { width: 600, margin: 2, errorCorrectionLevel: 'H' });
-      const blob = await (await fetch(dataUrl)).blob();
+      let blob: Blob;
+      try {
+        blob = await withCenterLogo(dataUrl);
+      } catch {
+        blob = await (await fetch(dataUrl)).blob();
+      }
       const safeLabel = qr.label.replace(/[^a-zA-Z0-9_-]/g, '_') || 'qr';
       files.push(new File([blob], `${safeLabel}.png`, { type: 'image/png' }));
     }
