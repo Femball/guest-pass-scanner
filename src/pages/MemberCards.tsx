@@ -330,10 +330,12 @@ const MemberCards = () => {
                   onChange={(e) => setCardSearch(e.target.value)}
                 />
               </div>
-              <Button onClick={openNewCard}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nouvelle carte
-              </Button>
+              {canManage && (
+                <Button onClick={openNewCard}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle carte
+                </Button>
+              )}
             </div>
 
             {loading ? (
@@ -428,17 +430,21 @@ const MemberCards = () => {
                             <Send className="w-4 h-4 mr-1" />
                             SMS
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => openEditCard(c)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive"
-                            onClick={() => deleteCard(c)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {canManage && (
+                            <>
+                              <Button size="sm" variant="ghost" onClick={() => openEditCard(c)}>
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive"
+                                onClick={() => deleteCard(c)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -450,12 +456,14 @@ const MemberCards = () => {
 
           {/* COMPANIES */}
           <TabsContent value="companies" className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={openNewCompany}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nouvelle entreprise
-              </Button>
-            </div>
+            {canManage && (
+              <div className="flex justify-end">
+                <Button onClick={openNewCompany}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle entreprise
+                </Button>
+              </div>
+            )}
 
             {loading ? (
               <p className="text-sm text-muted-foreground">Chargement...</p>
@@ -487,19 +495,21 @@ const MemberCards = () => {
                           {cards.filter((x) => x.company_id === c.id).length} carte(s)
                         </p>
                       </div>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => openEditCompany(c)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive"
-                          onClick={() => deleteCompany(c)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      {canManage && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => openEditCompany(c)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => deleteCompany(c)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
