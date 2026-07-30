@@ -16,10 +16,9 @@ const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading, signIn, signUp } = useAuth();
+  const { user, isLoading: authLoading, signIn } = useAuth();
   const hasNavigated = useRef(false);
 
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -90,36 +89,20 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
+      const { error } = await signIn(email, password);
 
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            toast.error('Email ou mot de passe incorrect');
-          } else if (error.message.includes('Email not confirmed')) {
-            toast.error('Veuillez confirmer votre email avant de vous connecter');
-          } else {
-            toast.error(error.message);
-          }
-          return;
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Email ou mot de passe incorrect');
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Veuillez confirmer votre email avant de vous connecter');
+        } else {
+          toast.error(error.message);
         }
-
-        // Navigation will be handled by useEffect when user state updates
-      } else {
-        const { error } = await signUp(email, password);
-
-        if (error) {
-          if (error.message.includes('User already registered')) {
-            toast.error('Un compte existe déjà avec cet email');
-          } else {
-            toast.error(error.message);
-          }
-          return;
-        }
-
-        toast.success('Compte créé ! Vérifiez votre email pour confirmer votre inscription.');
-        setIsLogin(true);
+        return;
       }
+
+      // Navigation will be handled by useEffect when user state updates
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +127,7 @@ const Auth = () => {
             <div>
               <CardTitle className="text-xl md:text-2xl">L'Access</CardTitle>
               <CardDescription className="text-xs md:text-sm">
-                {isLogin ? 'Connectez-vous à votre compte' : 'Créez un nouveau compte'}
+                Connectez-vous à votre compte
               </CardDescription>
             </div>
           </CardHeader>
@@ -184,7 +167,7 @@ const Auth = () => {
 
               <Button type="submit" className="w-full h-12 md:h-10" disabled={isLoading}>
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {isLogin ? 'Se connecter' : 'Créer un compte'}
+                Se connecter
               </Button>
             </form>
 
@@ -228,19 +211,8 @@ const Auth = () => {
               Continuer avec Google
             </Button>
 
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                {isLogin
-                  ? "Pas encore de compte ? S'inscrire"
-                  : 'Déjà un compte ? Se connecter'}
-              </button>
-            </div>
-
-            <p className="mt-4 text-xs text-center text-muted-foreground">
-              Contactez un administrateur pour obtenir l'accès après inscription.
+            <p className="mt-6 text-xs text-center text-muted-foreground">
+              L'inscription est réservée aux administrateurs. Contactez un administrateur pour obtenir un accès.
             </p>
           </CardContent>
         </Card>
