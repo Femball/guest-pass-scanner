@@ -5,11 +5,11 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: 'admin' | 'agent' | 'staff' | 'adminOrSupervisor';
+  requiredRole?: 'admin' | 'agent' | 'staff' | 'adminOrSupervisor' | 'memberViewer';
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, isLoading, isAdmin, isAgent, isStaff, hasAdminPrivileges } = useAuth();
+  const { user, isLoading, isAdmin, isAgent, isStaff, hasAdminPrivileges, canViewMembers } = useAuth();
 
   if (isLoading) {
     return (
@@ -49,7 +49,23 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     );
   }
 
+  if (requiredRole === 'memberViewer' && !canViewMembers) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-foreground">Accès refusé</h1>
+          <p className="text-muted-foreground">
+            Vous n'avez pas les droits pour consulter les cartes membres.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (requiredRole === 'staff' && !isStaff) {
+    if (canViewMembers) {
+      return <Navigate to="/admin/cartes" replace />;
+    }
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4">

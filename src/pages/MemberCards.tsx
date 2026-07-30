@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface Company {
@@ -77,6 +78,7 @@ function buildCardSmsBody(card: MemberCard, url: string): string {
 }
 
 const MemberCards = () => {
+  const { hasAdminPrivileges: canManage } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [cards, setCards] = useState<MemberCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -285,22 +287,26 @@ const MemberCards = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="px-4 py-3 md:px-6 md:py-4 border-b border-border flex items-center gap-3">
-        <Link to="/admin">
-          <Button variant="ghost" size="icon" className="h-10 w-10">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
+        {canManage && (
+          <Link to="/admin">
+            <Button variant="ghost" size="icon" className="h-10 w-10">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+        )}
         <div>
           <h1 className="text-base md:text-lg font-bold">Cartes membres</h1>
           <p className="text-[10px] md:text-xs text-muted-foreground">
             Cartes nominatives partenaires
           </p>
         </div>
-        <Link to="/admin/wallet-diagnostic" className="ml-auto">
-          <Button variant="outline" size="sm">
-            Diagnostic Wallet
-          </Button>
-        </Link>
+        {canManage && (
+          <Link to="/admin/wallet-diagnostic" className="ml-auto">
+            <Button variant="outline" size="sm">
+              Diagnostic Wallet
+            </Button>
+          </Link>
+        )}
       </header>
 
       <div className="px-4 py-4 md:px-6 md:py-6 max-w-5xl mx-auto">
@@ -328,10 +334,12 @@ const MemberCards = () => {
                   onChange={(e) => setCardSearch(e.target.value)}
                 />
               </div>
-              <Button onClick={openNewCard}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nouvelle carte
-              </Button>
+              {canManage && (
+                <Button onClick={openNewCard}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle carte
+                </Button>
+              )}
             </div>
 
             {loading ? (
@@ -426,17 +434,21 @@ const MemberCards = () => {
                             <Send className="w-4 h-4 mr-1" />
                             SMS
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => openEditCard(c)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive"
-                            onClick={() => deleteCard(c)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {canManage && (
+                            <>
+                              <Button size="sm" variant="ghost" onClick={() => openEditCard(c)}>
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive"
+                                onClick={() => deleteCard(c)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -448,12 +460,14 @@ const MemberCards = () => {
 
           {/* COMPANIES */}
           <TabsContent value="companies" className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={openNewCompany}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nouvelle entreprise
-              </Button>
-            </div>
+            {canManage && (
+              <div className="flex justify-end">
+                <Button onClick={openNewCompany}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle entreprise
+                </Button>
+              </div>
+            )}
 
             {loading ? (
               <p className="text-sm text-muted-foreground">Chargement...</p>
@@ -485,19 +499,21 @@ const MemberCards = () => {
                           {cards.filter((x) => x.company_id === c.id).length} carte(s)
                         </p>
                       </div>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => openEditCompany(c)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive"
-                          onClick={() => deleteCompany(c)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      {canManage && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => openEditCompany(c)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => deleteCompany(c)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

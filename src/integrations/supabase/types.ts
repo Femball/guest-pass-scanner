@@ -680,6 +680,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_members: { Args: { _user_id: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -745,7 +746,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "agent" | "supervisor"
+      app_role: "admin" | "agent" | "supervisor" | "member_control"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -873,7 +874,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "agent", "supervisor"],
+      app_role: ["admin", "agent", "supervisor", "member_control"],
     },
   },
 } as const
