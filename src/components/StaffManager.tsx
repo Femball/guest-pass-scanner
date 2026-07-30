@@ -376,7 +376,7 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
                   className={`flex items-center justify-between gap-3 rounded-lg border p-3 ${
                     editingUserId === member.user_id ? 'border-primary' : 'border-border'
                   }`}>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground truncate">
                       {`${member.first_name} ${member.last_name}`.trim() || member.email}
                       {member.is_self && <span className="text-xs text-muted-foreground"> (vous)</span>}
@@ -384,16 +384,38 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
                     <p className="text-xs text-muted-foreground truncate">
                       {member.email}{member.phone ? ` • ${member.phone}` : ''}
                     </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Select
+                        value={member.role ?? undefined}
+                        onValueChange={(v) => changeRole(member, v as AppRole)}
+                        disabled={busyUserId === member.user_id}
+                      >
+                        <SelectTrigger className="h-8 w-[190px] text-xs">
+                          <SelectValue placeholder="Sans rôle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="agent">{ROLE_SHORT.agent}</SelectItem>
+                          <SelectItem value="member_control">{ROLE_SHORT.member_control}</SelectItem>
+                          <SelectItem value="supervisor">{ROLE_SHORT.supervisor}</SelectItem>
+                          <SelectItem value="admin">{ROLE_SHORT.admin}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {busyUserId === member.user_id && (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
-                      {member.role ? ROLE_SHORT[member.role] : 'Sans rôle'}
-                    </Badge>
+                  <div className="flex items-center gap-1 shrink-0 self-start">
+                    {!member.role && <Badge variant="outline">Sans rôle</Badge>}
+                    <Button size="icon" variant="ghost" onClick={() => setPendingReset(member)}
+                      title="Réinitialiser le mot de passe">
+                      <KeyRound className="w-4 h-4" />
+                    </Button>
                     <Button size="icon" variant="ghost" onClick={() => startEdit(member)} title="Modifier">
                       <Pencil className="w-4 h-4" />
                     </Button>
                     {!member.is_self && (
-                      <Button size="icon" variant="ghost" onClick={() => removeStaff(member)} title="Supprimer">
+                      <Button size="icon" variant="ghost" onClick={() => setPendingDelete(member)} title="Supprimer">
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     )}
