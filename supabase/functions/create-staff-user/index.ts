@@ -40,9 +40,9 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
 
-    const { data: callerRole } = await admin
-      .from("user_roles").select("role").eq("user_id", caller.id).maybeSingle();
-    if (callerRole?.role !== "admin") return json({ error: "Accès réservé aux administrateurs" }, 403);
+    if (!(await isAdmin(admin, caller.id))) {
+      return json({ error: "Accès réservé aux administrateurs" }, 403);
+    }
 
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) return json({ error: parsed.error.errors.map((e) => e.message).join(", ") }, 400);
@@ -67,17 +67,8 @@ Deno.serve(async (req) => {
       user = created.user;
     }
 
-    const { error: roleError } = await admin
-      .from("user_roles")
-      .upsert({ user_id: user.id, role }, { onConflict: "user_id,role" });
-    if (roleError) {
-      // Existing row with a different role: replace it.
-      await admin.from("user_roles").delete().eq("user_id", user.id);
-      const { error: insertError } = await admin.from("user_roles").insert({ user_id: user.id, role });
-      if (insertError) return json({ error: "Attribution du rôle impossible" }, 400);
-    } else {
-      await admin.from("user_roles").delete().eq("user_id", user.id).neq("role", role);
-    }
+    const { error: roleError } = await setUserRole(admin, user.id, role);
+    if (roleError) return json({ error: roleError }, 400);
 
     const { error: profileError } = await admin
       .from("staff_profiles")
