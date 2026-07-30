@@ -6,6 +6,7 @@ import ValidationResult from '@/components/ValidationResult';
 import OccupancyGauge from '@/components/OccupancyGauge';
 import ManualEntryDialog from '@/components/ManualEntryDialog';
 import OfflineBanner from '@/components/OfflineBanner';
+import Seo from '@/components/Seo';
 import { useReservationValidator } from '@/hooks/useReservationValidator';
 import { useAuth } from '@/hooks/useAuth';
 import { useOccupancy } from '@/hooks/useOccupancy';
