@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { Loader2, Copy, Trash2, ShieldCheck, ScrollText, UserPlus, Search, Pencil, X } from 'lucide-react';
+import { Loader2, Copy, Trash2, ShieldCheck, ScrollText, UserPlus, Search, Pencil, X, KeyRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -60,6 +64,13 @@ interface Props {
 
 const emptyForm = { first_name: '', last_name: '', phone: '', email: '', role: 'agent' as AppRole };
 
+const CATEGORY_LABEL: Record<string, string> = {
+  staff: 'Personnel',
+  reservation: 'Réservations',
+  payment: 'Paiements',
+  general: 'Général',
+};
+
 const StaffManager = ({ open, onOpenChange }: Props) => {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -69,6 +80,12 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<StaffMember | null>(null);
+  const [pendingReset, setPendingReset] = useState<StaffMember | null>(null);
+  const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [logAuthor, setLogAuthor] = useState<string>('all');
+  const [logCategory, setLogCategory] = useState<string>('all');
+  const [logSearch, setLogSearch] = useState('');
 
   const loadStaff = useCallback(async () => {
     setIsLoading(true);
