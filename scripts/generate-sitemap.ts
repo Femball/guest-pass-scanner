@@ -19,6 +19,10 @@ const entries: SitemapEntry[] = [
   { path: "/unsubscribe", changefreq: "yearly", priority: "0.3" },
 ];
 
+// Routes volontairement exclues (privées / non indexables, bloquées dans robots.txt) :
+// /admin, /admin/cartes, /admin/wallet-diagnostic (back-office staff),
+// /carte/:uid, /qr/:code, /ticket/... (liens nominatifs privés envoyés par SMS).
+
 function generateSitemap(entries: SitemapEntry[]) {
   const urls = entries.map((e) =>
     [
