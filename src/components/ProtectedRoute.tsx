@@ -63,6 +63,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   }
 
   if (requiredRole === 'staff' && !isStaff) {
+    if (canViewMembers) {
+      return <Navigate to="/admin/cartes" replace />;
+    }
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="text-center space-y-4">
