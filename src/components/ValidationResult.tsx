@@ -32,6 +32,9 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
   return (
     <AnimatePresence>
       <motion.div
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
         className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-4 md:p-8 ${
           isValid ? 'validation-valid' : 'validation-invalid'
         }`}
@@ -40,6 +43,11 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
       >
+        <span className="sr-only">
+          {isValid ? 'Accès autorisé' : 'Accès refusé'}
+          {clientName && isValid ? `, ${clientName}` : ''}
+          {message ? `. ${message}` : ''}
+        </span>
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
