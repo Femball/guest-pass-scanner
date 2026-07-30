@@ -54,7 +54,7 @@ const AppContent = () => {
         <Route
           path="/admin/cartes"
           element={
-            <ProtectedRoute requiredRole="adminOrSupervisor">
+            <ProtectedRoute requiredRole="memberViewer">
               <MemberCards />
             </ProtectedRoute>
           }
