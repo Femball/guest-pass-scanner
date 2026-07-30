@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import QRCode from "qrcode";
 import { Calendar, Clock, MapPin, User } from "lucide-react";
+import Seo from "@/components/Seo";
 
 type TicketData = {
   code?: string;
@@ -57,7 +58,12 @@ const Ticket = () => {
   }, [code]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+      <Seo
+        title="Votre ticket d'entrée — L'Access"
+        description="Affichez le QR code de votre ticket L'Access et présentez-le à l'entrée de la soirée pour être scanné."
+        noindex
+      />
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold mb-1 text-center">L'Access — Votre ticket</h1>
         <p className="text-sm text-muted-foreground mb-4 text-center">
@@ -69,7 +75,7 @@ const Ticket = () => {
         {dataUrl && (
           <img
             src={dataUrl}
-            alt="QR code ticket"
+            alt="QR code du ticket d'entrée L'Access à présenter à l'accueil"
             className="w-full rounded-lg shadow-lg bg-white p-4"
           />
         )}
@@ -109,7 +115,7 @@ const Ticket = () => {
           </p>
         )}
       </div>
-    </div>
+    </main>
   );
 };
 

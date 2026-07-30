@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, XCircle, Loader2, MailX } from 'lucide-react';
+import Seo from '@/components/Seo';
 
 type Status = 'loading' | 'valid' | 'already' | 'invalid' | 'success' | 'error';
 
@@ -63,9 +64,15 @@ const Unsubscribe = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <main className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Seo
+        title="Se désabonner des emails — L'Access"
+        description="Gérez vos préférences email L'Access et désabonnez-vous en un clic des invitations et rappels de soirée."
+        noindex
+      />
       <Card className="max-w-md w-full">
         <CardContent className="pt-6 text-center space-y-4">
+          <h1 className="sr-only">Désabonnement des emails L'Access</h1>
           {status === 'loading' && (
             <>
               <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto" />
@@ -115,7 +122,7 @@ const Unsubscribe = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 };
 

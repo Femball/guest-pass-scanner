@@ -5,6 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, Check, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Seo from '@/components/Seo';
+
+const feedbackSeo = (
+  <Seo
+    title="Votre avis sur la soirée — L'Access"
+    description="Notez votre soirée L'Access et laissez un commentaire : votre retour nous aide à améliorer nos prochains événements."
+    noindex
+  />
+);
 
 interface FeedbackRecord {
   id: string;
@@ -67,27 +76,30 @@ const Feedback = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        {feedbackSeo}
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      </main>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <main className="min-h-screen bg-background flex items-center justify-center p-6">
+        {feedbackSeo}
         <div className="max-w-md text-center space-y-4">
           <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
           <h1 className="text-2xl font-bold text-foreground">Oups</h1>
           <p className="text-muted-foreground">{error}</p>
         </div>
-      </div>
+      </main>
     );
   }
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <main className="min-h-screen bg-background flex items-center justify-center p-6">
+        {feedbackSeo}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -101,12 +113,13 @@ const Feedback = () => {
             Votre retour nous aide à améliorer nos prochaines soirées.
           </p>
         </motion.div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6">
+    <main className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6">
+      {feedbackSeo}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -171,7 +184,7 @@ const Feedback = () => {
           {submitting ? 'Envoi…' : 'Envoyer mon avis'}
         </Button>
       </motion.div>
-    </div>
+    </main>
   );
 };
 
