@@ -131,9 +131,9 @@ const Auth = () => {
               <QrCode className="w-6 h-6 md:w-8 md:h-8 text-primary" />
             </div>
             <div>
-              <CardTitle asChild className="text-xl md:text-2xl">
-                <h1>L'Access — Connexion au personnel</h1>
-              </CardTitle>
+              <h1 className="text-xl md:text-2xl font-semibold leading-none tracking-tight">
+                L'Access — Connexion au personnel
+              </h1>
               <CardDescription className="text-xs md:text-sm">
                 Connectez-vous à votre compte
               </CardDescription>
