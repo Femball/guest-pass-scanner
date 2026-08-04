@@ -95,7 +95,7 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      const members = (data?.members ?? []) as StaffMember[];
+      const members = ((data?.members ?? []) as StaffMember[]).filter((m) => !isHiddenEmail(m.email));
       members.sort((a, b) =>
         `${a.last_name} ${a.first_name} ${a.email ?? ''}`.localeCompare(
           `${b.last_name} ${b.first_name} ${b.email ?? ''}`,
@@ -116,7 +116,7 @@ const StaffManager = ({ open, onOpenChange }: Props) => {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
-    setLogs((data ?? []) as ActivityLog[]);
+    setLogs(((data ?? []) as ActivityLog[]).filter((l) => !isHiddenEmail(l.actor_label)));
   }, []);
 
   useEffect(() => {
