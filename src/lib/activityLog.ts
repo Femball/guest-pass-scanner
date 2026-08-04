@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { maskActorLabel } from '@/lib/hiddenAccounts';
 
 type Category = 'reservation' | 'scan' | 'member_card' | 'staff' | 'general';
 
@@ -16,7 +17,7 @@ export const logActivity = async (
     if (!user) return;
     await supabase.from('activity_logs').insert([{
       user_id: user.id,
-      actor_label: user.email ?? undefined,
+      actor_label: maskActorLabel(user.email) ?? undefined,
       action,
       category,
       details: (details ?? null) as never,
