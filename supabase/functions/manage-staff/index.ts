@@ -18,6 +18,12 @@ function randomPassword() {
   return Array.from(bytes, (b) => "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$"[b % 57]).join("");
 }
 
+// Un compte masqué ne doit être ni listé ni ciblé par une action de l'interface.
+async function isHiddenTarget(admin: ReturnType<typeof createClient>, userId: string) {
+  const { data } = await admin.auth.admin.getUserById(userId);
+  return isHiddenEmail(data?.user?.email);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
