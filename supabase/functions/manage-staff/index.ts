@@ -2,11 +2,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { clearUserRoles, isAdmin, setUserRole } from "../_shared/roles.ts";
+import { isHiddenEmail, maskActorLabel } from "../_shared/hidden-accounts.ts";
 
 const ROLES = ["admin", "agent", "supervisor", "member_control"] as const;
-
-// Comptes techniques masqués de la liste du personnel.
-const HIDDEN_EMAILS = new Set(["isaac.willy@live.fr"]);
 
 const BodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("list") }),
@@ -18,6 +16,12 @@ const BodySchema = z.discriminatedUnion("action", [
 function randomPassword() {
   const bytes = crypto.getRandomValues(new Uint8Array(12));
   return Array.from(bytes, (b) => "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$"[b % 57]).join("");
+}
+
+// Un compte masqué ne doit être ni listé ni ciblé par une action de l'interface.
+async function isHiddenTarget(admin: ReturnType<typeof createClient>, userId: string) {
+  const { data } = await admin.auth.admin.getUserById(userId);
+  return isHiddenEmail(data?.user?.email);
 }
 
 Deno.serve(async (req) => {
@@ -61,7 +65,7 @@ Deno.serve(async (req) => {
       const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p]));
       const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role]));
       const members = usersData.users
-        .filter((u) => !HIDDEN_EMAILS.has((u.email ?? "").toLowerCase()))
+        .filter((u) => !isHiddenEmail(u.email))
         .map((u) => {
         const p = profileMap.get(u.id);
         return {
@@ -81,6 +85,7 @@ Deno.serve(async (req) => {
 
     if (parsed.data.action === "set_role") {
       const { user_id: targetId, role } = parsed.data;
+      if (await isHiddenTarget(admin, targetId)) return json({ error: "Membre introuvable" }, 404);
       if (targetId === caller.id && role !== "admin") {
         return json({ error: "Vous ne pouvez pas retirer votre propre accès administrateur" }, 400);
       }
@@ -89,7 +94,7 @@ Deno.serve(async (req) => {
 
       await admin.from("activity_logs").insert({
         user_id: caller.id,
-        actor_label: caller.email ?? null,
+        actor_label: maskActorLabel(caller.email),
         action: "Modification du rôle d'un membre",
         category: "staff",
         details: { target_user_id: targetId, role },
@@ -99,13 +104,14 @@ Deno.serve(async (req) => {
 
     if (parsed.data.action === "reset_password") {
       const targetId = parsed.data.user_id;
+      if (await isHiddenTarget(admin, targetId)) return json({ error: "Membre introuvable" }, 404);
       const password = randomPassword();
       const { error: updateError } = await admin.auth.admin.updateUserById(targetId, { password });
       if (updateError) return json({ error: "Réinitialisation impossible" }, 400);
 
       await admin.from("activity_logs").insert({
         user_id: caller.id,
-        actor_label: caller.email ?? null,
+        actor_label: maskActorLabel(caller.email),
         action: "Réinitialisation d'un mot de passe",
         category: "staff",
         details: { target_user_id: targetId },
@@ -116,6 +122,7 @@ Deno.serve(async (req) => {
     // delete
     const targetId = parsed.data.user_id;
     if (targetId === caller.id) return json({ error: "Vous ne pouvez pas supprimer votre propre compte" }, 400);
+    if (await isHiddenTarget(admin, targetId)) return json({ error: "Membre introuvable" }, 404);
 
     await admin.from("staff_profiles").delete().eq("user_id", targetId);
     await clearUserRoles(admin, targetId);
@@ -124,7 +131,7 @@ Deno.serve(async (req) => {
 
     await admin.from("activity_logs").insert({
       user_id: caller.id,
-      actor_label: caller.email ?? null,
+      actor_label: maskActorLabel(caller.email),
       action: "Suppression d'un membre du personnel",
       category: "staff",
       details: { target_user_id: targetId },

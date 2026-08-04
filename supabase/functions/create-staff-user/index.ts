@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { isAdmin, setUserRole } from "../_shared/roles.ts";
+import { isHiddenEmail, maskActorLabel } from "../_shared/hidden-accounts.ts";
 
 const BodySchema = z.object({
   email: z.string().email().max(255).transform((v) => v.toLowerCase()),
@@ -50,6 +51,9 @@ Deno.serve(async (req) => {
     const { email, first_name, last_name, role } = parsed.data;
     const phone = parsed.data.phone || null;
 
+    // Les comptes techniques masqués ne peuvent être ni créés ni modifiés depuis l'interface.
+    if (isHiddenEmail(email)) return json({ error: "Compte non gérable depuis l'interface" }, 403);
+
     // Find the user if the account already exists, otherwise create it.
     const { data: usersData, error: listError } = await admin.auth.admin.listUsers();
     if (listError) return json({ error: "Impossible de lister les comptes" }, 500);
@@ -78,7 +82,7 @@ Deno.serve(async (req) => {
 
     await admin.from("activity_logs").insert({
       user_id: caller.id,
-      actor_label: caller.email ?? null,
+      actor_label: maskActorLabel(caller.email),
       action: generatedPassword ? "Création d'un compte personnel" : "Mise à jour d'un membre du personnel",
       category: "staff",
       details: { target_email: email, role },
