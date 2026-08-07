@@ -872,6 +872,12 @@ const AdminContent = () => {
                 <span className="hidden sm:inline">Cartes membres</span>
               </Button>
             </Link>
+            <Link to="/admin/soirees">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Soirées spéciales</span>
+              </Button>
+            </Link>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <Button
