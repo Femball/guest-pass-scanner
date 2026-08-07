@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing, Star, Phone, MessageSquare, Contact, IdCard } from 'lucide-react';
+import { ArrowLeft, Plus, Users, CheckCircle, Clock, Trash2, Send, QrCode, Mail, Eye, LogOut, UserPlus, Download, CalendarIcon, Wine, X, Printer, Copy, Ticket, Search, Filter, CreditCard, Banknote, Bell, BellOff, BellRing, Star, Phone, MessageSquare, Contact, IdCard, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -870,6 +870,12 @@ const AdminContent = () => {
               <Button variant="outline" size="sm" className="ml-2 gap-1.5">
                 <IdCard className="w-4 h-4" />
                 <span className="hidden sm:inline">Cartes membres</span>
+              </Button>
+            </Link>
+            <Link to="/admin/soirees">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Soirées spéciales</span>
               </Button>
             </Link>
           </div>

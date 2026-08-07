@@ -12,6 +12,7 @@ import Feedback from "./pages/Feedback";
 import QrView from "./pages/QrView";
 import Ticket from "./pages/Ticket";
 import MemberCards from "./pages/MemberCards";
+import SpecialEvents from "./pages/SpecialEvents";
 import WalletDiagnostic from "./pages/WalletDiagnostic";
 import Carte from "./pages/Carte";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -56,6 +57,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute requiredRole="memberViewer">
               <MemberCards />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/soirees"
+          element={
+            <ProtectedRoute requiredRole="adminOrSupervisor">
+              <SpecialEvents />
             </ProtectedRoute>
           }
         />

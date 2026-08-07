@@ -570,6 +570,71 @@ export type Database = {
         }
         Relationships: []
       }
+      special_bookings: {
+        Row: {
+          created_at: string
+          event_id: string
+          guest_names: string
+          id: string
+          price: number | null
+          qr_code: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          guest_names: string
+          id?: string
+          price?: number | null
+          qr_code: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          guest_names?: string
+          id?: string
+          price?: number | null
+          qr_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_bookings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "special_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      special_events: {
+        Row: {
+          created_at: string
+          event_date: string
+          event_time: string
+          id: string
+          poster_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          event_time: string
+          id?: string
+          poster_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          event_time?: string
+          id?: string
+          poster_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       staff_profiles: {
         Row: {
           created_at: string
