@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Seo from '@/components/Seo';
@@ -29,7 +30,22 @@ interface SpecialBooking {
   price: number | null;
   qr_code: string;
   created_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  number_of_persons: number;
+  seat_rows: string | null;
+  seat_numbers: string | null;
 }
+
+const VENUE_ADDRESS = 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens';
+
+const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows' | 'seat_numbers'>) => {
+  const parts: string[] = [];
+  if (b.seat_rows) parts.push(`Rangée ${b.seat_rows}`);
+  if (b.seat_numbers) parts.push(`Siège ${b.seat_numbers}`);
+  return parts.join(' · ');
+};
 
 const formatDateLabel = (date: string) => {
   try {
