@@ -71,9 +71,22 @@ const SpecialEvents = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Booking form
-  const [guestNames, setGuestNames] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [persons, setPersons] = useState('1');
+  const [seatRows, setSeatRows] = useState('');
+  const [seatNumbers, setSeatNumbers] = useState('');
   const [price, setPrice] = useState('');
   const [adding, setAdding] = useState(false);
+
+  // Event edit
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editPoster, setEditPoster] = useState<File | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [posterSignedUrl, setPosterSignedUrl] = useState<string | null>(null);
   const [busyTicket, setBusyTicket] = useState<string | null>(null);
@@ -179,20 +192,71 @@ const SpecialEvents = () => {
 
   const addBooking = async () => {
     if (!selectedEvent) return toast.error('Sélectionnez une soirée');
-    if (!guestNames.trim()) return toast.error('Indiquez le ou les noms');
+    if (!firstName.trim() || !lastName.trim()) return toast.error('Prénom et nom obligatoires');
     setAdding(true);
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
     const { error } = await supabase.from('special_bookings').insert({
       event_id: selectedEvent.id,
-      guest_names: guestNames.trim(),
+      guest_names: fullName,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      phone: phone.trim() || null,
+      number_of_persons: Math.max(1, Number(persons) || 1),
+      seat_rows: seatRows.trim().toUpperCase() || null,
+      seat_numbers: seatNumbers.trim() || null,
       price: price ? Number(price) : null,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
     });
     setAdding(false);
     if (error) return toast.error('Ajout impossible');
-    setGuestNames('');
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    setPersons('1');
+    setSeatRows('');
+    setSeatNumbers('');
     setPrice('');
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
+  };
+
+  const openEdit = () => {
+    if (!selectedEvent) return;
+    setEditTitle(selectedEvent.title);
+    setEditDate(selectedEvent.event_date);
+    setEditTime(selectedEvent.event_time);
+    setEditPoster(null);
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!selectedEvent) return;
+    if (!editTitle.trim() || !editDate || !editTime) return toast.error('Titre, date et heure obligatoires');
+    setSavingEdit(true);
+    try {
+      let posterPath = selectedEvent.poster_url;
+      if (editPoster) {
+        const ext = editPoster.name.split('.').pop()?.toLowerCase() || 'jpg';
+        posterPath = `${editDate}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('event-posters')
+          .upload(posterPath, editPoster, { contentType: editPoster.type, upsert: false });
+        if (upErr) throw upErr;
+      }
+      const { error } = await supabase
+        .from('special_events')
+        .update({ title: editTitle.trim(), event_date: editDate, event_time: editTime, poster_url: posterPath })
+        .eq('id', selectedEvent.id);
+      if (error) throw error;
+      toast.success('Soirée modifiée');
+      setEditOpen(false);
+      await loadEvents();
+    } catch (err) {
+      console.error(err);
+      toast.error('Modification impossible');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const deleteBooking = async (id: string) => {
@@ -209,9 +273,11 @@ const SpecialEvents = () => {
         dateLabel: formatDateLabel(selectedEvent.event_date),
         timeLabel: `À partir de ${selectedEvent.event_time}`,
         guests: booking.guest_names,
+        seats: seatsLabel(booking) || null,
         price: booking.price != null ? `${booking.price} €` : null,
         code: booking.qr_code,
         posterUrl: posterSignedUrl,
+        address: VENUE_ADDRESS,
       });
     },
     [selectedEvent, posterSignedUrl],
