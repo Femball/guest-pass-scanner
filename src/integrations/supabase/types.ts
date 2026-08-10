@@ -574,26 +574,44 @@ export type Database = {
         Row: {
           created_at: string
           event_id: string
+          first_name: string | null
           guest_names: string
           id: string
+          last_name: string | null
+          number_of_persons: number
+          phone: string | null
           price: number | null
           qr_code: string
+          seat_numbers: string | null
+          seat_rows: string | null
         }
         Insert: {
           created_at?: string
           event_id: string
+          first_name?: string | null
           guest_names: string
           id?: string
+          last_name?: string | null
+          number_of_persons?: number
+          phone?: string | null
           price?: number | null
           qr_code: string
+          seat_numbers?: string | null
+          seat_rows?: string | null
         }
         Update: {
           created_at?: string
           event_id?: string
+          first_name?: string | null
           guest_names?: string
           id?: string
+          last_name?: string | null
+          number_of_persons?: number
+          phone?: string | null
           price?: number | null
           qr_code?: string
+          seat_numbers?: string | null
+          seat_rows?: string | null
         }
         Relationships: [
           {
