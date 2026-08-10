@@ -411,9 +411,14 @@ const SpecialEvents = () => {
                     </Select>
                   </div>
                   {selectedEvent && (
-                    <Button variant="outline" size="icon" onClick={() => deleteEvent(selectedEvent.id)} title="Supprimer la soirée">
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    <>
+                      <Button variant="outline" size="icon" onClick={openEdit} title="Modifier la soirée">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="icon" onClick={() => deleteEvent(selectedEvent.id)} title="Supprimer la soirée">
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </>
                   )}
                 </div>
 
@@ -424,26 +429,41 @@ const SpecialEvents = () => {
                   </div>
                 )}
 
-                <div className="grid gap-3 sm:grid-cols-[1fr_140px_auto] sm:items-end">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="guests">Nom(s) de la réservation</Label>
-                    <Textarea
-                      id="guests"
-                      value={guestNames}
-                      onChange={(e) => setGuestNames(e.target.value)}
-                      placeholder="Marie Dupont & Paul Martin"
-                      rows={2}
-                      maxLength={200}
-                    />
+                    <Label htmlFor="firstName">Prénom</Label>
+                    <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Marie" maxLength={60} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lastName">Nom</Label>
+                    <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" maxLength={60} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone">Téléphone</Label>
+                    <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" maxLength={30} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="persons">Nombre de personnes</Label>
+                    <Input id="persons" type="number" min="1" step="1" value={persons} onChange={(e) => setPersons(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rows">Rangée(s)</Label>
+                    <Input id="rows" value={seatRows} onChange={(e) => setSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="seats">Numéro(s) de siège(s)</Label>
+                    <Input id="seats" value={seatNumbers} onChange={(e) => setSeatNumbers(e.target.value)} placeholder="12, 13" maxLength={60} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="price">Prix réglé (€)</Label>
                     <Input id="price" type="number" min="0" step="1" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="50" />
                   </div>
-                  <Button onClick={addBooking} disabled={adding} className="gap-2">
-                    {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    Ajouter
-                  </Button>
+                  <div className="flex items-end">
+                    <Button onClick={addBooking} disabled={adding} className="gap-2 w-full">
+                      {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      Ajouter
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -455,7 +475,8 @@ const SpecialEvents = () => {
                         <div className="flex-1 min-w-[160px]">
                           <p className="font-medium text-sm text-foreground">{b.guest_names}</p>
                           <p className="text-xs text-muted-foreground">
-                            {b.price != null ? `${b.price} €` : 'Prix non renseigné'} · {b.qr_code.slice(0, 14)}…
+                            {b.number_of_persons} pers.{seatsLabel(b) ? ` · ${seatsLabel(b)}` : ''} · {b.price != null ? `${b.price} €` : 'Prix non renseigné'}
+                            {b.phone ? ` · ${b.phone}` : ''}
                           </p>
                         </div>
                         <Button variant="outline" size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handlePreview(b)}>
