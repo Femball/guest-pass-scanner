@@ -1,19 +1,23 @@
 import QRCode from 'qrcode';
+import laccessLogo from '@/assets/laccess-logo.jpeg.asset.json';
+import francaisLogo from '@/assets/le-francais-logo.png.asset.json';
 
 export interface SpecialTicketData {
   title: string;
   dateLabel: string;
   timeLabel: string;
   guests: string;
+  seats?: string | null;
   price: string | null;
   code: string;
   posterUrl: string | null;
+  address?: string;
 }
 
 const GOLD = '#D4B26A';
 const GOLD_SOFT = '#E8D7A8';
 const W = 1080;
-const H = 1620;
+const H = 1750;
 
 const loadImage = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -138,20 +142,40 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
   const cx = W / 2;
   const maxW = W - 220;
 
+  // Logos band (L'Access + Le Français)
+  const logoH = 108;
+  const drawLogo = async (src: string, centerX: number, centerY: number, round: boolean) => {
+    try {
+      const img = await loadImage(src);
+      const w = (img.width / img.height) * logoH;
+      const x = centerX - w / 2;
+      const y0 = centerY - logoH / 2;
+      ctx.save();
+      if (round) {
+        roundRect(ctx, x, y0, w, logoH, 18);
+        ctx.clip();
+      }
+      ctx.drawImage(img, x, y0, w, logoH);
+      ctx.restore();
+    } catch { /* ignore missing logo */ }
+  };
+  await drawLogo(laccessLogo.url, cx - 200, 168, true);
+  await drawLogo(francaisLogo.url, cx + 200, 168, false);
+
   // Overline
   ctx.fillStyle = GOLD_SOFT;
   ctx.font = sans(26, 600);
-  spacedText(ctx, "L'ACCESS", cx, 148, 10);
+  spacedText(ctx, "L'ACCESS", cx, 268, 10);
   ctx.font = sans(20, 400);
   ctx.fillStyle = 'rgba(232,215,168,0.65)';
-  spacedText(ctx, 'SOIRÉE SPÉCIALE', cx, 190, 7);
+  spacedText(ctx, 'SOIRÉE SPÉCIALE', cx, 308, 7);
 
   // Title
   ctx.fillStyle = GOLD;
   const titleSize = fitText(ctx, data.title.toUpperCase(), maxW, 78, (s) => serif(s, 600), 34);
   ctx.font = serif(titleSize, 600);
   const titleLines = wrapLines(ctx, data.title.toUpperCase(), maxW).slice(0, 2);
-  let y = 292;
+  let y = 402;
   titleLines.forEach((line, i) => {
     ctx.fillText(line, cx, y + i * (titleSize * 1.18));
   });
@@ -192,7 +216,7 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
     color: { dark: '#0B0B0C', light: '#FFFFFF' },
   });
   const qrImg = await loadImage(qrDataUrl);
-  const panel = 500;
+  const panel = 460;
   const panelX = cx - panel / 2;
   const panelY = y + 60;
   ctx.save();
@@ -210,17 +234,31 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
   ctx.drawImage(qrImg, panelX + qrPad, panelY + qrPad, panel - qrPad * 2, panel - qrPad * 2);
 
   // Guests
-  y = panelY + panel + 96;
+  y = panelY + panel + 92;
   ctx.fillStyle = 'rgba(232,215,168,0.6)';
   ctx.font = sans(20, 500);
   spacedText(ctx, 'AU NOM DE', cx, y, 6);
-  y += 48;
+  y += 46;
   ctx.fillStyle = GOLD;
-  const guestSize = fitText(ctx, data.guests, maxW, 48, (s) => serif(s, 600), 26);
+  const guestSize = fitText(ctx, data.guests, maxW, 46, (s) => serif(s, 600), 24);
   ctx.font = serif(guestSize, 600);
   const guestLines = wrapLines(ctx, data.guests, maxW).slice(0, 3);
   guestLines.forEach((line, i) => ctx.fillText(line, cx, y + i * (guestSize * 1.25)));
-  y += (guestLines.length - 1) * (guestSize * 1.25) + 70;
+  y += (guestLines.length - 1) * (guestSize * 1.25) + 62;
+
+  // Seats
+  if (data.seats) {
+    ctx.fillStyle = 'rgba(232,215,168,0.6)';
+    ctx.font = sans(20, 500);
+    spacedText(ctx, 'PLACEMENT', cx, y, 6);
+    y += 44;
+    ctx.fillStyle = GOLD_SOFT;
+    const seatSize = fitText(ctx, data.seats, maxW, 38, (s) => serif(s, 600), 22);
+    ctx.font = serif(seatSize, 600);
+    const seatLines = wrapLines(ctx, data.seats, maxW).slice(0, 2);
+    seatLines.forEach((line, i) => ctx.fillText(line, cx, y + i * (seatSize * 1.25)));
+    y += (seatLines.length - 1) * (seatSize * 1.25) + 58;
+  }
 
   // Price
   if (data.price) {
@@ -232,16 +270,22 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
     ctx.stroke();
     ctx.fillStyle = 'rgba(232,215,168,0.6)';
     ctx.font = sans(20, 500);
-    spacedText(ctx, 'RÈGLEMENT', cx, y + 16, 6);
+    spacedText(ctx, 'RÈGLEMENT', cx, y + 12, 6);
     ctx.fillStyle = GOLD_SOFT;
-    ctx.font = serif(40, 600);
-    ctx.fillText(data.price, cx, y + 66);
+    ctx.font = serif(38, 600);
+    ctx.fillText(data.price, cx, y + 58);
   }
 
-  // Footer code
+  // Footer : address + code
+  if (data.address) {
+    ctx.fillStyle = 'rgba(232,215,168,0.8)';
+    ctx.font = sans(22, 500);
+    const addrLines = wrapLines(ctx, data.address, maxW).slice(0, 2);
+    addrLines.forEach((line, i) => ctx.fillText(line, cx, H - 156 + i * 30));
+  }
   ctx.fillStyle = 'rgba(232,215,168,0.45)';
   ctx.font = sans(18, 400);
-  spacedText(ctx, data.code, cx, H - 100, 2);
+  spacedText(ctx, data.code, cx, H - 88, 2);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');

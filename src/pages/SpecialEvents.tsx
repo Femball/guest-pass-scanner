@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Seo from '@/components/Seo';
@@ -29,7 +29,22 @@ interface SpecialBooking {
   price: number | null;
   qr_code: string;
   created_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  number_of_persons: number;
+  seat_rows: string | null;
+  seat_numbers: string | null;
 }
+
+const VENUE_ADDRESS = 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens';
+
+const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows' | 'seat_numbers'>) => {
+  const parts: string[] = [];
+  if (b.seat_rows) parts.push(`Rangée ${b.seat_rows}`);
+  if (b.seat_numbers) parts.push(`Siège ${b.seat_numbers}`);
+  return parts.join(' · ');
+};
 
 const formatDateLabel = (date: string) => {
   try {
@@ -55,9 +70,22 @@ const SpecialEvents = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Booking form
-  const [guestNames, setGuestNames] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [persons, setPersons] = useState('1');
+  const [seatRows, setSeatRows] = useState('');
+  const [seatNumbers, setSeatNumbers] = useState('');
   const [price, setPrice] = useState('');
   const [adding, setAdding] = useState(false);
+
+  // Event edit
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editPoster, setEditPoster] = useState<File | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [posterSignedUrl, setPosterSignedUrl] = useState<string | null>(null);
   const [busyTicket, setBusyTicket] = useState<string | null>(null);
@@ -163,20 +191,71 @@ const SpecialEvents = () => {
 
   const addBooking = async () => {
     if (!selectedEvent) return toast.error('Sélectionnez une soirée');
-    if (!guestNames.trim()) return toast.error('Indiquez le ou les noms');
+    if (!firstName.trim() || !lastName.trim()) return toast.error('Prénom et nom obligatoires');
     setAdding(true);
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
     const { error } = await supabase.from('special_bookings').insert({
       event_id: selectedEvent.id,
-      guest_names: guestNames.trim(),
+      guest_names: fullName,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      phone: phone.trim() || null,
+      number_of_persons: Math.max(1, Number(persons) || 1),
+      seat_rows: seatRows.trim().toUpperCase() || null,
+      seat_numbers: seatNumbers.trim() || null,
       price: price ? Number(price) : null,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
     });
     setAdding(false);
     if (error) return toast.error('Ajout impossible');
-    setGuestNames('');
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    setPersons('1');
+    setSeatRows('');
+    setSeatNumbers('');
     setPrice('');
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
+  };
+
+  const openEdit = () => {
+    if (!selectedEvent) return;
+    setEditTitle(selectedEvent.title);
+    setEditDate(selectedEvent.event_date);
+    setEditTime(selectedEvent.event_time);
+    setEditPoster(null);
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!selectedEvent) return;
+    if (!editTitle.trim() || !editDate || !editTime) return toast.error('Titre, date et heure obligatoires');
+    setSavingEdit(true);
+    try {
+      let posterPath = selectedEvent.poster_url;
+      if (editPoster) {
+        const ext = editPoster.name.split('.').pop()?.toLowerCase() || 'jpg';
+        posterPath = `${editDate}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('event-posters')
+          .upload(posterPath, editPoster, { contentType: editPoster.type, upsert: false });
+        if (upErr) throw upErr;
+      }
+      const { error } = await supabase
+        .from('special_events')
+        .update({ title: editTitle.trim(), event_date: editDate, event_time: editTime, poster_url: posterPath })
+        .eq('id', selectedEvent.id);
+      if (error) throw error;
+      toast.success('Soirée modifiée');
+      setEditOpen(false);
+      await loadEvents();
+    } catch (err) {
+      console.error(err);
+      toast.error('Modification impossible');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const deleteBooking = async (id: string) => {
@@ -193,9 +272,11 @@ const SpecialEvents = () => {
         dateLabel: formatDateLabel(selectedEvent.event_date),
         timeLabel: `À partir de ${selectedEvent.event_time}`,
         guests: booking.guest_names,
+        seats: seatsLabel(booking) || null,
         price: booking.price != null ? `${booking.price} €` : null,
         code: booking.qr_code,
         posterUrl: posterSignedUrl,
+        address: VENUE_ADDRESS,
       });
     },
     [selectedEvent, posterSignedUrl],
@@ -329,9 +410,14 @@ const SpecialEvents = () => {
                     </Select>
                   </div>
                   {selectedEvent && (
-                    <Button variant="outline" size="icon" onClick={() => deleteEvent(selectedEvent.id)} title="Supprimer la soirée">
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    <>
+                      <Button variant="outline" size="icon" onClick={openEdit} title="Modifier la soirée">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="icon" onClick={() => deleteEvent(selectedEvent.id)} title="Supprimer la soirée">
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </>
                   )}
                 </div>
 
@@ -342,26 +428,41 @@ const SpecialEvents = () => {
                   </div>
                 )}
 
-                <div className="grid gap-3 sm:grid-cols-[1fr_140px_auto] sm:items-end">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="guests">Nom(s) de la réservation</Label>
-                    <Textarea
-                      id="guests"
-                      value={guestNames}
-                      onChange={(e) => setGuestNames(e.target.value)}
-                      placeholder="Marie Dupont & Paul Martin"
-                      rows={2}
-                      maxLength={200}
-                    />
+                    <Label htmlFor="firstName">Prénom</Label>
+                    <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Marie" maxLength={60} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lastName">Nom</Label>
+                    <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" maxLength={60} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone">Téléphone</Label>
+                    <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" maxLength={30} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="persons">Nombre de personnes</Label>
+                    <Input id="persons" type="number" min="1" step="1" value={persons} onChange={(e) => setPersons(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rows">Rangée(s)</Label>
+                    <Input id="rows" value={seatRows} onChange={(e) => setSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="seats">Numéro(s) de siège(s)</Label>
+                    <Input id="seats" value={seatNumbers} onChange={(e) => setSeatNumbers(e.target.value)} placeholder="12, 13" maxLength={60} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="price">Prix réglé (€)</Label>
                     <Input id="price" type="number" min="0" step="1" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="50" />
                   </div>
-                  <Button onClick={addBooking} disabled={adding} className="gap-2">
-                    {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    Ajouter
-                  </Button>
+                  <div className="flex items-end">
+                    <Button onClick={addBooking} disabled={adding} className="gap-2 w-full">
+                      {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      Ajouter
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -373,7 +474,8 @@ const SpecialEvents = () => {
                         <div className="flex-1 min-w-[160px]">
                           <p className="font-medium text-sm text-foreground">{b.guest_names}</p>
                           <p className="text-xs text-muted-foreground">
-                            {b.price != null ? `${b.price} €` : 'Prix non renseigné'} · {b.qr_code.slice(0, 14)}…
+                            {b.number_of_persons} pers.{seatsLabel(b) ? ` · ${seatsLabel(b)}` : ''} · {b.price != null ? `${b.price} €` : 'Prix non renseigné'}
+                            {b.phone ? ` · ${b.phone}` : ''}
                           </p>
                         </div>
                         <Button variant="outline" size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handlePreview(b)}>
@@ -405,6 +507,40 @@ const SpecialEvents = () => {
             <img src={previewUrl} alt="Aperçu de l'invitation QR code" className="max-h-full max-w-full rounded-lg shadow-2xl" />
           </div>
         )}
+
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Modifier la soirée</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Titre</Label>
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} maxLength={80} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Date</Label>
+                  <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Heure</Label>
+                  <Input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Remplacer l'affiche (optionnel)</Label>
+                <Input type="file" accept="image/*" onChange={(e) => setEditPoster(e.target.files?.[0] ?? null)} />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Annuler</Button>
+                <Button onClick={saveEdit} disabled={savingEdit} className="gap-2">
+                  {savingEdit && <Loader2 className="w-4 h-4 animate-spin" />}Enregistrer
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
