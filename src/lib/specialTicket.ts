@@ -1,19 +1,23 @@
 import QRCode from 'qrcode';
+import laccessLogo from '@/assets/laccess-logo.jpeg.asset.json';
+import francaisLogo from '@/assets/le-francais-logo.png.asset.json';
 
 export interface SpecialTicketData {
   title: string;
   dateLabel: string;
   timeLabel: string;
   guests: string;
+  seats?: string | null;
   price: string | null;
   code: string;
   posterUrl: string | null;
+  address?: string;
 }
 
 const GOLD = '#D4B26A';
 const GOLD_SOFT = '#E8D7A8';
 const W = 1080;
-const H = 1620;
+const H = 1750;
 
 const loadImage = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
