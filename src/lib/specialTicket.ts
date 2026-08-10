@@ -142,20 +142,40 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
   const cx = W / 2;
   const maxW = W - 220;
 
+  // Logos band (L'Access + Le Français)
+  const logoH = 108;
+  const drawLogo = async (src: string, centerX: number, centerY: number, round: boolean) => {
+    try {
+      const img = await loadImage(src);
+      const w = (img.width / img.height) * logoH;
+      const x = centerX - w / 2;
+      const y0 = centerY - logoH / 2;
+      ctx.save();
+      if (round) {
+        roundRect(ctx, x, y0, w, logoH, 18);
+        ctx.clip();
+      }
+      ctx.drawImage(img, x, y0, w, logoH);
+      ctx.restore();
+    } catch { /* ignore missing logo */ }
+  };
+  await drawLogo(laccessLogo.url, cx - 200, 168, true);
+  await drawLogo(francaisLogo.url, cx + 200, 168, false);
+
   // Overline
   ctx.fillStyle = GOLD_SOFT;
   ctx.font = sans(26, 600);
-  spacedText(ctx, "L'ACCESS", cx, 148, 10);
+  spacedText(ctx, "L'ACCESS", cx, 268, 10);
   ctx.font = sans(20, 400);
   ctx.fillStyle = 'rgba(232,215,168,0.65)';
-  spacedText(ctx, 'SOIRÉE SPÉCIALE', cx, 190, 7);
+  spacedText(ctx, 'SOIRÉE SPÉCIALE', cx, 308, 7);
 
   // Title
   ctx.fillStyle = GOLD;
   const titleSize = fitText(ctx, data.title.toUpperCase(), maxW, 78, (s) => serif(s, 600), 34);
   ctx.font = serif(titleSize, 600);
   const titleLines = wrapLines(ctx, data.title.toUpperCase(), maxW).slice(0, 2);
-  let y = 292;
+  let y = 402;
   titleLines.forEach((line, i) => {
     ctx.fillText(line, cx, y + i * (titleSize * 1.18));
   });
