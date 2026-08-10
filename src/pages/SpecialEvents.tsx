@@ -501,6 +501,9 @@ const SpecialEvents = () => {
         </Card>
 
         {previewUrl && (
+          <></>
+        )}
+        {previewUrl && (
           <div
             className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(''); }}
@@ -508,6 +511,40 @@ const SpecialEvents = () => {
             <img src={previewUrl} alt="Aperçu de l'invitation QR code" className="max-h-full max-w-full rounded-lg shadow-2xl" />
           </div>
         )}
+
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Modifier la soirée</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Titre</Label>
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} maxLength={80} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Date</Label>
+                  <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Heure</Label>
+                  <Input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Remplacer l'affiche (optionnel)</Label>
+                <Input type="file" accept="image/*" onChange={(e) => setEditPoster(e.target.files?.[0] ?? null)} />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Annuler</Button>
+                <Button onClick={saveEdit} disabled={savingEdit} className="gap-2">
+                  {savingEdit && <Loader2 className="w-4 h-4 animate-spin" />}Enregistrer
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
