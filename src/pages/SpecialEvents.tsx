@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
+import { buildSmsPayload } from '@/lib/sms';
+import type { PendingSms } from '@/types/admin';
 
 interface SpecialEvent {
   id: string;
