@@ -325,6 +325,16 @@ const SpecialEvents = () => {
     }
   };
 
+  const ticketUrl = (booking: SpecialBooking) => {
+    if (!selectedEvent) return '';
+    const url = new URL(`/ticket/${encodeURIComponent(booking.qr_code)}`, 'https://laccess.lovable.app');
+    url.searchParams.set('name', booking.guest_names);
+    url.searchParams.set('date', formatDateLabel(selectedEvent.event_date));
+    url.searchParams.set('time', `à partir de ${selectedEvent.event_time}`);
+    url.searchParams.set('place', VENUE_ADDRESS);
+    return url.toString();
+  };
+
   const smsBody = (booking: SpecialBooking) =>
     [
       `Bonjour ${booking.first_name ?? booking.guest_names},`,
@@ -334,7 +344,10 @@ const SpecialEvents = () => {
       seatsLabel(booking) ? `Placement : ${seatsLabel(booking)}` : '',
       VENUE_ADDRESS,
       '',
-      'Présentez le QR code joint à votre arrivée.',
+      'Votre ticket avec QR code :',
+      ticketUrl(booking),
+      '',
+      'Présentez le QR code à votre arrivée.',
     ]
       .filter(Boolean)
       .join('\n');
