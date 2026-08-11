@@ -275,7 +275,6 @@ const SpecialEvents = () => {
         timeLabel: `À partir de ${selectedEvent.event_time}`,
         guests: booking.guest_names,
         seats: seatsLabel(booking) || null,
-        price: booking.price != null ? `${booking.price} €` : null,
         code: booking.qr_code,
         posterUrl: posterSignedUrl,
         address: VENUE_ADDRESS,
