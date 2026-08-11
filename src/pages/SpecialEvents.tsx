@@ -528,6 +528,15 @@ const SpecialEvents = () => {
                         <Button size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handleShare(b)}>
                           <Share2 className="w-4 h-4" /> Envoyer
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5"
+                          disabled={busyTicket === b.id || !b.phone}
+                          onClick={() => handleSms(b)}
+                        >
+                          <MessageSquare className="w-4 h-4" /> SMS
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => deleteBooking(b.id)}>
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
