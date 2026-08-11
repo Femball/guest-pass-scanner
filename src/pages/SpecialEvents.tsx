@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
+import { buildSmsPayload } from '@/lib/sms';
+import type { PendingSms } from '@/types/admin';
 
 interface SpecialEvent {
   id: string;
@@ -89,6 +91,7 @@ const SpecialEvents = () => {
 
   const [posterSignedUrl, setPosterSignedUrl] = useState<string | null>(null);
   const [busyTicket, setBusyTicket] = useState<string | null>(null);
+  const [pendingSms, setPendingSms] = useState<{ payload: PendingSms; booking: SpecialBooking } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const selectedEvent = useMemo(
@@ -273,7 +276,6 @@ const SpecialEvents = () => {
         timeLabel: `À partir de ${selectedEvent.event_time}`,
         guests: booking.guest_names,
         seats: seatsLabel(booking) || null,
-        price: booking.price != null ? `${booking.price} €` : null,
         code: booking.qr_code,
         posterUrl: posterSignedUrl,
         address: VENUE_ADDRESS,
@@ -318,6 +320,45 @@ const SpecialEvents = () => {
       setPreviewUrl(URL.createObjectURL(blob));
     } catch {
       toast.error('Aperçu impossible');
+    } finally {
+      setBusyTicket(null);
+    }
+  };
+
+  const smsBody = (booking: SpecialBooking) =>
+    [
+      `Bonjour ${booking.first_name ?? booking.guest_names},`,
+      '',
+      `Votre invitation L'Access : ${selectedEvent?.title ?? ''}`,
+      `${formatDateLabel(selectedEvent?.event_date ?? '')} — à partir de ${selectedEvent?.event_time ?? ''}`,
+      seatsLabel(booking) ? `Placement : ${seatsLabel(booking)}` : '',
+      VENUE_ADDRESS,
+      '',
+      'Présentez le QR code joint à votre arrivée.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+  const handleSms = (booking: SpecialBooking) => {
+    if (!booking.phone) return toast.error('Aucun numéro de téléphone pour cette invitation');
+    const payload = buildSmsPayload(booking.phone, smsBody(booking));
+    if (!payload) return toast.error('Numéro invalide');
+    // Must stay synchronous inside the user gesture for iOS
+    window.location.href = payload.url;
+    setPendingSms({ payload, booking });
+  };
+
+  const handleShareFromSms = async (booking: SpecialBooking) => {
+    setBusyTicket(booking.id);
+    try {
+      const blob = await buildTicket(booking);
+      const shared = await shareTicketBlob(blob, 'invitation.png', smsBody(booking));
+      if (!shared) {
+        downloadBlob(blob, 'invitation.png');
+        toast.info('Partage non supporté : image téléchargée');
+      }
+    } catch (err) {
+      if ((err as Error)?.name !== 'AbortError') toast.error('Partage impossible');
     } finally {
       setBusyTicket(null);
     }
@@ -487,6 +528,15 @@ const SpecialEvents = () => {
                         <Button size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handleShare(b)}>
                           <Share2 className="w-4 h-4" /> Envoyer
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5"
+                          disabled={busyTicket === b.id || !b.phone}
+                          onClick={() => handleSms(b)}
+                        >
+                          <MessageSquare className="w-4 h-4" /> SMS
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => deleteBooking(b.id)}>
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -507,6 +557,58 @@ const SpecialEvents = () => {
             <img src={previewUrl} alt="Aperçu de l'invitation QR code" className="max-h-full max-w-full rounded-lg shadow-2xl" />
           </div>
         )}
+
+        <Dialog open={!!pendingSms} onOpenChange={(open) => { if (!open) setPendingSms(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" /> SMS prêt
+              </DialogTitle>
+              <DialogDescription>
+                Envoyez d'abord l'image de l'invitation, puis le texte si nécessaire.
+              </DialogDescription>
+            </DialogHeader>
+            {pendingSms && (
+              <div className="space-y-3">
+                <Button
+                  className="w-full"
+                  disabled={busyTicket === pendingSms.booking.id}
+                  onClick={() => handleShareFromSms(pendingSms.booking)}
+                >
+                  {busyTicket === pendingSms.booking.id ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Share2 className="w-4 h-4 mr-2" />
+                  )}
+                  Partager l'invitation (image) via Messages
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <a href={pendingSms.payload.url}>Ouvrir SMS (texte uniquement)</a>
+                </Button>
+                {pendingSms.payload.isIOS && (
+                  <Button asChild variant="outline" className="w-full">
+                    <a href={pendingSms.payload.fallbackUrl}>Essayer le format iOS alternatif</a>
+                  </Button>
+                )}
+                <Button asChild variant="outline" className="w-full">
+                  <a href={pendingSms.payload.recipientOnlyUrl}>Ouvrir SMS avec le numéro seul</a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    navigator.clipboard
+                      ?.writeText(pendingSms.payload.body)
+                      .then(() => toast.success('Message copié'))
+                      .catch(() => toast.error('Copie impossible sur cet appareil'));
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" /> Copier le message
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="max-w-md">
