@@ -325,6 +325,57 @@ const SpecialEvents = () => {
     }
   };
 
+  const smsBody = (booking: SpecialBooking) =>
+    [
+      `Bonjour ${booking.first_name ?? booking.guest_names},`,
+      '',
+      `Votre invitation L'Access : ${selectedEvent?.title ?? ''}`,
+      `${formatDateLabel(selectedEvent?.event_date ?? '')} — à partir de ${selectedEvent?.event_time ?? ''}`,
+      seatsLabel(booking) ? `Placement : ${seatsLabel(booking)}` : '',
+      VENUE_ADDRESS,
+      '',
+      'Présentez le QR code joint à votre arrivée.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+  const handleSms = (booking: SpecialBooking) => {
+    if (!booking.phone) return toast.error('Aucun numéro de téléphone pour cette invitation');
+    const payload = buildSmsPayload(booking.phone, smsBody(booking));
+    if (!payload) return toast.error('Numéro invalide');
+    // Must stay synchronous inside the user gesture for iOS
+    window.location.href = payload.url;
+    setPendingSms({ payload, booking });
+  };
+
+  const handleShareFromSms = async (booking: SpecialBooking) => {
+    setBusyTicket(booking.id);
+    try {
+      const blob = await buildTicket(booking);
+      const shared = await shareTicketBlob(blob, 'invitation.png', smsBody(booking));
+      if (!shared) {
+        downloadBlob(blob, 'invitation.png');
+        toast.info('Partage non supporté : image téléchargée');
+      }
+    } catch (err) {
+      if ((err as Error)?.name !== 'AbortError') toast.error('Partage impossible');
+    } finally {
+      setBusyTicket(null);
+    }
+  };
+
+  const handlePreviewLegacy = async (booking: SpecialBooking) => {
+    setBusyTicket(booking.id);
+    try {
+      const blob = await buildTicket(booking);
+      setPreviewUrl(URL.createObjectURL(blob));
+    } catch {
+      toast.error('Aperçu impossible');
+    } finally {
+      setBusyTicket(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Seo
