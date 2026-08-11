@@ -91,6 +91,7 @@ const SpecialEvents = () => {
 
   const [posterSignedUrl, setPosterSignedUrl] = useState<string | null>(null);
   const [busyTicket, setBusyTicket] = useState<string | null>(null);
+  const [pendingSms, setPendingSms] = useState<{ payload: PendingSms; booking: SpecialBooking } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const selectedEvent = useMemo(
