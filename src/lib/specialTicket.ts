@@ -8,7 +8,6 @@ export interface SpecialTicketData {
   timeLabel: string;
   guests: string;
   seats?: string | null;
-  price: string | null;
   code: string;
   posterUrl: string | null;
   address?: string;
