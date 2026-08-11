@@ -558,6 +558,58 @@ const SpecialEvents = () => {
           </div>
         )}
 
+        <Dialog open={!!pendingSms} onOpenChange={(open) => { if (!open) setPendingSms(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" /> SMS prêt
+              </DialogTitle>
+              <DialogDescription>
+                Envoyez d'abord l'image de l'invitation, puis le texte si nécessaire.
+              </DialogDescription>
+            </DialogHeader>
+            {pendingSms && (
+              <div className="space-y-3">
+                <Button
+                  className="w-full"
+                  disabled={busyTicket === pendingSms.booking.id}
+                  onClick={() => handleShareFromSms(pendingSms.booking)}
+                >
+                  {busyTicket === pendingSms.booking.id ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Share2 className="w-4 h-4 mr-2" />
+                  )}
+                  Partager l'invitation (image) via Messages
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <a href={pendingSms.payload.url}>Ouvrir SMS (texte uniquement)</a>
+                </Button>
+                {pendingSms.payload.isIOS && (
+                  <Button asChild variant="outline" className="w-full">
+                    <a href={pendingSms.payload.fallbackUrl}>Essayer le format iOS alternatif</a>
+                  </Button>
+                )}
+                <Button asChild variant="outline" className="w-full">
+                  <a href={pendingSms.payload.recipientOnlyUrl}>Ouvrir SMS avec le numéro seul</a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    navigator.clipboard
+                      ?.writeText(pendingSms.payload.body)
+                      .then(() => toast.success('Message copié'))
+                      .catch(() => toast.error('Copie impossible sur cet appareil'));
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" /> Copier le message
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
