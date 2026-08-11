@@ -300,7 +300,7 @@ const SpecialEvents = () => {
     setBusyTicket(booking.id);
     try {
       const blob = await buildTicket(booking);
-      const text = `${selectedEvent?.title} — ${formatDateLabel(selectedEvent?.event_date ?? '')} à ${selectedEvent?.event_time}. Votre invitation L'Access.`;
+      const text = `${selectedEvent?.title} — ${formatDateLabel(selectedEvent?.event_date ?? '')} à ${selectedEvent?.event_time}. Votre ticket : ${ticketUrl(booking)}`;
       const shared = await shareTicketBlob(blob, 'invitation.png', text);
       if (!shared) {
         downloadBlob(blob, 'invitation.png');
