@@ -364,18 +364,6 @@ const SpecialEvents = () => {
     }
   };
 
-  const handlePreviewLegacy = async (booking: SpecialBooking) => {
-    setBusyTicket(booking.id);
-    try {
-      const blob = await buildTicket(booking);
-      setPreviewUrl(URL.createObjectURL(blob));
-    } catch {
-      toast.error('Aperçu impossible');
-    } finally {
-      setBusyTicket(null);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Seo
