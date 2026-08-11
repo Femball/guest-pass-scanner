@@ -122,10 +122,10 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
 
   // Darkening scrim so gold text always reads
   const scrim = ctx.createLinearGradient(0, 0, 0, H);
-  scrim.addColorStop(0, 'rgba(6,6,8,0.86)');
-  scrim.addColorStop(0.38, 'rgba(6,6,8,0.58)');
-  scrim.addColorStop(0.62, 'rgba(6,6,8,0.72)');
-  scrim.addColorStop(1, 'rgba(6,6,8,0.94)');
+  scrim.addColorStop(0, 'rgba(5,5,7,0.92)');
+  scrim.addColorStop(0.38, 'rgba(5,5,7,0.78)');
+  scrim.addColorStop(0.62, 'rgba(5,5,7,0.86)');
+  scrim.addColorStop(1, 'rgba(5,5,7,0.96)');
   ctx.fillStyle = scrim;
   ctx.fillRect(0, 0, W, H);
 
@@ -143,7 +143,7 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
   const maxW = W - 220;
 
   // Logos band (L'Access + Le Français)
-  const logoH = 108;
+  const logoH = 168;
   const drawLogo = async (src: string, centerX: number, centerY: number, round: boolean) => {
     try {
       const img = await loadImage(src);
@@ -159,23 +159,15 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
       ctx.restore();
     } catch { /* ignore missing logo */ }
   };
-  await drawLogo(laccessLogo.url, cx - 200, 168, true);
-  await drawLogo(francaisLogo.url, cx + 200, 168, false);
-
-  // Overline
-  ctx.fillStyle = GOLD_SOFT;
-  ctx.font = sans(26, 600);
-  spacedText(ctx, "L'ACCESS", cx, 268, 10);
-  ctx.font = sans(20, 400);
-  ctx.fillStyle = 'rgba(232,215,168,0.65)';
-  spacedText(ctx, 'SOIRÉE SPÉCIALE', cx, 308, 7);
+  await drawLogo(laccessLogo.url, cx - 230, 200, true);
+  await drawLogo(francaisLogo.url, cx + 230, 200, false);
 
   // Title
   ctx.fillStyle = GOLD;
-  const titleSize = fitText(ctx, data.title.toUpperCase(), maxW, 78, (s) => serif(s, 600), 34);
+  const titleSize = fitText(ctx, data.title.toUpperCase(), maxW, 86, (s) => serif(s, 700), 36);
   ctx.font = serif(titleSize, 600);
   const titleLines = wrapLines(ctx, data.title.toUpperCase(), maxW).slice(0, 2);
-  let y = 402;
+  let y = 372;
   titleLines.forEach((line, i) => {
     ctx.fillText(line, cx, y + i * (titleSize * 1.18));
   });
