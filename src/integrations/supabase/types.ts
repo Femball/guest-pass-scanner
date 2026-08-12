@@ -796,6 +796,16 @@ export type Database = {
           valid_until: string
         }[]
       }
+      get_public_ticket: {
+        Args: { p_short: string }
+        Returns: {
+          event_date: string
+          event_time: string
+          guest_name: string
+          qr_code: string
+          seats: string
+        }[]
+      }
       has_admin_privileges: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
