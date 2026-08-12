@@ -11,6 +11,7 @@ import Unsubscribe from "./pages/Unsubscribe";
 import Feedback from "./pages/Feedback";
 import QrView from "./pages/QrView";
 import Ticket from "./pages/Ticket";
+import ShortTicket from "./pages/ShortTicket";
 import MemberCards from "./pages/MemberCards";
 import SpecialEvents from "./pages/SpecialEvents";
 import WalletDiagnostic from "./pages/WalletDiagnostic";
@@ -80,6 +81,7 @@ const AppContent = () => {
         <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/qr/:code" element={<QrView />} />
+        <Route path="/t/:short" element={<ShortTicket />} />
         <Route path="/ticket" element={<Ticket />} />
         <Route path="/ticket/:code" element={<Ticket />} />
         <Route path="/ticket/:code/*" element={<Ticket />} />

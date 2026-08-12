@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
 import { buildSmsPayload } from '@/lib/sms';
+import { shortTicketUrl } from '@/lib/shortTicket';
 import type { PendingSms } from '@/types/admin';
 
 interface SpecialEvent {
@@ -327,12 +328,7 @@ const SpecialEvents = () => {
 
   const ticketUrl = (booking: SpecialBooking) => {
     if (!selectedEvent) return '';
-    const url = new URL(`/ticket/${encodeURIComponent(booking.qr_code)}`, 'https://laccess.lovable.app');
-    url.searchParams.set('name', booking.guest_names);
-    url.searchParams.set('date', formatDateLabel(selectedEvent.event_date));
-    url.searchParams.set('time', `à partir de ${selectedEvent.event_time}`);
-    url.searchParams.set('place', VENUE_ADDRESS);
-    return url.toString();
+    return shortTicketUrl(booking.qr_code);
   };
 
   const smsBody = (booking: SpecialBooking) =>
