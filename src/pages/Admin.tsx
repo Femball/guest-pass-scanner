@@ -28,6 +28,7 @@ import ScanAnomalies from '@/components/ScanAnomalies';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import QRCode from 'qrcode';
 import { buildSmsPayload, shareQrFiles } from '@/lib/sms';
+import { shortTicketUrl } from '@/lib/shortTicket';
 import SumUpPaymentWidget from '@/components/admin/SumUpPaymentWidget';
 import ClientsDirectoryDialog from '@/components/admin/ClientsDirectoryDialog';
 import ClientFormDialog from '@/components/admin/ClientFormDialog';
@@ -367,14 +368,9 @@ const AdminContent = () => {
 
   const getTicketQrImageUrl = (
     qrCode: string,
-    extras?: { name?: string; date?: string; place?: string; time?: string }
+    _extras?: { name?: string; date?: string; place?: string; time?: string }
   ): string => {
-    const url = new URL(`/ticket/${encodeURIComponent(qrCode)}`, 'https://laccess.lovable.app');
-    if (extras?.name) url.searchParams.set('name', extras.name);
-    if (extras?.date) url.searchParams.set('date', extras.date);
-    if (extras?.time) url.searchParams.set('time', extras.time);
-    if (extras?.place) url.searchParams.set('place', extras.place);
-    return url.toString();
+    return shortTicketUrl(qrCode);
   };
 
   const buildTicketSmsBody = (reservationList: Reservation[], address: string) => {
