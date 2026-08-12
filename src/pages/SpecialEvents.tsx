@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
 import { buildSmsPayload } from '@/lib/sms';
+import { shortTicketUrl } from '@/lib/shortTicket';
 import type { PendingSms } from '@/types/admin';
 
 interface SpecialEvent {
