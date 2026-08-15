@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import QRCode from "qrcode";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar, Clock, MapPin, User, Armchair } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Seo from "@/components/Seo";
 
@@ -111,7 +111,7 @@ const ShortTicket = () => {
             )}
             {ticket.seats && (
               <div className="flex items-center gap-2">
-                <Armchair className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Users className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span>{ticket.seats}</span>
               </div>
             )}
