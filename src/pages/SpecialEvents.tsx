@@ -356,8 +356,8 @@ const SpecialEvents = () => {
       phone: phone.trim() || null,
       number_of_persons: personCount,
       seat_rows: seatRows.trim().toUpperCase() || null,
-      seat_numbers: seatNumbers.trim() || null,
-      price: price ? Number(price) : null,
+      seat_numbers: null,
+      price: personCount * MENU_PRICE_PER_PERSON,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
     }).select('id').single();
     if (!error && created) {
@@ -380,8 +380,6 @@ const SpecialEvents = () => {
     setPhone('');
     setPersons('1');
     setSeatRows('');
-    setSeatNumbers('');
-    setPrice('');
     setNewMeals([emptyMeal(1)]);
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
@@ -692,12 +690,10 @@ const SpecialEvents = () => {
                     <Input id="rows" value={seatRows} onChange={(e) => setSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="seats">Numéro(s) de siège(s)</Label>
-                    <Input id="seats" value={seatNumbers} onChange={(e) => setSeatNumbers(e.target.value)} placeholder="12, 13" maxLength={60} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="price">Prix réglé (€)</Label>
-                    <Input id="price" type="number" min="0" step="1" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="50" />
+                    <Label>Total menus</Label>
+                    <div className="h-10 flex items-center rounded-md border border-border px-3 text-sm text-foreground">
+                      {(Math.max(1, Number(persons) || 1) * MENU_PRICE_PER_PERSON).toFixed(0)} € ({MENU_PRICE_PER_PERSON} € / pers.)
+                    </div>
                   </div>
                   <div className="flex items-end">
                     <Button onClick={addBooking} disabled={adding} className="gap-2 w-full">
