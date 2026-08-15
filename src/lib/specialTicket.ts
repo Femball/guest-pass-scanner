@@ -241,7 +241,7 @@ export const renderSpecialTicket = async (data: SpecialTicketData): Promise<Blob
   if (data.seats) {
     ctx.fillStyle = 'rgba(232,215,168,0.75)';
     ctx.font = sans(24, 600);
-    spacedText(ctx, 'PLACEMENT', cx, y, 6);
+    spacedText(ctx, 'NOMBRE DE PERSONNES', cx, y, 4);
     y += 50;
     ctx.fillStyle = GOLD_SOFT;
     const seatSize = fitText(ctx, data.seats, maxW, 44, (s) => serif(s, 700), 24);
