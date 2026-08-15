@@ -245,15 +245,39 @@ export const useReservationValidator = () => {
         return;
       }
 
+      // Verrou atomique : la mise à jour n'aboutit que si le ticket n'est pas
+      // déjà validé. Deux scans simultanés ne peuvent donc pas passer tous les deux.
       const { result: updateRes, attempts: updateAttempts } = await withRetry(
         async () =>
           await supabase
             .from('reservations')
             .update({ is_validated: true, validated_at: new Date().toISOString() })
-            .eq('id', reservation.id),
+            .eq('id', reservation.id)
+            .eq('is_validated', false)
+            .select('id'),
         (attempt) => setState((prev) => ({ ...prev, retryAttempt: attempt, isLoading: true })),
       );
       const updateError = updateRes.error;
+
+      if (!updateError && (!updateRes.data || updateRes.data.length === 0)) {
+        // Aucune ligne modifiée => un autre scan a validé ce ticket entre-temps
+        const { data: fresh } = await supabase
+          .from('reservations')
+          .select('validated_at')
+          .eq('id', reservation.id)
+          .maybeSingle();
+        playErrorSound();
+        setState({
+          isValid: false,
+          clientName: reservation.client_name,
+          numberOfPersons: reservation.number_of_persons,
+          message: `🚫 Déjà entré — ticket validé le ${
+            fresh?.validated_at ? new Date(fresh.validated_at).toLocaleString('fr-FR') : "à l'instant"
+          }`,
+          isLoading: false,
+        });
+        return;
+      }
 
       if (updateError) {
         playErrorSound();
