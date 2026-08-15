@@ -256,6 +256,31 @@ const SpecialEvents = () => {
   const menuEditable = isMenuEditable();
   const deadlineLabel = formatDateLabel(MENU_EDIT_DEADLINE);
 
+  /** Détail ligne par ligne : un convive = une ligne. */
+  const guestRows = useMemo(
+    () =>
+      [...bookings]
+        .sort((a, b) => a.guest_names.localeCompare(b.guest_names, 'fr'))
+        .flatMap((b) => {
+          const meals = mealsByBooking[b.id] ?? [];
+          const list =
+            meals.length > 0
+              ? meals
+              : Array.from({ length: b.number_of_persons }, (_, i) => emptyMeal(i + 1));
+          return list.map((m) => ({
+            reservation: b.guest_names,
+            phone: b.phone ?? '',
+            index: m.guest_index,
+            name: m.guest_name || `${b.guest_names} (convive ${m.guest_index})`,
+            starter: m.starter || '—',
+            main: m.main_course || '—',
+            dessert: m.dessert || '—',
+            notes: m.notes || '',
+          }));
+        }),
+    [bookings, mealsByBooking],
+  );
+
   const exportKitchenCsv = () => {
     if (!selectedEvent) return;
     const rows: string[][] = [
@@ -266,6 +291,19 @@ const SpecialEvents = () => {
       ...kitchenTotals.flatMap((course) =>
         course.counts.map((c) => [course.label, c.opt, String(c.count)]),
       ),
+      [],
+      ['Détail par convive', ''],
+      ['Réservation', 'Téléphone', 'Convive', 'Nom', 'Entrée', 'Plat', 'Dessert', 'Remarques'],
+      ...guestRows.map((g) => [
+        g.reservation,
+        g.phone,
+        String(g.index),
+        g.name,
+        g.starter,
+        g.main,
+        g.dessert,
+        g.notes,
+      ]),
       [],
       ['Convives', String(bookings.reduce((s, b) => s + b.number_of_persons, 0))],
       ['Total menus (€)', String(bookings.reduce((s, b) => s + b.number_of_persons, 0) * MENU_PRICE_PER_PERSON)],
@@ -342,6 +380,45 @@ const SpecialEvents = () => {
     doc.text(`Total menus (${MENU_PRICE_PER_PERSON} € / pers.)`, M, y);
     doc.text(`${total} €`, pageW - M, y, { align: 'right' });
     y += 10;
+
+    if (guestRows.length > 0) {
+      ensureSpace(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Détail par convive', M, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.text('Convive', M, y);
+      doc.text('Entrée', M + 55, y);
+      doc.text('Plat', M + 100, y);
+      doc.text('Dessert', M + 140, y);
+      y += 4;
+      doc.setDrawColor(210);
+      doc.line(M, y, pageW - M, y);
+      y += 4;
+      doc.setFont('helvetica', 'normal');
+      guestRows.forEach((g) => {
+        ensureSpace(10);
+        const name = doc.splitTextToSize(g.name, 52)[0];
+        doc.text(String(name), M, y);
+        doc.text(doc.splitTextToSize(g.starter, 43)[0], M + 55, y);
+        doc.text(doc.splitTextToSize(g.main, 38)[0], M + 100, y);
+        doc.text(doc.splitTextToSize(g.dessert, 40)[0], M + 140, y);
+        y += 5;
+        if (g.notes) {
+          const lines = doc.splitTextToSize(`Note : ${g.notes}`, pageW - M * 2 - 6);
+          ensureSpace(lines.length * 4.5);
+          doc.setTextColor(120);
+          doc.setFontSize(8);
+          doc.text(lines, M + 4, y);
+          doc.setFontSize(9);
+          doc.setTextColor(0);
+          y += lines.length * 4.5 + 1;
+        }
+      });
+      y += 6;
+      doc.setFontSize(10);
+    }
 
     if (allNotes.length > 0) {
       ensureSpace(12);
