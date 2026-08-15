@@ -111,6 +111,9 @@ const MealFields = ({
 const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows'>) =>
   b.seat_rows ? `Rangée ${b.seat_rows}` : '';
 
+const personsLabel = (b: Pick<SpecialBooking, 'number_of_persons'>) =>
+  `${b.number_of_persons} ${b.number_of_persons > 1 ? 'personnes' : 'personne'}`;
+
 const formatDateLabel = (date: string) => {
   try {
     return format(parseISO(date), 'EEEE d MMMM yyyy', { locale: fr });
@@ -474,7 +477,7 @@ const SpecialEvents = () => {
         dateLabel: formatDateLabel(selectedEvent.event_date),
         timeLabel: `À partir de ${selectedEvent.event_time}`,
         guests: booking.guest_names,
-        seats: seatsLabel(booking) || null,
+        seats: personsLabel(booking),
         code: booking.qr_code,
         posterUrl: posterSignedUrl,
         address: VENUE_ADDRESS,
@@ -535,7 +538,7 @@ const SpecialEvents = () => {
       '',
       `Votre invitation L'Access : ${selectedEvent?.title ?? ''}`,
       `${formatDateLabel(selectedEvent?.event_date ?? '')} — à partir de ${selectedEvent?.event_time ?? ''}`,
-      seatsLabel(booking) ? `Placement : ${seatsLabel(booking)}` : '',
+      `Nombre de personnes : ${personsLabel(booking)}`,
       VENUE_ADDRESS,
       '',
       'Votre ticket avec QR code :',
