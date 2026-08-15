@@ -740,9 +740,6 @@ const SpecialEvents = () => {
           </CardContent>
         </Card>
 
-        {previewUrl && (
-          <></>
-        )}
         {selectedEvent && bookings.length > 0 && (
           <Card className="print:shadow-none">
             <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
