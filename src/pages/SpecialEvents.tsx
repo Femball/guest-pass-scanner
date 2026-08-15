@@ -741,6 +741,48 @@ const SpecialEvents = () => {
         </Card>
 
         {previewUrl && (
+          <></>
+        )}
+        {selectedEvent && bookings.length > 0 && (
+          <Card className="print:shadow-none">
+            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UtensilsCrossed className="w-4 h-4 text-primary" /> Récapitulatif cuisine
+              </CardTitle>
+              <Button variant="outline" size="sm" className="gap-1.5 print:hidden" onClick={() => window.print()}>
+                <Printer className="w-4 h-4" /> Imprimer
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                {selectedEvent.title} — {formatDateLabel(selectedEvent.event_date)}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {kitchenTotals.map((course) => (
+                  <div key={course.label} className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">{course.label}</p>
+                    {course.counts.map((c) => (
+                      <p key={c.opt} className="text-sm text-muted-foreground flex justify-between gap-3">
+                        <span>{c.opt}</span>
+                        <span className="font-semibold text-foreground">{c.count}</span>
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              {allNotes.length > 0 && (
+                <div className="space-y-1 pt-2 border-t border-border">
+                  <p className="text-sm font-semibold text-foreground">Remarques / allergies</p>
+                  {allNotes.map((n, i) => (
+                    <p key={i} className="text-sm text-muted-foreground">{n.name} : {n.notes}</p>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {previewUrl && (
           <div
             className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(''); }}
@@ -748,6 +790,27 @@ const SpecialEvents = () => {
             <img src={previewUrl} alt="Aperçu de l'invitation QR code" className="max-h-full max-w-full rounded-lg shadow-2xl" />
           </div>
         )}
+
+        <Dialog open={!!mealBooking} onOpenChange={(open) => { if (!open) setMealBooking(null); }}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Menus — {mealBooking?.guest_names}</DialogTitle>
+              <DialogDescription>Choix de l'entrée, du plat et du dessert pour chaque convive.</DialogDescription>
+            </DialogHeader>
+            <MealFields
+              meals={editMeals}
+              onChange={(i, patch) =>
+                setEditMeals((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)))
+              }
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setMealBooking(null)}>Annuler</Button>
+              <Button onClick={saveMeals} disabled={savingMeals} className="gap-2">
+                {savingMeals && <Loader2 className="w-4 h-4 animate-spin" />}Enregistrer
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!pendingSms} onOpenChange={(open) => { if (!open) setPendingSms(null); }}>
           <DialogContent className="max-w-md">
