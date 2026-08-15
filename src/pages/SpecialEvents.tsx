@@ -386,6 +386,10 @@ const SpecialEvents = () => {
   };
 
   const openMeals = (booking: SpecialBooking) => {
+    if (!isMenuEditable()) {
+      toast.error(`Les menus ne sont plus modifiables après le ${formatDateLabel(MENU_EDIT_DEADLINE)}`);
+      return;
+    }
     const existing = mealsByBooking[booking.id] ?? [];
     setEditMeals(resizeMeals(existing, booking.number_of_persons));
     setMealBooking(booking);
@@ -393,6 +397,10 @@ const SpecialEvents = () => {
 
   const saveMeals = async () => {
     if (!mealBooking) return;
+    if (!isMenuEditable()) {
+      setMealBooking(null);
+      return toast.error(`Modification des menus close depuis le ${formatDateLabel(MENU_EDIT_DEADLINE)}`);
+    }
     setSavingMeals(true);
     const rows = editMeals.map((m, i) => ({
       booking_id: mealBooking.id,
@@ -707,6 +715,9 @@ const SpecialEvents = () => {
                   <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <UtensilsCrossed className="w-4 h-4 text-primary" /> Menus des convives
                   </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {MENU_PRICE_PER_PERSON} € par personne · menus modifiables jusqu'au {deadlineLabel}
+                  </p>
                   <MealFields
                     meals={newMeals}
                     onChange={(i, patch) =>
@@ -735,7 +746,14 @@ const SpecialEvents = () => {
                             ) : null
                           ))}
                         </div>
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openMeals(b)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          disabled={!menuEditable}
+                          title={menuEditable ? undefined : `Modification close depuis le ${deadlineLabel}`}
+                          onClick={() => openMeals(b)}
+                        >
                           <UtensilsCrossed className="w-4 h-4" /> Menus
                         </Button>
                         <Button variant="outline" size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handlePreview(b)}>
@@ -774,13 +792,23 @@ const SpecialEvents = () => {
               <CardTitle className="flex items-center gap-2 text-base">
                 <UtensilsCrossed className="w-4 h-4 text-primary" /> Récapitulatif cuisine
               </CardTitle>
-              <Button variant="outline" size="sm" className="gap-1.5 print:hidden" onClick={() => window.print()}>
-                <Printer className="w-4 h-4" /> Imprimer
-              </Button>
+              <div className="flex items-center gap-2 print:hidden">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={exportKitchenCsv}>
+                  <Download className="w-4 h-4" /> Exporter (CSV)
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4" /> Imprimer
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground">
                 {selectedEvent.title} — {formatDateLabel(selectedEvent.event_date)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {bookings.reduce((s, b) => s + b.number_of_persons, 0)} convives ·{' '}
+                {bookings.reduce((s, b) => s + b.number_of_persons, 0) * MENU_PRICE_PER_PERSON} € au total (
+                {MENU_PRICE_PER_PERSON} € / pers.)
               </p>
               <div className="grid gap-4 sm:grid-cols-3">
                 {kitchenTotals.map((course) => (
