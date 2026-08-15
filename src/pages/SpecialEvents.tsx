@@ -315,18 +315,32 @@ const SpecialEvents = () => {
     if (!firstName.trim() || !lastName.trim()) return toast.error('Prénom et nom obligatoires');
     setAdding(true);
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
-    const { error } = await supabase.from('special_bookings').insert({
+    const personCount = Math.max(1, Number(persons) || 1);
+    const { data: created, error } = await supabase.from('special_bookings').insert({
       event_id: selectedEvent.id,
       guest_names: fullName,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       phone: phone.trim() || null,
-      number_of_persons: Math.max(1, Number(persons) || 1),
+      number_of_persons: personCount,
       seat_rows: seatRows.trim().toUpperCase() || null,
       seat_numbers: seatNumbers.trim() || null,
       price: price ? Number(price) : null,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
-    });
+    }).select('id').single();
+    if (!error && created) {
+      const rows = resizeMeals(newMeals, personCount).map((m, i) => ({
+        booking_id: created.id,
+        guest_index: i + 1,
+        guest_name: (m.guest_name || (i === 0 ? fullName : '')) || null,
+        starter: m.starter || null,
+        main_course: m.main_course || null,
+        dessert: m.dessert || null,
+        notes: m.notes || null,
+      }));
+      const { error: mealErr } = await supabase.from('special_booking_meals').insert(rows);
+      if (mealErr) toast.error('Invitation créée, mais les menus n’ont pas été enregistrés');
+    }
     setAdding(false);
     if (error) return toast.error('Ajout impossible');
     setFirstName('');
@@ -336,8 +350,37 @@ const SpecialEvents = () => {
     setSeatRows('');
     setSeatNumbers('');
     setPrice('');
+    setNewMeals([emptyMeal(1)]);
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
+  };
+
+  const openMeals = (booking: SpecialBooking) => {
+    const existing = mealsByBooking[booking.id] ?? [];
+    setEditMeals(resizeMeals(existing, booking.number_of_persons));
+    setMealBooking(booking);
+  };
+
+  const saveMeals = async () => {
+    if (!mealBooking) return;
+    setSavingMeals(true);
+    const rows = editMeals.map((m, i) => ({
+      booking_id: mealBooking.id,
+      guest_index: i + 1,
+      guest_name: m.guest_name || null,
+      starter: m.starter || null,
+      main_course: m.main_course || null,
+      dessert: m.dessert || null,
+      notes: m.notes || null,
+    }));
+    const { error } = await supabase
+      .from('special_booking_meals')
+      .upsert(rows, { onConflict: 'booking_id,guest_index' });
+    setSavingMeals(false);
+    if (error) return toast.error('Enregistrement impossible');
+    toast.success('Menus enregistrés');
+    setMealBooking(null);
+    loadMeals(bookings.map((b) => b.id));
   };
 
   const openEdit = () => {
