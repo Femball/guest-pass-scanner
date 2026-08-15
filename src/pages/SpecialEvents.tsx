@@ -281,6 +281,87 @@ const SpecialEvents = () => {
     downloadBlob(blob, `recap-cuisine-${selectedEvent.event_date}.csv`);
   };
 
+  const exportKitchenPdf = () => {
+    if (!selectedEvent) return;
+    const guests = bookings.reduce((s, b) => s + b.number_of_persons, 0);
+    const total = guests * MENU_PRICE_PER_PERSON;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const M = 18;
+    let y = M;
+
+    const ensureSpace = (needed: number) => {
+      if (y + needed > pageH - M) {
+        doc.addPage();
+        y = M;
+      }
+    };
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Récapitulatif cuisine', M, y);
+    y += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.text(`${selectedEvent.title} — ${formatDateLabel(selectedEvent.event_date)}`, M, y);
+    y += 6;
+    doc.setFontSize(10);
+    doc.text(
+      `${guests} convive${guests > 1 ? 's' : ''} · ${total} € au total (${MENU_PRICE_PER_PERSON} € / pers.)`,
+      M,
+      y,
+    );
+    y += 6;
+    doc.setDrawColor(180);
+    doc.line(M, y, pageW - M, y);
+    y += 8;
+
+    kitchenTotals.forEach((course) => {
+      ensureSpace(14 + course.counts.length * 6);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(course.label, M, y);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      course.counts.forEach((c) => {
+        doc.text(String(c.opt), M + 4, y);
+        doc.text(String(c.count), pageW - M, y, { align: 'right' });
+        y += 5.5;
+      });
+      y += 4;
+    });
+
+    ensureSpace(16);
+    doc.setDrawColor(180);
+    doc.line(M, y, pageW - M, y);
+    y += 7;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`Total menus (${MENU_PRICE_PER_PERSON} € / pers.)`, M, y);
+    doc.text(`${total} €`, pageW - M, y, { align: 'right' });
+    y += 10;
+
+    if (allNotes.length > 0) {
+      ensureSpace(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Remarques / allergies', M, y);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      allNotes.forEach((n) => {
+        const lines = doc.splitTextToSize(`${n.name} : ${n.notes}`, pageW - M * 2 - 4);
+        ensureSpace(lines.length * 5 + 2);
+        doc.text(lines, M + 4, y);
+        y += lines.length * 5 + 1;
+      });
+    }
+
+    doc.save(`recap-cuisine-${selectedEvent.event_date}.pdf`);
+  };
+
   // Signed URL for the private poster
   useEffect(() => {
     let cancelled = false;
@@ -799,6 +880,9 @@ const SpecialEvents = () => {
               <div className="flex items-center gap-2 print:hidden">
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={exportKitchenCsv}>
                   <Download className="w-4 h-4" /> Exporter (CSV)
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={exportKitchenPdf}>
+                  <Download className="w-4 h-4" /> Exporter (PDF)
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
                   <Printer className="w-4 h-4" /> Imprimer
