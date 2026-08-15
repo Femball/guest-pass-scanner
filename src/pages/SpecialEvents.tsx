@@ -16,7 +16,17 @@ import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
 import { buildSmsPayload } from '@/lib/sms';
 import { shortTicketUrl } from '@/lib/shortTicket';
-import { MENU_COURSES, MENU_COMMON, resizeMeals, emptyMeal, mealSummaryLabel, type GuestMeal } from '@/lib/cabaretMenu';
+import {
+  MENU_COURSES,
+  MENU_COMMON,
+  MENU_PRICE_PER_PERSON,
+  MENU_EDIT_DEADLINE,
+  isMenuEditable,
+  resizeMeals,
+  emptyMeal,
+  mealSummaryLabel,
+  type GuestMeal,
+} from '@/lib/cabaretMenu';
 import type { PendingSms } from '@/types/admin';
 
 interface SpecialEvent {
@@ -98,12 +108,8 @@ const MealFields = ({
   </div>
 );
 
-const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows' | 'seat_numbers'>) => {
-  const parts: string[] = [];
-  if (b.seat_rows) parts.push(`Rangée ${b.seat_rows}`);
-  if (b.seat_numbers) parts.push(`Siège ${b.seat_numbers}`);
-  return parts.join(' · ');
-};
+const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows'>) =>
+  b.seat_rows ? `Rangée ${b.seat_rows}` : '';
 
 const formatDateLabel = (date: string) => {
   try {
