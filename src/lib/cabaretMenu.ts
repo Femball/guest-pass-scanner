@@ -14,6 +14,15 @@ export const MENU_COURSES: MenuCourse[] = [
 /** Mets servis à tous les convives, sans choix. */
 export const MENU_COMMON = ['Kir de bienvenue', 'Velouté', 'Trou commingeois', 'Café'];
 
+/** Tarif du menu, par personne. */
+export const MENU_PRICE_PER_PERSON = 60;
+
+/** Dernière date de modification des menus (inclus). */
+export const MENU_EDIT_DEADLINE = '2026-09-15';
+
+export const isMenuEditable = (now: Date = new Date()) =>
+  now <= new Date(`${MENU_EDIT_DEADLINE}T23:59:59`);
+
 export interface GuestMeal {
   guest_index: number;
   guest_name: string;

@@ -16,7 +16,17 @@ import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
 import { buildSmsPayload } from '@/lib/sms';
 import { shortTicketUrl } from '@/lib/shortTicket';
-import { MENU_COURSES, MENU_COMMON, resizeMeals, emptyMeal, mealSummaryLabel, type GuestMeal } from '@/lib/cabaretMenu';
+import {
+  MENU_COURSES,
+  MENU_COMMON,
+  MENU_PRICE_PER_PERSON,
+  MENU_EDIT_DEADLINE,
+  isMenuEditable,
+  resizeMeals,
+  emptyMeal,
+  mealSummaryLabel,
+  type GuestMeal,
+} from '@/lib/cabaretMenu';
 import type { PendingSms } from '@/types/admin';
 
 interface SpecialEvent {
@@ -98,12 +108,8 @@ const MealFields = ({
   </div>
 );
 
-const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows' | 'seat_numbers'>) => {
-  const parts: string[] = [];
-  if (b.seat_rows) parts.push(`Rangée ${b.seat_rows}`);
-  if (b.seat_numbers) parts.push(`Siège ${b.seat_numbers}`);
-  return parts.join(' · ');
-};
+const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows'>) =>
+  b.seat_rows ? `Rangée ${b.seat_rows}` : '';
 
 const formatDateLabel = (date: string) => {
   try {
@@ -134,8 +140,6 @@ const SpecialEvents = () => {
   const [phone, setPhone] = useState('');
   const [persons, setPersons] = useState('1');
   const [seatRows, setSeatRows] = useState('');
-  const [seatNumbers, setSeatNumbers] = useState('');
-  const [price, setPrice] = useState('');
   const [adding, setAdding] = useState(false);
   const [newMeals, setNewMeals] = useState<GuestMeal[]>([emptyMeal(1)]);
 
@@ -245,6 +249,34 @@ const SpecialEvents = () => {
     [mealsByBooking, bookings],
   );
 
+  const menuEditable = isMenuEditable();
+  const deadlineLabel = formatDateLabel(MENU_EDIT_DEADLINE);
+
+  const exportKitchenCsv = () => {
+    if (!selectedEvent) return;
+    const rows: string[][] = [
+      ['Soirée', selectedEvent.title],
+      ['Date', formatDateLabel(selectedEvent.event_date)],
+      [],
+      ['Service', 'Plat', 'Quantité'],
+      ...kitchenTotals.flatMap((course) =>
+        course.counts.map((c) => [course.label, c.opt, String(c.count)]),
+      ),
+      [],
+      ['Convives', String(bookings.reduce((s, b) => s + b.number_of_persons, 0))],
+      ['Total menus (€)', String(bookings.reduce((s, b) => s + b.number_of_persons, 0) * MENU_PRICE_PER_PERSON)],
+    ];
+    if (allNotes.length > 0) {
+      rows.push([], ['Remarques / allergies', '']);
+      allNotes.forEach((n) => rows.push([n.name, n.notes]));
+    }
+    const csv = rows
+      .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(';'))
+      .join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `recap-cuisine-${selectedEvent.event_date}.csv`);
+  };
+
   // Signed URL for the private poster
   useEffect(() => {
     let cancelled = false;
@@ -324,8 +356,8 @@ const SpecialEvents = () => {
       phone: phone.trim() || null,
       number_of_persons: personCount,
       seat_rows: seatRows.trim().toUpperCase() || null,
-      seat_numbers: seatNumbers.trim() || null,
-      price: price ? Number(price) : null,
+      seat_numbers: null,
+      price: personCount * MENU_PRICE_PER_PERSON,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
     }).select('id').single();
     if (!error && created) {
@@ -348,14 +380,16 @@ const SpecialEvents = () => {
     setPhone('');
     setPersons('1');
     setSeatRows('');
-    setSeatNumbers('');
-    setPrice('');
     setNewMeals([emptyMeal(1)]);
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
   };
 
   const openMeals = (booking: SpecialBooking) => {
+    if (!isMenuEditable()) {
+      toast.error(`Les menus ne sont plus modifiables après le ${formatDateLabel(MENU_EDIT_DEADLINE)}`);
+      return;
+    }
     const existing = mealsByBooking[booking.id] ?? [];
     setEditMeals(resizeMeals(existing, booking.number_of_persons));
     setMealBooking(booking);
@@ -363,6 +397,10 @@ const SpecialEvents = () => {
 
   const saveMeals = async () => {
     if (!mealBooking) return;
+    if (!isMenuEditable()) {
+      setMealBooking(null);
+      return toast.error(`Modification des menus close depuis le ${formatDateLabel(MENU_EDIT_DEADLINE)}`);
+    }
     setSavingMeals(true);
     const rows = editMeals.map((m, i) => ({
       booking_id: mealBooking.id,
@@ -660,12 +698,10 @@ const SpecialEvents = () => {
                     <Input id="rows" value={seatRows} onChange={(e) => setSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="seats">Numéro(s) de siège(s)</Label>
-                    <Input id="seats" value={seatNumbers} onChange={(e) => setSeatNumbers(e.target.value)} placeholder="12, 13" maxLength={60} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="price">Prix réglé (€)</Label>
-                    <Input id="price" type="number" min="0" step="1" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="50" />
+                    <Label>Total menus</Label>
+                    <div className="h-10 flex items-center rounded-md border border-border px-3 text-sm text-foreground">
+                      {(Math.max(1, Number(persons) || 1) * MENU_PRICE_PER_PERSON).toFixed(0)} € ({MENU_PRICE_PER_PERSON} € / pers.)
+                    </div>
                   </div>
                   <div className="flex items-end">
                     <Button onClick={addBooking} disabled={adding} className="gap-2 w-full">
@@ -679,6 +715,9 @@ const SpecialEvents = () => {
                   <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <UtensilsCrossed className="w-4 h-4 text-primary" /> Menus des convives
                   </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {MENU_PRICE_PER_PERSON} € par personne · menus modifiables jusqu'au {deadlineLabel}
+                  </p>
                   <MealFields
                     meals={newMeals}
                     onChange={(i, patch) =>
@@ -707,7 +746,14 @@ const SpecialEvents = () => {
                             ) : null
                           ))}
                         </div>
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openMeals(b)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          disabled={!menuEditable}
+                          title={menuEditable ? undefined : `Modification close depuis le ${deadlineLabel}`}
+                          onClick={() => openMeals(b)}
+                        >
                           <UtensilsCrossed className="w-4 h-4" /> Menus
                         </Button>
                         <Button variant="outline" size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handlePreview(b)}>
@@ -746,13 +792,23 @@ const SpecialEvents = () => {
               <CardTitle className="flex items-center gap-2 text-base">
                 <UtensilsCrossed className="w-4 h-4 text-primary" /> Récapitulatif cuisine
               </CardTitle>
-              <Button variant="outline" size="sm" className="gap-1.5 print:hidden" onClick={() => window.print()}>
-                <Printer className="w-4 h-4" /> Imprimer
-              </Button>
+              <div className="flex items-center gap-2 print:hidden">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={exportKitchenCsv}>
+                  <Download className="w-4 h-4" /> Exporter (CSV)
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4" /> Imprimer
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground">
                 {selectedEvent.title} — {formatDateLabel(selectedEvent.event_date)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {bookings.reduce((s, b) => s + b.number_of_persons, 0)} convives ·{' '}
+                {bookings.reduce((s, b) => s + b.number_of_persons, 0) * MENU_PRICE_PER_PERSON} € au total (
+                {MENU_PRICE_PER_PERSON} € / pers.)
               </p>
               <div className="grid gap-4 sm:grid-cols-3">
                 {kitchenTotals.map((course) => (
