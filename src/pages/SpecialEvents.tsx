@@ -676,6 +676,18 @@ const SpecialEvents = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <UtensilsCrossed className="w-4 h-4 text-primary" /> Menus des convives
+                  </h2>
+                  <MealFields
+                    meals={newMeals}
+                    onChange={(i, patch) =>
+                      setNewMeals((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
                   {bookings.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Aucune invitation pour cette soirée.</p>
                   ) : (
@@ -687,7 +699,17 @@ const SpecialEvents = () => {
                             {b.number_of_persons} pers.{seatsLabel(b) ? ` · ${seatsLabel(b)}` : ''} · {b.price != null ? `${b.price} €` : 'Prix non renseigné'}
                             {b.phone ? ` · ${b.phone}` : ''}
                           </p>
+                          {(mealsByBooking[b.id] ?? []).map((m) => (
+                            mealSummaryLabel(m) ? (
+                              <p key={m.guest_index} className="text-[11px] text-muted-foreground">
+                                {m.guest_name || `Convive ${m.guest_index}`} : {mealSummaryLabel(m)}
+                              </p>
+                            ) : null
+                          ))}
                         </div>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openMeals(b)}>
+                          <UtensilsCrossed className="w-4 h-4" /> Menus
+                        </Button>
                         <Button variant="outline" size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handlePreview(b)}>
                           <QrCode className="w-4 h-4" /> Aperçu
                         </Button>
