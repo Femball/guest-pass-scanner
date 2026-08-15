@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy, UtensilsCrossed, Printer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
 import { buildSmsPayload } from '@/lib/sms';
 import { shortTicketUrl } from '@/lib/shortTicket';
+import { MENU_COURSES, MENU_COMMON, resizeMeals, emptyMeal, mealSummaryLabel, type GuestMeal } from '@/lib/cabaretMenu';
 import type { PendingSms } from '@/types/admin';
 
 interface SpecialEvent {
@@ -41,6 +43,60 @@ interface SpecialBooking {
 }
 
 const VENUE_ADDRESS = 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens';
+
+const MealFields = ({
+  meals,
+  onChange,
+}: {
+  meals: GuestMeal[];
+  onChange: (index: number, patch: Partial<GuestMeal>) => void;
+}) => (
+  <div className="space-y-3">
+    <p className="text-xs text-muted-foreground">
+      Servis à tous : {MENU_COMMON.join(' · ')}
+    </p>
+    {meals.map((meal, i) => (
+      <div key={meal.guest_index} className="rounded-lg border border-border p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-primary">Convive {meal.guest_index}</span>
+          <Input
+            value={meal.guest_name}
+            onChange={(e) => onChange(i, { guest_name: e.target.value })}
+            placeholder="Nom (optionnel)"
+            maxLength={60}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {MENU_COURSES.map((course) => (
+            <div key={course.key} className="space-y-1">
+              <Label className="text-xs">{course.label}</Label>
+              <Select
+                value={meal[course.key] || undefined}
+                onValueChange={(v) => onChange(i, { [course.key]: v } as Partial<GuestMeal>)}
+              >
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Choisir" /></SelectTrigger>
+                <SelectContent>
+                  {course.options.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+        </div>
+        <Textarea
+          value={meal.notes}
+          onChange={(e) => onChange(i, { notes: e.target.value })}
+          placeholder="Allergies / remarques"
+          rows={2}
+          maxLength={300}
+          className="text-sm"
+        />
+      </div>
+    ))}
+  </div>
+);
 
 const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows' | 'seat_numbers'>) => {
   const parts: string[] = [];
@@ -81,6 +137,13 @@ const SpecialEvents = () => {
   const [seatNumbers, setSeatNumbers] = useState('');
   const [price, setPrice] = useState('');
   const [adding, setAdding] = useState(false);
+  const [newMeals, setNewMeals] = useState<GuestMeal[]>([emptyMeal(1)]);
+
+  // Menu choices
+  const [mealsByBooking, setMealsByBooking] = useState<Record<string, GuestMeal[]>>({});
+  const [mealBooking, setMealBooking] = useState<SpecialBooking | null>(null);
+  const [editMeals, setEditMeals] = useState<GuestMeal[]>([]);
+  const [savingMeals, setSavingMeals] = useState(false);
 
   // Event edit
   const [editOpen, setEditOpen] = useState(false);
@@ -125,8 +188,62 @@ const SpecialEvents = () => {
     else setBookings(data ?? []);
   }, []);
 
+  const loadMeals = useCallback(async (bookingIds: string[]) => {
+    if (bookingIds.length === 0) return setMealsByBooking({});
+    const { data, error } = await supabase
+      .from('special_booking_meals')
+      .select('booking_id, guest_index, guest_name, starter, main_course, dessert, notes')
+      .in('booking_id', bookingIds)
+      .order('guest_index');
+    if (error) return;
+    const map: Record<string, GuestMeal[]> = {};
+    (data ?? []).forEach((row) => {
+      const meal: GuestMeal = {
+        guest_index: row.guest_index,
+        guest_name: row.guest_name ?? '',
+        starter: row.starter ?? '',
+        main_course: row.main_course ?? '',
+        dessert: row.dessert ?? '',
+        notes: row.notes ?? '',
+      };
+      (map[row.booking_id] ??= []).push(meal);
+    });
+    setMealsByBooking(map);
+  }, []);
+
   useEffect(() => { loadEvents(); }, [loadEvents]);
   useEffect(() => { loadBookings(selectedId); }, [selectedId, loadBookings]);
+  useEffect(() => { loadMeals(bookings.map((b) => b.id)); }, [bookings, loadMeals]);
+  useEffect(() => {
+    setNewMeals((prev) => resizeMeals(prev, Number(persons) || 1));
+  }, [persons]);
+
+  const kitchenTotals = useMemo(() => {
+    const totals = MENU_COURSES.map((course) => ({
+      label: course.label,
+      counts: course.options.map((opt) => ({ opt, count: 0 })),
+    }));
+    Object.values(mealsByBooking).flat().forEach((meal) => {
+      MENU_COURSES.forEach((course, ci) => {
+        const entry = totals[ci].counts.find((c) => c.opt === meal[course.key]);
+        if (entry) entry.count += 1;
+      });
+    });
+    return totals;
+  }, [mealsByBooking]);
+
+  const allNotes = useMemo(
+    () =>
+      Object.entries(mealsByBooking).flatMap(([bookingId, meals]) =>
+        meals
+          .filter((m) => m.notes.trim())
+          .map((m) => ({
+            name: m.guest_name || bookings.find((b) => b.id === bookingId)?.guest_names || 'Convive',
+            notes: m.notes,
+          })),
+      ),
+    [mealsByBooking, bookings],
+  );
 
   // Signed URL for the private poster
   useEffect(() => {
@@ -198,18 +315,32 @@ const SpecialEvents = () => {
     if (!firstName.trim() || !lastName.trim()) return toast.error('Prénom et nom obligatoires');
     setAdding(true);
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
-    const { error } = await supabase.from('special_bookings').insert({
+    const personCount = Math.max(1, Number(persons) || 1);
+    const { data: created, error } = await supabase.from('special_bookings').insert({
       event_id: selectedEvent.id,
       guest_names: fullName,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       phone: phone.trim() || null,
-      number_of_persons: Math.max(1, Number(persons) || 1),
+      number_of_persons: personCount,
       seat_rows: seatRows.trim().toUpperCase() || null,
       seat_numbers: seatNumbers.trim() || null,
       price: price ? Number(price) : null,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
-    });
+    }).select('id').single();
+    if (!error && created) {
+      const rows = resizeMeals(newMeals, personCount).map((m, i) => ({
+        booking_id: created.id,
+        guest_index: i + 1,
+        guest_name: (m.guest_name || (i === 0 ? fullName : '')) || null,
+        starter: m.starter || null,
+        main_course: m.main_course || null,
+        dessert: m.dessert || null,
+        notes: m.notes || null,
+      }));
+      const { error: mealErr } = await supabase.from('special_booking_meals').insert(rows);
+      if (mealErr) toast.error('Invitation créée, mais les menus n’ont pas été enregistrés');
+    }
     setAdding(false);
     if (error) return toast.error('Ajout impossible');
     setFirstName('');
@@ -219,8 +350,37 @@ const SpecialEvents = () => {
     setSeatRows('');
     setSeatNumbers('');
     setPrice('');
+    setNewMeals([emptyMeal(1)]);
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
+  };
+
+  const openMeals = (booking: SpecialBooking) => {
+    const existing = mealsByBooking[booking.id] ?? [];
+    setEditMeals(resizeMeals(existing, booking.number_of_persons));
+    setMealBooking(booking);
+  };
+
+  const saveMeals = async () => {
+    if (!mealBooking) return;
+    setSavingMeals(true);
+    const rows = editMeals.map((m, i) => ({
+      booking_id: mealBooking.id,
+      guest_index: i + 1,
+      guest_name: m.guest_name || null,
+      starter: m.starter || null,
+      main_course: m.main_course || null,
+      dessert: m.dessert || null,
+      notes: m.notes || null,
+    }));
+    const { error } = await supabase
+      .from('special_booking_meals')
+      .upsert(rows, { onConflict: 'booking_id,guest_index' });
+    setSavingMeals(false);
+    if (error) return toast.error('Enregistrement impossible');
+    toast.success('Menus enregistrés');
+    setMealBooking(null);
+    loadMeals(bookings.map((b) => b.id));
   };
 
   const openEdit = () => {
@@ -516,6 +676,18 @@ const SpecialEvents = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <UtensilsCrossed className="w-4 h-4 text-primary" /> Menus des convives
+                  </h2>
+                  <MealFields
+                    meals={newMeals}
+                    onChange={(i, patch) =>
+                      setNewMeals((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
                   {bookings.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Aucune invitation pour cette soirée.</p>
                   ) : (
@@ -527,7 +699,17 @@ const SpecialEvents = () => {
                             {b.number_of_persons} pers.{seatsLabel(b) ? ` · ${seatsLabel(b)}` : ''} · {b.price != null ? `${b.price} €` : 'Prix non renseigné'}
                             {b.phone ? ` · ${b.phone}` : ''}
                           </p>
+                          {(mealsByBooking[b.id] ?? []).map((m) => (
+                            mealSummaryLabel(m) ? (
+                              <p key={m.guest_index} className="text-[11px] text-muted-foreground">
+                                {m.guest_name || `Convive ${m.guest_index}`} : {mealSummaryLabel(m)}
+                              </p>
+                            ) : null
+                          ))}
                         </div>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openMeals(b)}>
+                          <UtensilsCrossed className="w-4 h-4" /> Menus
+                        </Button>
                         <Button variant="outline" size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handlePreview(b)}>
                           <QrCode className="w-4 h-4" /> Aperçu
                         </Button>
@@ -558,6 +740,45 @@ const SpecialEvents = () => {
           </CardContent>
         </Card>
 
+        {selectedEvent && bookings.length > 0 && (
+          <Card className="print:shadow-none">
+            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UtensilsCrossed className="w-4 h-4 text-primary" /> Récapitulatif cuisine
+              </CardTitle>
+              <Button variant="outline" size="sm" className="gap-1.5 print:hidden" onClick={() => window.print()}>
+                <Printer className="w-4 h-4" /> Imprimer
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                {selectedEvent.title} — {formatDateLabel(selectedEvent.event_date)}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {kitchenTotals.map((course) => (
+                  <div key={course.label} className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">{course.label}</p>
+                    {course.counts.map((c) => (
+                      <p key={c.opt} className="text-sm text-muted-foreground flex justify-between gap-3">
+                        <span>{c.opt}</span>
+                        <span className="font-semibold text-foreground">{c.count}</span>
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              {allNotes.length > 0 && (
+                <div className="space-y-1 pt-2 border-t border-border">
+                  <p className="text-sm font-semibold text-foreground">Remarques / allergies</p>
+                  {allNotes.map((n, i) => (
+                    <p key={i} className="text-sm text-muted-foreground">{n.name} : {n.notes}</p>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {previewUrl && (
           <div
             className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
@@ -566,6 +787,27 @@ const SpecialEvents = () => {
             <img src={previewUrl} alt="Aperçu de l'invitation QR code" className="max-h-full max-w-full rounded-lg shadow-2xl" />
           </div>
         )}
+
+        <Dialog open={!!mealBooking} onOpenChange={(open) => { if (!open) setMealBooking(null); }}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Menus — {mealBooking?.guest_names}</DialogTitle>
+              <DialogDescription>Choix de l'entrée, du plat et du dessert pour chaque convive.</DialogDescription>
+            </DialogHeader>
+            <MealFields
+              meals={editMeals}
+              onChange={(i, patch) =>
+                setEditMeals((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)))
+              }
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setMealBooking(null)}>Annuler</Button>
+              <Button onClick={saveMeals} disabled={savingMeals} className="gap-2">
+                {savingMeals && <Loader2 className="w-4 h-4 animate-spin" />}Enregistrer
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!pendingSms} onOpenChange={(open) => { if (!open) setPendingSms(null); }}>
           <DialogContent className="max-w-md">

@@ -570,6 +570,53 @@ export type Database = {
         }
         Relationships: []
       }
+      special_booking_meals: {
+        Row: {
+          booking_id: string
+          created_at: string
+          dessert: string | null
+          guest_index: number
+          guest_name: string | null
+          id: string
+          main_course: string | null
+          notes: string | null
+          starter: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          dessert?: string | null
+          guest_index?: number
+          guest_name?: string | null
+          id?: string
+          main_course?: string | null
+          notes?: string | null
+          starter?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          dessert?: string | null
+          guest_index?: number
+          guest_name?: string | null
+          id?: string
+          main_course?: string | null
+          notes?: string | null
+          starter?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_booking_meals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "special_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       special_bookings: {
         Row: {
           created_at: string
