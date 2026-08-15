@@ -140,8 +140,6 @@ const SpecialEvents = () => {
   const [phone, setPhone] = useState('');
   const [persons, setPersons] = useState('1');
   const [seatRows, setSeatRows] = useState('');
-  const [seatNumbers, setSeatNumbers] = useState('');
-  const [price, setPrice] = useState('');
   const [adding, setAdding] = useState(false);
   const [newMeals, setNewMeals] = useState<GuestMeal[]>([emptyMeal(1)]);
 
@@ -250,6 +248,34 @@ const SpecialEvents = () => {
       ),
     [mealsByBooking, bookings],
   );
+
+  const menuEditable = isMenuEditable();
+  const deadlineLabel = formatDateLabel(MENU_EDIT_DEADLINE);
+
+  const exportKitchenCsv = () => {
+    if (!selectedEvent) return;
+    const rows: string[][] = [
+      ['Soirée', selectedEvent.title],
+      ['Date', formatDateLabel(selectedEvent.event_date)],
+      [],
+      ['Service', 'Plat', 'Quantité'],
+      ...kitchenTotals.flatMap((course) =>
+        course.counts.map((c) => [course.label, c.opt, String(c.count)]),
+      ),
+      [],
+      ['Convives', String(bookings.reduce((s, b) => s + b.number_of_persons, 0))],
+      ['Total menus (€)', String(bookings.reduce((s, b) => s + b.number_of_persons, 0) * MENU_PRICE_PER_PERSON)],
+    ];
+    if (allNotes.length > 0) {
+      rows.push([], ['Remarques / allergies', '']);
+      allNotes.forEach((n) => rows.push([n.name, n.notes]));
+    }
+    const csv = rows
+      .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(';'))
+      .join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `recap-cuisine-${selectedEvent.event_date}.csv`);
+  };
 
   // Signed URL for the private poster
   useEffect(() => {
