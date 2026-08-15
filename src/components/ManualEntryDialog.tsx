@@ -88,13 +88,22 @@ const ManualEntryDialog = ({ open, onOpenChange, onValidated }: ManualEntryDialo
     }
 
     setValidatingId(reservation.id);
-    const { error } = await supabase
+    // Verrou atomique : refuse une seconde validation de la même réservation
+    const { data: updated, error } = await supabase
       .from('reservations')
       .update({ is_validated: true, validated_at: new Date().toISOString() })
-      .eq('id', reservation.id);
+      .eq('id', reservation.id)
+      .eq('is_validated', false)
+      .select('id');
 
     if (error) {
       toast.error('Erreur lors de la validation');
+      setValidatingId(null);
+      return;
+    }
+
+    if (!updated || updated.length === 0) {
+      toast.error('🚫 Déjà entré — ce ticket vient d\'être validé');
       setValidatingId(null);
       return;
     }
