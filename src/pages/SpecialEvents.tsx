@@ -381,6 +381,45 @@ const SpecialEvents = () => {
     doc.text(`${total} €`, pageW - M, y, { align: 'right' });
     y += 10;
 
+    if (guestRows.length > 0) {
+      ensureSpace(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Détail par convive', M, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.text('Convive', M, y);
+      doc.text('Entrée', M + 55, y);
+      doc.text('Plat', M + 100, y);
+      doc.text('Dessert', M + 140, y);
+      y += 4;
+      doc.setDrawColor(210);
+      doc.line(M, y, pageW - M, y);
+      y += 4;
+      doc.setFont('helvetica', 'normal');
+      guestRows.forEach((g) => {
+        ensureSpace(10);
+        const name = doc.splitTextToSize(g.name, 52)[0];
+        doc.text(String(name), M, y);
+        doc.text(doc.splitTextToSize(g.starter, 43)[0], M + 55, y);
+        doc.text(doc.splitTextToSize(g.main, 38)[0], M + 100, y);
+        doc.text(doc.splitTextToSize(g.dessert, 40)[0], M + 140, y);
+        y += 5;
+        if (g.notes) {
+          const lines = doc.splitTextToSize(`Note : ${g.notes}`, pageW - M * 2 - 6);
+          ensureSpace(lines.length * 4.5);
+          doc.setTextColor(120);
+          doc.setFontSize(8);
+          doc.text(lines, M + 4, y);
+          doc.setFontSize(9);
+          doc.setTextColor(0);
+          y += lines.length * 4.5 + 1;
+        }
+      });
+      y += 6;
+      doc.setFontSize(10);
+    }
+
     if (allNotes.length > 0) {
       ensureSpace(12);
       doc.setFont('helvetica', 'bold');
