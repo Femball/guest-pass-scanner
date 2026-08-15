@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy, UtensilsCrossed, Printer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
 import { buildSmsPayload } from '@/lib/sms';
 import { shortTicketUrl } from '@/lib/shortTicket';
+import { MENU_COURSES, MENU_COMMON, resizeMeals, emptyMeal, mealSummaryLabel, type GuestMeal } from '@/lib/cabaretMenu';
 import type { PendingSms } from '@/types/admin';
 
 interface SpecialEvent {
@@ -41,6 +43,60 @@ interface SpecialBooking {
 }
 
 const VENUE_ADDRESS = 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens';
+
+const MealFields = ({
+  meals,
+  onChange,
+}: {
+  meals: GuestMeal[];
+  onChange: (index: number, patch: Partial<GuestMeal>) => void;
+}) => (
+  <div className="space-y-3">
+    <p className="text-xs text-muted-foreground">
+      Servis à tous : {MENU_COMMON.join(' · ')}
+    </p>
+    {meals.map((meal, i) => (
+      <div key={meal.guest_index} className="rounded-lg border border-border p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-primary">Convive {meal.guest_index}</span>
+          <Input
+            value={meal.guest_name}
+            onChange={(e) => onChange(i, { guest_name: e.target.value })}
+            placeholder="Nom (optionnel)"
+            maxLength={60}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {MENU_COURSES.map((course) => (
+            <div key={course.key} className="space-y-1">
+              <Label className="text-xs">{course.label}</Label>
+              <Select
+                value={meal[course.key] || undefined}
+                onValueChange={(v) => onChange(i, { [course.key]: v } as Partial<GuestMeal>)}
+              >
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Choisir" /></SelectTrigger>
+                <SelectContent>
+                  {course.options.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+        </div>
+        <Textarea
+          value={meal.notes}
+          onChange={(e) => onChange(i, { notes: e.target.value })}
+          placeholder="Allergies / remarques"
+          rows={2}
+          maxLength={300}
+          className="text-sm"
+        />
+      </div>
+    ))}
+  </div>
+);
 
 const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows' | 'seat_numbers'>) => {
   const parts: string[] = [];
