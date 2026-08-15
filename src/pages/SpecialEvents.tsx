@@ -53,7 +53,7 @@ interface SpecialBooking {
   seat_numbers: string | null;
 }
 
-const VENUE_ADDRESS = 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens';
+const VENUE_ADDRESS = 'Le Français, Place Napoléon, 31800 Saint-Gaudens';
 
 const MealFields = ({
   meals,

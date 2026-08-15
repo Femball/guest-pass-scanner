@@ -52,7 +52,7 @@ const AdminContent = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
   const [eventTime, setEventTime] = useState('');
-  const [eventAddress, setEventAddress] = useState('Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+  const [eventAddress, setEventAddress] = useState('Le Français, Place Napoléon, 31800 Saint-Gaudens');
   const [eventAddressType, setEventAddressType] = useState<'default' | 'other'>('default');
   const [hasPayment, setHasPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
@@ -129,7 +129,7 @@ const AdminContent = () => {
       toast.error('Aucune réservation trouvée pour ce client');
       return;
     }
-    const body = buildTicketSmsBody([reservation], 'Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+    const body = buildTicketSmsBody([reservation], 'Le Français, Place Napoléon, 31800 Saint-Gaudens');
     openSmsPreview(client.phone!, client.name, body, [
       { label: reservation.client_name, code: reservation.qr_code },
     ]);
@@ -590,7 +590,7 @@ const AdminContent = () => {
     setNewPersons(1);
     setPersonNames([]);
     setEventTime('');
-    setEventAddress('Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+    setEventAddress('Le Français, Place Napoléon, 31800 Saint-Gaudens');
     setEventAddressType('default');
     setHasBottle(false);
     setBottles([{ type: '', quantity: 1 }]);
@@ -1202,7 +1202,7 @@ const AdminContent = () => {
                       onValueChange={(val: 'default' | 'other') => {
                         setEventAddressType(val);
                         if (val === 'default') {
-                          setEventAddress('Café Le Français, Place Napoléon, 31800 Saint-Gaudens');
+                          setEventAddress('Le Français, Place Napoléon, 31800 Saint-Gaudens');
                         } else {
                           setEventAddress('');
                         }
@@ -1212,7 +1212,7 @@ const AdminContent = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="default">Café Le Français, Saint-Gaudens</SelectItem>
+                        <SelectItem value="default">Le Français, Saint-Gaudens</SelectItem>
                         <SelectItem value="other">Autre adresse...</SelectItem>
                       </SelectContent>
                     </Select>
