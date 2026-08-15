@@ -256,6 +256,31 @@ const SpecialEvents = () => {
   const menuEditable = isMenuEditable();
   const deadlineLabel = formatDateLabel(MENU_EDIT_DEADLINE);
 
+  /** Détail ligne par ligne : un convive = une ligne. */
+  const guestRows = useMemo(
+    () =>
+      [...bookings]
+        .sort((a, b) => a.guest_names.localeCompare(b.guest_names, 'fr'))
+        .flatMap((b) => {
+          const meals = mealsByBooking[b.id] ?? [];
+          const list =
+            meals.length > 0
+              ? meals
+              : Array.from({ length: b.number_of_persons }, (_, i) => emptyMeal(i + 1));
+          return list.map((m) => ({
+            reservation: b.guest_names,
+            phone: b.phone ?? '',
+            index: m.guest_index,
+            name: m.guest_name || `${b.guest_names} (convive ${m.guest_index})`,
+            starter: m.starter || '—',
+            main: m.main_course || '—',
+            dessert: m.dessert || '—',
+            notes: m.notes || '',
+          }));
+        }),
+    [bookings, mealsByBooking],
+  );
+
   const exportKitchenCsv = () => {
     if (!selectedEvent) return;
     const rows: string[][] = [
@@ -266,6 +291,19 @@ const SpecialEvents = () => {
       ...kitchenTotals.flatMap((course) =>
         course.counts.map((c) => [course.label, c.opt, String(c.count)]),
       ),
+      [],
+      ['Détail par convive', ''],
+      ['Réservation', 'Téléphone', 'Convive', 'Nom', 'Entrée', 'Plat', 'Dessert', 'Remarques'],
+      ...guestRows.map((g) => [
+        g.reservation,
+        g.phone,
+        String(g.index),
+        g.name,
+        g.starter,
+        g.main,
+        g.dessert,
+        g.notes,
+      ]),
       [],
       ['Convives', String(bookings.reduce((s, b) => s + b.number_of_persons, 0))],
       ['Total menus (€)', String(bookings.reduce((s, b) => s + b.number_of_persons, 0) * MENU_PRICE_PER_PERSON)],
