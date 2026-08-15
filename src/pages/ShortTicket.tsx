@@ -7,7 +7,7 @@ import { Calendar, Clock, MapPin, User, Armchair } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Seo from "@/components/Seo";
 
-const VENUE_ADDRESS = "Le Français — 3 Rue Schoelcher, 97110 Pointe-à-Pitre";
+const VENUE_ADDRESS = "Le Français, Place Napoléon, 31800 Saint-Gaudens";
 
 type PublicTicket = {
   qr_code: string;
