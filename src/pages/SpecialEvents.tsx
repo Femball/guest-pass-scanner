@@ -137,6 +137,13 @@ const SpecialEvents = () => {
   const [seatNumbers, setSeatNumbers] = useState('');
   const [price, setPrice] = useState('');
   const [adding, setAdding] = useState(false);
+  const [newMeals, setNewMeals] = useState<GuestMeal[]>([emptyMeal(1)]);
+
+  // Menu choices
+  const [mealsByBooking, setMealsByBooking] = useState<Record<string, GuestMeal[]>>({});
+  const [mealBooking, setMealBooking] = useState<SpecialBooking | null>(null);
+  const [editMeals, setEditMeals] = useState<GuestMeal[]>([]);
+  const [savingMeals, setSavingMeals] = useState(false);
 
   // Event edit
   const [editOpen, setEditOpen] = useState(false);
@@ -181,8 +188,62 @@ const SpecialEvents = () => {
     else setBookings(data ?? []);
   }, []);
 
+  const loadMeals = useCallback(async (bookingIds: string[]) => {
+    if (bookingIds.length === 0) return setMealsByBooking({});
+    const { data, error } = await supabase
+      .from('special_booking_meals')
+      .select('booking_id, guest_index, guest_name, starter, main_course, dessert, notes')
+      .in('booking_id', bookingIds)
+      .order('guest_index');
+    if (error) return;
+    const map: Record<string, GuestMeal[]> = {};
+    (data ?? []).forEach((row) => {
+      const meal: GuestMeal = {
+        guest_index: row.guest_index,
+        guest_name: row.guest_name ?? '',
+        starter: row.starter ?? '',
+        main_course: row.main_course ?? '',
+        dessert: row.dessert ?? '',
+        notes: row.notes ?? '',
+      };
+      (map[row.booking_id] ??= []).push(meal);
+    });
+    setMealsByBooking(map);
+  }, []);
+
   useEffect(() => { loadEvents(); }, [loadEvents]);
   useEffect(() => { loadBookings(selectedId); }, [selectedId, loadBookings]);
+  useEffect(() => { loadMeals(bookings.map((b) => b.id)); }, [bookings, loadMeals]);
+  useEffect(() => {
+    setNewMeals((prev) => resizeMeals(prev, Number(persons) || 1));
+  }, [persons]);
+
+  const kitchenTotals = useMemo(() => {
+    const totals = MENU_COURSES.map((course) => ({
+      label: course.label,
+      counts: course.options.map((opt) => ({ opt, count: 0 })),
+    }));
+    Object.values(mealsByBooking).flat().forEach((meal) => {
+      MENU_COURSES.forEach((course, ci) => {
+        const entry = totals[ci].counts.find((c) => c.opt === meal[course.key]);
+        if (entry) entry.count += 1;
+      });
+    });
+    return totals;
+  }, [mealsByBooking]);
+
+  const allNotes = useMemo(
+    () =>
+      Object.entries(mealsByBooking).flatMap(([bookingId, meals]) =>
+        meals
+          .filter((m) => m.notes.trim())
+          .map((m) => ({
+            name: m.guest_name || bookings.find((b) => b.id === bookingId)?.guest_names || 'Convive',
+            notes: m.notes,
+          })),
+      ),
+    [mealsByBooking, bookings],
+  );
 
   // Signed URL for the private poster
   useEffect(() => {
