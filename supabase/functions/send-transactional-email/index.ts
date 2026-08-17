@@ -49,17 +49,22 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-  const authClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-  })
-  const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(
-    authHeader.replace('Bearer ', '')
-  )
-  if (claimsError || !claimsData?.claims) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  const bearerToken = authHeader.replace('Bearer ', '')
+  // Internal service-to-service calls (cron jobs, other edge functions) pass the
+  // service role key directly — accept it without user JWT validation.
+  const isServiceRole = bearerToken === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!isServiceRole) {
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
     })
+    const { data: claimsData, error: claimsError } =
+      await authClient.auth.getClaims(bearerToken)
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
   }
 
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
