@@ -319,6 +319,43 @@ const SpecialEvents = () => {
     downloadBlob(blob, `recap-cuisine-${selectedEvent.event_date}.csv`);
   };
 
+  const exportGuestsJson = () => {
+    if (!selectedEvent) return;
+    const guests = bookings.reduce((s, b) => s + b.number_of_persons, 0);
+    const payload = {
+      event: {
+        title: selectedEvent.title,
+        date: selectedEvent.event_date,
+        time: selectedEvent.event_time,
+      },
+      menu_price_per_person: MENU_PRICE_PER_PERSON,
+      totals: {
+        guests,
+        total_eur: guests * MENU_PRICE_PER_PERSON,
+        by_course: kitchenTotals.map((course) => ({
+          course: course.label,
+          options: course.counts.map((c) => ({ name: c.opt, count: c.count })),
+        })),
+      },
+      guests: guestRows.map((g) => ({
+        reservation: g.reservation,
+        phone: g.phone,
+        guest_index: g.index,
+        name: g.name,
+        starter: g.starter,
+        main: g.main,
+        dessert: g.dessert,
+        notes: g.notes,
+      })),
+      allergies: allNotes.map((n) => ({ name: n.name, notes: n.notes })),
+      exported_at: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json;charset=utf-8;',
+    });
+    downloadBlob(blob, `convives-${selectedEvent.event_date}.json`);
+  };
+
   const exportKitchenPdf = () => {
     if (!selectedEvent) return;
     const guests = bookings.reduce((s, b) => s + b.number_of_persons, 0);
@@ -960,6 +997,9 @@ const SpecialEvents = () => {
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={exportKitchenPdf}>
                   <Download className="w-4 h-4" /> Exporter (PDF)
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={exportGuestsJson}>
+                  <Download className="w-4 h-4" /> Exporter (JSON)
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
                   <Printer className="w-4 h-4" /> Imprimer
