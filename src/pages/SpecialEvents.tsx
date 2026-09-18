@@ -585,8 +585,8 @@ const SpecialEvents = () => {
   };
 
   const openMeals = (booking: SpecialBooking) => {
-    if (!isMenuEditable()) {
-      toast.error(`Les menus ne sont plus modifiables après le ${formatDateLabel(MENU_EDIT_DEADLINE)}`);
+    if (!isMenuEditable(selectedEvent?.event_date)) {
+      toast.error(`Les menus ne sont plus modifiables après le ${deadlineLabel}`);
       return;
     }
     const existing = mealsByBooking[booking.id] ?? [];
@@ -596,9 +596,9 @@ const SpecialEvents = () => {
 
   const saveMeals = async () => {
     if (!mealBooking) return;
-    if (!isMenuEditable()) {
+    if (!isMenuEditable(selectedEvent?.event_date)) {
       setMealBooking(null);
-      return toast.error(`Modification des menus close depuis le ${formatDateLabel(MENU_EDIT_DEADLINE)}`);
+      return toast.error(`Modification des menus close depuis le ${deadlineLabel}`);
     }
     setSavingMeals(true);
     const rows = editMeals.map((m, i) => ({
