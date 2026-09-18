@@ -253,8 +253,8 @@ const SpecialEvents = () => {
     [mealsByBooking, bookings],
   );
 
-  const menuEditable = isMenuEditable();
-  const deadlineLabel = formatDateLabel(MENU_EDIT_DEADLINE);
+  const menuEditable = isMenuEditable(selectedEvent?.event_date);
+  const deadlineLabel = selectedEvent ? formatDateLabel(menuEditDeadline(selectedEvent.event_date)) : '';
 
   /** Détail ligne par ligne : un convive = une ligne. */
   const guestRows = useMemo(
