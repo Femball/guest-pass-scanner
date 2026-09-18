@@ -21,7 +21,7 @@ import {
   MENU_COURSES,
   MENU_COMMON,
   MENU_PRICE_PER_PERSON,
-  MENU_EDIT_DEADLINE,
+  menuEditDeadline,
   isMenuEditable,
   resizeMeals,
   emptyMeal,
