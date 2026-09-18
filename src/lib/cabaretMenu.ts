@@ -17,11 +17,17 @@ export const MENU_COMMON = ['Kir de bienvenue', 'Velouté', 'Trou commingeois', 
 /** Tarif du menu, par personne. */
 export const MENU_PRICE_PER_PERSON = 60;
 
-/** Dernière date de modification des menus (inclus). */
-export const MENU_EDIT_DEADLINE = '2026-09-15';
+/** Dernière date de modification des menus : la veille de la soirée (incluse). */
+export const menuEditDeadline = (eventDate: string) => {
+  const d = new Date(`${eventDate}T00:00:00`);
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+};
 
-export const isMenuEditable = (now: Date = new Date()) =>
-  now <= new Date(`${MENU_EDIT_DEADLINE}T23:59:59`);
+export const isMenuEditable = (eventDate?: string | null, now: Date = new Date()) => {
+  if (!eventDate) return true;
+  return now <= new Date(`${menuEditDeadline(eventDate)}T23:59:59`);
+};
 
 export interface GuestMeal {
   guest_index: number;
