@@ -670,6 +670,59 @@ export type Database = {
           },
         ]
       }
+      special_event_reminders: {
+        Row: {
+          booking_ids: string[]
+          created_at: string
+          created_by: string | null
+          event_id: string
+          id: string
+          label: string
+          message: string
+          scheduled_for: string
+          sent_at: string | null
+          sent_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          booking_ids?: string[]
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          id?: string
+          label?: string
+          message: string
+          scheduled_for: string
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          booking_ids?: string[]
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          id?: string
+          label?: string
+          message?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_event_reminders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "special_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       special_events: {
         Row: {
           created_at: string

@@ -17,6 +17,7 @@ import Seo from '@/components/Seo';
 import { renderSpecialTicket, downloadBlob, shareTicketBlob } from '@/lib/specialTicket';
 import { buildSmsPayload } from '@/lib/sms';
 import { shortTicketUrl } from '@/lib/shortTicket';
+import SpecialEventReminders from '@/components/special/SpecialEventReminders';
 import {
   MENU_COURSES,
   MENU_COMMON,
@@ -984,6 +985,15 @@ const SpecialEvents = () => {
             )}
           </CardContent>
         </Card>
+
+        {selectedEvent && bookings.length > 0 && (
+          <SpecialEventReminders
+            event={selectedEvent}
+            bookings={bookings}
+            venue={VENUE_ADDRESS}
+            ticketUrl={(b) => shortTicketUrl(b.qr_code)}
+          />
+        )}
 
         {selectedEvent && bookings.length > 0 && (
           <Card className="print:shadow-none">
