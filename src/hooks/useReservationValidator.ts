@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useScanSounds } from './useScanSounds';
 import { z } from 'zod';
@@ -61,8 +61,19 @@ export const useReservationValidator = () => {
   
   const { playSuccessSound, playErrorSound } = useScanSounds();
 
+  // Mémorise le dernier état appliqué pour pouvoir renvoyer le résultat du scan.
+  const setState = useCallback(
+    (value: ValidationState | ((prev: ValidationState) => ValidationState)) => {
+      _setState((prev) => {
+        const next = typeof value === 'function' ? (value as (p: ValidationState) => ValidationState)(prev) : value;
+        lastResultRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
 
-  const validateQRCode = useCallback(async (qrCode: string) => {
+  const runValidation = useCallback(async (qrCode: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
 
     const validationResult = qrCodeSchema.safeParse(qrCode);
