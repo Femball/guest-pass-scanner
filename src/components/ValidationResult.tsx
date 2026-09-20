@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, User, CreditCard, Banknote } from 'lucide-react';
+import { CheckCircle, XCircle, User, CreditCard, Banknote, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ValidationResultProps {
@@ -116,6 +116,7 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
         </motion.p>
 
         <motion.div
+          className="flex flex-col sm:flex-row items-center gap-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -123,11 +124,25 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
           <Button
             size="lg"
             variant="outline"
+            type="button"
             onClick={handleConfirm}
             disabled={confirmed}
-            className="text-base md:text-lg px-6 md:px-8 py-4 md:py-6 bg-white/20 border-white/40 hover:bg-white/30 text-current font-semibold"
+            aria-label="Confirmer ce résultat et revenir au scanner"
+            className="min-h-12 text-base md:text-lg px-6 md:px-8 py-4 md:py-6 bg-white/20 border-white/40 hover:bg-white/30 text-current font-semibold focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2"
           >
             {confirmed ? 'OK ✓' : '✋ Confirmer et scanner suivant'}
+          </Button>
+          <Button
+            size="lg"
+            variant="ghost"
+            type="button"
+            onClick={onReset}
+            disabled={confirmed}
+            aria-label="Rescanner immédiatement un autre QR code"
+            className="min-h-12 gap-2 text-base px-5 py-4 border border-white/40 text-current hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2"
+          >
+            <RotateCcw className="w-5 h-5" aria-hidden="true" />
+            Rescanner
           </Button>
         </motion.div>
       </motion.div>
