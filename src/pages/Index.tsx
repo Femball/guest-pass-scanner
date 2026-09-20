@@ -47,7 +47,15 @@ const Index = () => {
   } = useReservationValidator();
   const handleScan = async (qrCode: string) => {
     setIsScanning(false);
-    await validateQRCode(qrCode);
+    const result = await validateQRCode(qrCode);
+    if (result && result.isValid !== null) {
+      vibrate(result.isValid ? 80 : [70, 60, 70]);
+      addEntry({
+        isValid: result.isValid,
+        clientName: result.clientName,
+        message: result.message,
+      });
+    }
   };
   const handleReset = () => {
     reset();
