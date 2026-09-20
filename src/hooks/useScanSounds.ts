@@ -1,9 +1,11 @@
 import { useCallback, useRef } from 'react';
+import { readScanPreferences } from './useScanPreferences';
 
 export const useScanSounds = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const getAudioContext = useCallback(() => {
+    if (!readScanPreferences().sound) return null;
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
