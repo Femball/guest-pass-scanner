@@ -19,8 +19,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import StaffManager from '@/components/StaffManager';
+import { ScrollButtons } from '@/components/ScrollButtons';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+
 const Index = () => {
   const [isScanning, setIsScanning] = useState(true);
   const [manualOpen, setManualOpen] = useState(false);
@@ -204,6 +206,9 @@ const Index = () => {
 
       {/* Validation overlay */}
       <ValidationResult isValid={isValid} clientName={clientName} message={message} amount={amount} paymentMethod={paymentMethod} paymentStatus={paymentStatus} onReset={handleReset} />
+
+      <ScrollButtons />
     </div>;
+
 };
 export default Index;
