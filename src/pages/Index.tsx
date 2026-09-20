@@ -205,6 +205,11 @@ const Index = () => {
         }}>
               Le résultat s'affichera automatiquement
             </motion.p>
+
+            <div className="w-full max-w-sm mt-4 flex flex-col gap-3">
+              <ScanFeedbackSettings />
+              <ScanHistory history={history} onClear={clearHistory} />
+            </div>
           </> : null}
       </main>
 
