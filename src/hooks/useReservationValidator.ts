@@ -46,7 +46,8 @@ interface ValidationState {
 }
 
 export const useReservationValidator = () => {
-  const [state, setState] = useState<ValidationState>({
+  const lastResultRef = useRef<ValidationState | null>(null);
+  const [state, _setState] = useState<ValidationState>({
     isValid: null,
     clientName: undefined,
     numberOfPersons: undefined,
