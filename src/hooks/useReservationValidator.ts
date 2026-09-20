@@ -316,11 +316,20 @@ export const useReservationValidator = () => {
       playErrorSound();
       setState({ isValid: false, message: 'Erreur de connexion. Vérifiez votre réseau.', isLoading: false });
     }
-  }, [playSuccessSound, playErrorSound]);
+  }, [playSuccessSound, playErrorSound, setState]);
+
+  const validateQRCode = useCallback(
+    async (qrCode: string): Promise<ValidationState | null> => {
+      lastResultRef.current = null;
+      await runValidation(qrCode);
+      return lastResultRef.current;
+    },
+    [runValidation],
+  );
 
   const reset = useCallback(() => {
     setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, amount: undefined, paymentMethod: undefined, paymentStatus: undefined, isLoading: false, retryAttempt: 0 });
-  }, []);
+  }, [setState]);
 
   return { ...state, validateQRCode, reset };
 };
