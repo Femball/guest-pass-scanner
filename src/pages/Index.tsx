@@ -45,6 +45,8 @@ const Index = () => {
     validateQRCode,
     reset
   } = useReservationValidator();
+  const { history, addEntry, clear: clearHistory } = useScanHistory();
+  const { vibrate } = useScanPreferences();
   const handleScan = async (qrCode: string) => {
     setIsScanning(false);
     const result = await validateQRCode(qrCode);
