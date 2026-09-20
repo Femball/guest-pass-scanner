@@ -14,6 +14,7 @@ export const useScanSounds = () => {
 
   const playSuccessSound = useCallback(() => {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -35,6 +36,7 @@ export const useScanSounds = () => {
 
   const playErrorSound = useCallback(() => {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -55,6 +57,7 @@ export const useScanSounds = () => {
 
   const playPaymentSound = useCallback(() => {
     const ctx = getAudioContext();
+    if (!ctx) return;
 
     const notes = [
       { freq: 1318.51, start: 0, dur: 0.08 },    // E6
