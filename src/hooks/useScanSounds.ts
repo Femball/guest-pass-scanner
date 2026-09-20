@@ -1,9 +1,11 @@
 import { useCallback, useRef } from 'react';
+import { readScanPreferences } from './useScanPreferences';
 
 export const useScanSounds = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const getAudioContext = useCallback(() => {
+    if (!readScanPreferences().sound) return null;
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -12,6 +14,7 @@ export const useScanSounds = () => {
 
   const playSuccessSound = useCallback(() => {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -33,6 +36,7 @@ export const useScanSounds = () => {
 
   const playErrorSound = useCallback(() => {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -53,6 +57,7 @@ export const useScanSounds = () => {
 
   const playPaymentSound = useCallback(() => {
     const ctx = getAudioContext();
+    if (!ctx) return;
 
     const notes = [
       { freq: 1318.51, start: 0, dur: 0.08 },    // E6

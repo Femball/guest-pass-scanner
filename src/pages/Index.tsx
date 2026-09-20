@@ -19,6 +19,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import StaffManager from '@/components/StaffManager';
+import ScanHistory from '@/components/ScanHistory';
+import ScanFeedbackSettings from '@/components/ScanFeedbackSettings';
+import { useScanHistory } from '@/hooks/useScanHistory';
+import { useScanPreferences } from '@/hooks/useScanPreferences';
 import { ScrollButtons } from '@/components/ScrollButtons';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -41,9 +45,19 @@ const Index = () => {
     validateQRCode,
     reset
   } = useReservationValidator();
+  const { history, addEntry, clear: clearHistory } = useScanHistory();
+  const { vibrate } = useScanPreferences();
   const handleScan = async (qrCode: string) => {
     setIsScanning(false);
-    await validateQRCode(qrCode);
+    const result = await validateQRCode(qrCode);
+    if (result && result.isValid !== null) {
+      vibrate(result.isValid ? 80 : [70, 60, 70]);
+      addEntry({
+        isValid: result.isValid,
+        clientName: result.clientName,
+        message: result.message,
+      });
+    }
   };
   const handleReset = () => {
     reset();
@@ -191,6 +205,11 @@ const Index = () => {
         }}>
               Le résultat s'affichera automatiquement
             </motion.p>
+
+            <div className="w-full max-w-sm mt-4 flex flex-col gap-3">
+              <ScanFeedbackSettings />
+              <ScanHistory history={history} onClear={clearHistory} />
+            </div>
           </> : null}
       </main>
 
