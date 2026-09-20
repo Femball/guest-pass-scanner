@@ -206,6 +206,9 @@ const Index = () => {
 
       {/* Validation overlay */}
       <ValidationResult isValid={isValid} clientName={clientName} message={message} amount={amount} paymentMethod={paymentMethod} paymentStatus={paymentStatus} onReset={handleReset} />
+
+      <ScrollButtons />
     </div>;
+
 };
 export default Index;
