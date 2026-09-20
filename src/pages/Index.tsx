@@ -19,6 +19,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import StaffManager from '@/components/StaffManager';
+import ScanHistory from '@/components/ScanHistory';
+import ScanFeedbackSettings from '@/components/ScanFeedbackSettings';
+import { useScanHistory } from '@/hooks/useScanHistory';
+import { useScanPreferences } from '@/hooks/useScanPreferences';
 import { ScrollButtons } from '@/components/ScrollButtons';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
