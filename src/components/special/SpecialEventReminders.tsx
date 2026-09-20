@@ -27,6 +27,7 @@ export interface ReminderBooking {
   last_name: string | null;
   phone: string | null;
   number_of_persons: number;
+  qr_code: string;
 }
 
 interface Reminder {
@@ -68,15 +69,17 @@ export const personalize = (
   venue: string,
   ticketUrl: string,
 ) =>
-  template
-    .replaceAll('{prenom}', booking.first_name ?? booking.guest_names)
-    .replaceAll('{nom}', booking.last_name ?? '')
-    .replaceAll('{titre}', event.title)
-    .replaceAll('{date}', dateLabel(event.event_date))
-    .replaceAll('{heure}', event.event_time)
-    .replaceAll('{personnes}', String(booking.number_of_persons))
-    .replaceAll('{lieu}', venue)
-    .replaceAll('{lien}', ticketUrl)
+  Object.entries({
+    '{prenom}': booking.first_name ?? booking.guest_names,
+    '{nom}': booking.last_name ?? '',
+    '{titre}': event.title,
+    '{date}': dateLabel(event.event_date),
+    '{heure}': event.event_time,
+    '{personnes}': String(booking.number_of_persons),
+    '{lieu}': venue,
+    '{lien}': ticketUrl,
+  })
+    .reduce((acc, [token, value]) => acc.split(token).join(value), template)
     .trim();
 
 interface Props {
