@@ -19,9 +19,13 @@ export const MENU_PRICE_PER_PERSON = 60;
 
 /** Dernière date de modification des menus : la veille de la soirée (incluse). */
 export const menuEditDeadline = (eventDate: string) => {
-  const d = new Date(`${eventDate}T00:00:00`);
+  const [year, month, day] = eventDate.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
   d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dayStr = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dayStr}`;
 };
 
 export const isMenuEditable = (eventDate?: string | null, now: Date = new Date()) => {
