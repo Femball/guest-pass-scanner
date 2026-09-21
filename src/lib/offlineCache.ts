@@ -1,5 +1,14 @@
 import { get, set, del } from 'idb-keyval';
 
+export interface PendingValidation {
+  id: string;
+  type: 'ticket' | 'flyer';
+  targetId: string;
+  qrCode: string;
+  clientName: string;
+  scannedAt: string;
+}
+
 export interface CachedReservation {
   id: string;
   qr_code: string;
