@@ -4,7 +4,9 @@ import { useAuth } from './useAuth';
 import { useNetworkStatus } from './useNetworkStatus';
 import {
   loadCache,
+  loadQueue,
   saveCache,
+  saveQueue,
   type CachedFlyer,
   type CachedReservation,
 } from '@/lib/offlineCache';
@@ -15,6 +17,7 @@ interface OfflineCacheState {
   syncedAt: string | null;
   reservationsCount: number;
   flyersCount: number;
+  pendingCount: number;
   isReady: boolean;
 }
 
