@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { buildCorsHeaders } from "../_shared/cors.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { isAdmin, setUserRole } from "../_shared/roles.ts";
 import { isHiddenEmail, maskActorLabel } from "../_shared/hidden-accounts.ts";
@@ -19,6 +19,7 @@ function randomPassword() {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const json = (b: unknown, status = 200) =>
