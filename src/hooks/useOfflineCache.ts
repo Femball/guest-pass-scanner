@@ -137,6 +137,15 @@ export const useOfflineCache = () => {
   }, []);
 
 
+  // Rafraîchit le compteur de scans en attente (utile hors-ligne)
+  useEffect(() => {
+    const id = setInterval(async () => {
+      const pending = await loadQueue();
+      if (isMountedRef.current) setState((s) => (s.pendingCount === pending.length ? s : { ...s, pendingCount: pending.length }));
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     if (!isStaff) return;
     sync();
