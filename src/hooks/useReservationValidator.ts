@@ -2,7 +2,15 @@ import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useScanSounds } from './useScanSounds';
 import { z } from 'zod';
-import { findFlyerByQr, findReservationByQr, loadCache } from '@/lib/offlineCache';
+import {
+  enqueueValidation,
+  findFlyerByQr,
+  findReservationByQr,
+  isQueued,
+  loadCache,
+  loadQueue,
+  markCachedValidated,
+} from '@/lib/offlineCache';
 
 const qrCodeSchema = z.string()
   .min(1, 'QR code is required')
