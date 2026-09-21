@@ -93,10 +93,12 @@ export const useReservationValidator = () => {
 
     const validatedQrCode = validationResult.data;
 
-    // Offline mode: read from cache only, block validation
+    // Mode hors-ligne : validation locale depuis le cache + file de synchronisation
     if (!navigator.onLine) {
       const cache = await loadCache();
+      const queue = await loadQueue();
       const today = new Date().toISOString().slice(0, 10);
+      const now = new Date().toISOString();
 
       if (validatedQrCode.startsWith('FLYER-')) {
         const flyer = findFlyerByQr(cache, validatedQrCode);
@@ -110,11 +112,20 @@ export const useReservationValidator = () => {
           setState({ isValid: false, message: '📵 Hors-ligne — flyer non valable aujourd\'hui.', isLoading: false });
           return;
         }
-        playErrorSound();
-        setState({
-          isValid: false,
+        await enqueueValidation({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          type: 'flyer',
+          targetId: flyer.id,
+          qrCode: validatedQrCode,
           clientName: `Invité Flyer - ${flyer.label}`,
-          message: '📵 Mode hors-ligne — validation impossible. Reconnectez-vous au réseau.',
+          scannedAt: now,
+        });
+        playSuccessSound();
+        setState({
+          isValid: true,
+          clientName: `Invité Flyer - ${flyer.label}`,
+          numberOfPersons: 1,
+          message: '📵 Hors-ligne — entrée acceptée, synchronisation dès le retour du réseau.',
           isLoading: false,
         });
         return;
@@ -137,21 +148,63 @@ export const useReservationValidator = () => {
         });
         return;
       }
-      playErrorSound();
+      if (reservation.is_validated || isQueued(queue, validatedQrCode)) {
+        playErrorSound();
+        setState({
+          isValid: false,
+          clientName: reservation.client_name,
+          numberOfPersons: reservation.number_of_persons,
+          amount: reservation.amount,
+          paymentMethod: reservation.payment_method,
+          paymentStatus: reservation.payment_status,
+          message: `🚫 Déjà entré — ticket validé le ${
+            reservation.validated_at
+              ? new Date(reservation.validated_at).toLocaleString('fr-FR')
+              : "à l'instant"
+          }`,
+          isLoading: false,
+        });
+        return;
+      }
+      if (reservation.payment_method === 'card' && reservation.payment_status !== 'paid') {
+        playErrorSound();
+        setState({
+          isValid: false,
+          clientName: reservation.client_name,
+          numberOfPersons: reservation.number_of_persons,
+          amount: reservation.amount,
+          paymentMethod: reservation.payment_method,
+          paymentStatus: reservation.payment_status,
+          message: '💳 Paiement CB non effectué. La validation est impossible tant que le paiement n\'est pas confirmé.',
+          isLoading: false,
+        });
+        return;
+      }
+
+      await enqueueValidation({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type: 'ticket',
+        targetId: reservation.id,
+        qrCode: validatedQrCode,
+        clientName: reservation.client_name,
+        scannedAt: now,
+      });
+      await markCachedValidated(validatedQrCode, now);
+
+      playSuccessSound();
       setState({
-        isValid: false,
+        isValid: true,
         clientName: reservation.client_name,
         numberOfPersons: reservation.number_of_persons,
         amount: reservation.amount,
         paymentMethod: reservation.payment_method,
         paymentStatus: reservation.payment_status,
-        message: reservation.is_validated
-          ? '📵 Hors-ligne — ticket déjà validé précédemment.'
-          : '📵 Mode hors-ligne — validation impossible. Reconnectez-vous au réseau.',
+        message: '📵 Hors-ligne — entrée acceptée, synchronisation dès le retour du réseau.',
         isLoading: false,
       });
       return;
     }
+
 
     try {
       // Flyer QR codes
