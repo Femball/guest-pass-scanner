@@ -34,6 +34,7 @@ import ClientsDirectoryDialog from '@/components/admin/ClientsDirectoryDialog';
 import ClientFormDialog from '@/components/admin/ClientFormDialog';
 import { BulkSmsSelectDialog, BulkSmsQueueDialog, PendingSmsDialog } from '@/components/admin/BulkSmsDialogs';
 import type { Reservation, PendingSms, ClientRecord, BottleWithReservation, FlyerInvitation } from '@/types/admin';
+import { ScrollButtons } from '@/components/ScrollButtons';
 
 
 const AdminContent = () => {
@@ -2029,6 +2030,7 @@ const AdminContent = () => {
         />
 
 
+      <ScrollButtons />
       </main>
     </div>
   );

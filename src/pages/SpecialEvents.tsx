@@ -30,6 +30,7 @@ import {
   type GuestMeal,
 } from '@/lib/cabaretMenu';
 import type { PendingSms } from '@/types/admin';
+import { ScrollButtons } from '@/components/ScrollButtons';
 
 interface SpecialEvent {
   id: string;
@@ -1165,6 +1166,7 @@ const SpecialEvents = () => {
             </div>
           </DialogContent>
         </Dialog>
+      <ScrollButtons />
       </main>
     </div>
   );

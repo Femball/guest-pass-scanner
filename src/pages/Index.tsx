@@ -33,7 +33,7 @@ const Index = () => {
   const [staffManagerOpen, setStaffManagerOpen] = useState(false);
   const { hasAdminPrivileges, signOut } = useAuth();
   const { validated, expected, refresh: refreshOccupancy } = useOccupancy();
-  const { isOnline, syncedAt, reservationsCount } = useOfflineCache();
+  const { isOnline, syncedAt, reservationsCount, pendingCount } = useOfflineCache();
   const {
     isValid,
     clientName,
@@ -70,7 +70,7 @@ const Index = () => {
         description="Scannez les QR codes de réservation, suivez l'occupation en temps réel et gérez les cartes membres L'Access depuis un seul écran."
         noindex
       />
-      <OfflineBanner isOnline={isOnline} syncedAt={syncedAt} reservationsCount={reservationsCount} />
+      <OfflineBanner isOnline={isOnline} syncedAt={syncedAt} reservationsCount={reservationsCount} pendingCount={pendingCount} />
       {/* Header */}
       <motion.header className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between border-b border-border" initial={{
       opacity: 0,
