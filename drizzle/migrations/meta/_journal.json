@@ -8,6 +8,13 @@
       "when": 1789884684189,
       "tag": "0000_create_special_event_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789952105037,
+      "tag": "0001_harden_app_config_and_definer_execute",
+      "breakpoints": true
     }
   ]
 }
