@@ -4,7 +4,9 @@ import { useAuth } from './useAuth';
 import { useNetworkStatus } from './useNetworkStatus';
 import {
   loadCache,
+  loadQueue,
   saveCache,
+  saveQueue,
   type CachedFlyer,
   type CachedReservation,
 } from '@/lib/offlineCache';
@@ -15,6 +17,7 @@ interface OfflineCacheState {
   syncedAt: string | null;
   reservationsCount: number;
   flyersCount: number;
+  pendingCount: number;
   isReady: boolean;
 }
 
@@ -25,12 +28,54 @@ export const useOfflineCache = () => {
     syncedAt: null,
     reservationsCount: 0,
     flyersCount: 0,
+    pendingCount: 0,
     isReady: false,
   });
   const isMountedRef = useRef(true);
+  const flushingRef = useRef(false);
+
+  /** Rejoue les scans effectués hors-ligne dès que le réseau revient. */
+  const flushQueue = useCallback(async () => {
+    if (flushingRef.current || !navigator.onLine) return;
+    flushingRef.current = true;
+    try {
+      const queue = await loadQueue();
+      if (queue.length === 0) return;
+      const remaining: typeof queue = [];
+
+      for (const item of queue) {
+        try {
+          if (item.type === 'ticket') {
+            const { error } = await supabase
+              .from('reservations')
+              .update({ is_validated: true, validated_at: item.scannedAt })
+              .eq('id', item.targetId)
+              .eq('is_validated', false)
+              .select('id');
+            if (error) remaining.push(item);
+          } else {
+            const { error } = await supabase
+              .from('flyer_scans')
+              .insert({ flyer_invitation_id: item.targetId, scanned_at: item.scannedAt });
+            if (error) remaining.push(item);
+          }
+        } catch {
+          remaining.push(item);
+        }
+      }
+
+      await saveQueue(remaining);
+      if (isMountedRef.current) {
+        setState((s) => ({ ...s, pendingCount: remaining.length }));
+      }
+    } finally {
+      flushingRef.current = false;
+    }
+  }, []);
 
   const sync = useCallback(async () => {
     if (!isStaff || !navigator.onLine) return;
+    await flushQueue();
     const today = new Date().toISOString().slice(0, 10);
 
     const [reservationsRes, flyersRes] = await Promise.all([
@@ -56,35 +101,49 @@ export const useOfflineCache = () => {
     };
 
     await saveCache(payload);
+    const pending = await loadQueue();
     if (isMountedRef.current) {
       setState({
         syncedAt: payload.syncedAt,
         reservationsCount: payload.reservations.length,
         flyersCount: payload.flyers.length,
+        pendingCount: pending.length,
         isReady: true,
       });
     }
-  }, [isStaff]);
+  }, [isStaff, flushQueue]);
 
   // Bootstrap: load existing cache, then try sync
   useEffect(() => {
     isMountedRef.current = true;
     (async () => {
-      const existing = await loadCache();
-      if (existing && isMountedRef.current) {
+      const [existing, pending] = await Promise.all([loadCache(), loadQueue()]);
+      if (!isMountedRef.current) return;
+      if (existing) {
         setState({
           syncedAt: existing.syncedAt,
           reservationsCount: existing.reservations.length,
           flyersCount: existing.flyers.length,
+          pendingCount: pending.length,
           isReady: true,
         });
-      } else if (isMountedRef.current) {
-        setState((s) => ({ ...s, isReady: true }));
+      } else {
+        setState((s) => ({ ...s, pendingCount: pending.length, isReady: true }));
       }
     })();
     return () => {
       isMountedRef.current = false;
     };
+  }, []);
+
+
+  // Rafraîchit le compteur de scans en attente (utile hors-ligne)
+  useEffect(() => {
+    const id = setInterval(async () => {
+      const pending = await loadQueue();
+      if (isMountedRef.current) setState((s) => (s.pendingCount === pending.length ? s : { ...s, pendingCount: pending.length }));
+    }, 5000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
