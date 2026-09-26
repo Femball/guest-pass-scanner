@@ -145,8 +145,10 @@ const SpecialEvents = () => {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [persons, setPersons] = useState('1');
-  const [seatRows, setSeatRows] = useState('');
-  const [seatNumbers, setSeatNumbers] = useState('');
+  const [seatBooking, setSeatBooking] = useState<SpecialBooking | null>(null);
+  const [editSeatRows, setEditSeatRows] = useState('');
+  const [editSeatNumbers, setEditSeatNumbers] = useState('');
+  const [savingSeats, setSavingSeats] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newMeals, setNewMeals] = useState<GuestMeal[]>([emptyMeal(1)]);
 
@@ -557,8 +559,8 @@ const SpecialEvents = () => {
       last_name: lastName.trim(),
       phone: phone.trim() || null,
       number_of_persons: personCount,
-      seat_rows: seatRows.trim().toUpperCase() || null,
-      seat_numbers: seatNumbers.trim() || null,
+      seat_rows: null,
+      seat_numbers: null,
       price: personCount * MENU_PRICE_PER_PERSON,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
     }).select('id').single();
@@ -581,8 +583,6 @@ const SpecialEvents = () => {
     setLastName('');
     setPhone('');
     setPersons('1');
-    setSeatRows('');
-    setSeatNumbers('');
     setNewMeals([emptyMeal(1)]);
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
