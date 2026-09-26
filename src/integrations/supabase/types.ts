@@ -631,6 +631,8 @@ export type Database = {
           qr_code: string
           seat_numbers: string | null
           seat_rows: string | null
+          seated_at: string | null
+          validated_at: string | null
         }
         Insert: {
           created_at?: string
@@ -645,6 +647,8 @@ export type Database = {
           qr_code: string
           seat_numbers?: string | null
           seat_rows?: string | null
+          seated_at?: string | null
+          validated_at?: string | null
         }
         Update: {
           created_at?: string
@@ -659,6 +663,8 @@ export type Database = {
           qr_code?: string
           seat_numbers?: string | null
           seat_rows?: string | null
+          seated_at?: string | null
+          validated_at?: string | null
         }
         Relationships: [
           {
@@ -864,6 +870,20 @@ export type Database = {
     }
     Functions: {
       can_view_members: { Args: { _user_id: string }; Returns: boolean }
+      check_in_special_booking: {
+        Args: { p_qr: string }
+        Returns: {
+          already_validated_at: string
+          event_date: string
+          event_title: string
+          guest_names: string
+          id: string
+          number_of_persons: number
+          seat_numbers: string
+          seat_rows: string
+          seated_at: string
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -933,6 +953,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      seat_special_booking: { Args: { p_id: string }; Returns: string }
       submit_feedback_by_token: {
         Args: { p_comment: string; p_rating: number; p_token: string }
         Returns: boolean
