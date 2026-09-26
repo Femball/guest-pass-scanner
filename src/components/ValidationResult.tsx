@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, User, CreditCard, Banknote, RotateCcw } from 'lucide-react';
+import { CheckCircle, XCircle, User, CreditCard, Banknote, RotateCcw, Armchair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { SeatInfo } from '@/hooks/useReservationValidator';
 
 interface ValidationResultProps {
   isValid: boolean | null;
@@ -10,11 +11,14 @@ interface ValidationResultProps {
   amount?: number | null;
   paymentMethod?: string | null;
   paymentStatus?: string | null;
+  seat?: SeatInfo;
+  onConfirmSeat?: () => Promise<unknown>;
   onReset: () => void;
 }
 
-const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod, paymentStatus, onReset }: ValidationResultProps) => {
+const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod, paymentStatus, seat, onConfirmSeat, onReset }: ValidationResultProps) => {
   const [confirmed, setConfirmed] = useState(false);
+  const [seating, setSeating] = useState(false);
 
   if (isValid === null) return null;
 
@@ -105,6 +109,45 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
             </span>
           </motion.div>
         )}
+
+        {seat && (seat.rows || seat.numbers) && (
+          <div className="mb-4 md:mb-6 w-full max-w-sm rounded-2xl bg-white/20 backdrop-blur-sm px-5 py-4 text-center">
+            <div className="flex items-center justify-center gap-2 text-sm uppercase tracking-wider opacity-80 mb-2">
+              <Armchair className="w-5 h-5" aria-hidden="true" /> Placement
+            </div>
+            <div className="flex justify-center gap-6">
+              {seat.rows && (
+                <div>
+                  <div className="text-xs opacity-80">Rangée</div>
+                  <div className="text-3xl md:text-4xl font-extrabold">{seat.rows}</div>
+                </div>
+              )}
+              {seat.numbers && (
+                <div>
+                  <div className="text-xs opacity-80">Chaise(s)</div>
+                  <div className="text-3xl md:text-4xl font-extrabold">{seat.numbers}</div>
+                </div>
+              )}
+            </div>
+            {onConfirmSeat && (
+              seat.seatedAt ? (
+                <p className="mt-3 font-semibold">✅ Placé à {new Date(seat.seatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+              ) : (
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={seating}
+                  onClick={async () => { setSeating(true); await onConfirmSeat(); setSeating(false); }}
+                  className="mt-3 min-h-12 w-full gap-2 bg-white/30 hover:bg-white/40 text-current border border-white/50 font-semibold"
+                >
+                  <Armchair className="w-5 h-5" aria-hidden="true" />
+                  {seating ? 'Enregistrement…' : 'Valider le placement'}
+                </Button>
+              )
+            )}
+          </div>
+        )}
+
 
         <motion.p
           className="text-base md:text-xl opacity-90 text-center mb-4 md:mb-8"

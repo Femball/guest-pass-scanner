@@ -42,6 +42,8 @@ const Index = () => {
     paymentMethod,
     paymentStatus,
     isLoading,
+    seat,
+    confirmSeat,
     validateQRCode,
     reset
   } = useReservationValidator();
@@ -224,7 +226,10 @@ const Index = () => {
       <StaffManager open={staffManagerOpen} onOpenChange={setStaffManagerOpen} />
 
       {/* Validation overlay */}
-      <ValidationResult isValid={isValid} clientName={clientName} message={message} amount={amount} paymentMethod={paymentMethod} paymentStatus={paymentStatus} onReset={handleReset} />
+      <ValidationResult isValid={isValid} clientName={clientName} message={message} amount={amount} paymentMethod={paymentMethod} paymentStatus={paymentStatus} seat={seat} onConfirmSeat={async () => {
+        const ok = await confirmSeat();
+        ok ? toast.success('Placement validé') : toast.error('Placement non enregistré');
+      }} onReset={handleReset} />
 
       <ScrollButtons />
     </div>;
