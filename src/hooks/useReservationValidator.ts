@@ -15,7 +15,7 @@ import {
 const qrCodeSchema = z.string()
   .min(1, 'QR code is required')
   .max(100, 'QR code too long')
-  .regex(/^(TICKET|FLYER)-[A-Z0-9-]+$/i, 'Invalid QR code format');
+  .regex(/^(TICKET|FLYER|SOIREE)-[A-Z0-9-]+$/i, 'Invalid QR code format');
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 800;
@@ -41,6 +41,13 @@ async function withRetry<T extends { error: any }>(
   return { result: lastResult as T, attempts: MAX_RETRIES };
 }
 
+export interface SeatInfo {
+  bookingId: string;
+  rows: string | null;
+  numbers: string | null;
+  seatedAt: string | null;
+}
+
 interface ValidationState {
   isValid: boolean | null;
   clientName?: string;
@@ -51,6 +58,7 @@ interface ValidationState {
   paymentStatus?: string | null;
   isLoading: boolean;
   retryAttempt?: number;
+  seat?: SeatInfo;
 }
 
 export const useReservationValidator = () => {
@@ -92,6 +100,12 @@ export const useReservationValidator = () => {
     }
 
     const validatedQrCode = validationResult.data;
+
+    if (!navigator.onLine && validatedQrCode.toUpperCase().startsWith('SOIREE-')) {
+      playErrorSound();
+      setState({ isValid: false, message: '📵 Hors-ligne — les invitations de soirée spéciale nécessitent le réseau.', isLoading: false });
+      return;
+    }
 
     // Mode hors-ligne : validation locale depuis le cache + file de synchronisation
     if (!navigator.onLine) {
@@ -205,8 +219,50 @@ export const useReservationValidator = () => {
       return;
     }
 
-
     try {
+      // Soirées spéciales (cabaret) : entrée + placement
+      if (validatedQrCode.toUpperCase().startsWith('SOIREE-')) {
+        const { data, error } = await supabase.rpc('check_in_special_booking', { p_qr: validatedQrCode });
+        const b = Array.isArray(data) ? data[0] : null;
+        if (error || !b) {
+          playErrorSound();
+          setState({ isValid: false, message: 'Invitation non reconnue.', isLoading: false });
+          return;
+        }
+        const seat = {
+          bookingId: b.id,
+          rows: b.seat_rows,
+          numbers: b.seat_numbers,
+          seatedAt: b.seated_at,
+        };
+        const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+        if (b.event_date !== today) {
+          playErrorSound();
+          setState({
+            isValid: false, clientName: b.guest_names, numberOfPersons: b.number_of_persons,
+            message: `Invitation valable uniquement le ${new Date(b.event_date + 'T00:00:00').toLocaleDateString('fr-FR')}`,
+            isLoading: false,
+          });
+          return;
+        }
+        if (b.already_validated_at) {
+          playErrorSound();
+          setState({
+            isValid: false, clientName: b.guest_names, numberOfPersons: b.number_of_persons, seat,
+            message: `Déjà entré le ${new Date(b.already_validated_at).toLocaleString('fr-FR')}`,
+            isLoading: false,
+          });
+          return;
+        }
+        playSuccessSound();
+        setState({
+          isValid: true, clientName: b.guest_names, numberOfPersons: b.number_of_persons, seat,
+          message: `${b.event_title} — ${b.number_of_persons} personne${b.number_of_persons > 1 ? 's' : ''}`,
+          isLoading: false,
+        });
+        return;
+      }
+
       // Flyer QR codes
       if (validatedQrCode.startsWith('FLYER-')) {
         const { data: flyer, error } = await supabase
@@ -392,5 +448,14 @@ export const useReservationValidator = () => {
     setState({ isValid: null, clientName: undefined, numberOfPersons: undefined, message: undefined, amount: undefined, paymentMethod: undefined, paymentStatus: undefined, isLoading: false, retryAttempt: 0 });
   }, [setState]);
 
-  return { ...state, validateQRCode, reset };
+  const confirmSeat = useCallback(async () => {
+    const id = lastResultRef.current?.seat?.bookingId;
+    if (!id) return false;
+    const { data, error } = await supabase.rpc('seat_special_booking', { p_id: id });
+    if (error) return false;
+    setState((prev) => (prev.seat ? { ...prev, seat: { ...prev.seat, seatedAt: data as string } } : prev));
+    return true;
+  }, [setState]);
+
+  return { ...state, validateQRCode, reset, confirmSeat };
 };
