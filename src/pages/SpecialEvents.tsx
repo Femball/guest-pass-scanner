@@ -897,14 +897,6 @@ const SpecialEvents = () => {
                     <Input id="persons" type="number" min="1" step="1" value={persons} onChange={(e) => setPersons(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="rows">Rangée(s)</Label>
-                    <Input id="rows" value={seatRows} onChange={(e) => setSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="seats">Chaise(s)</Label>
-                    <Input id="seats" value={seatNumbers} onChange={(e) => setSeatNumbers(e.target.value)} placeholder="1, 2, 3" maxLength={60} />
-                  </div>
-                  <div className="space-y-1.5">
                     <Label>Total menus</Label>
                     <div className="h-10 flex items-center rounded-md border border-border px-3 text-sm text-foreground">
                       {(Math.max(1, Number(persons) || 1) * MENU_PRICE_PER_PERSON).toFixed(0)} € ({MENU_PRICE_PER_PERSON} € / pers.)
