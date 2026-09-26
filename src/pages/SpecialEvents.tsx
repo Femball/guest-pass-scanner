@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy, UtensilsCrossed, Printer } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy, UtensilsCrossed, Printer, Armchair } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -622,6 +622,29 @@ const SpecialEvents = () => {
     toast.success('Menus enregistrés');
     setMealBooking(null);
     loadMeals(bookings.map((b) => b.id));
+  };
+
+  const openSeats = (booking: SpecialBooking) => {
+    setEditSeatRows(booking.seat_rows || '');
+    setEditSeatNumbers(booking.seat_numbers || '');
+    setSeatBooking(booking);
+  };
+
+  const saveSeats = async () => {
+    if (!seatBooking) return;
+    setSavingSeats(true);
+    const { error } = await supabase
+      .from('special_bookings')
+      .update({
+        seat_rows: editSeatRows.trim().toUpperCase() || null,
+        seat_numbers: editSeatNumbers.trim() || null,
+      })
+      .eq('id', seatBooking.id);
+    setSavingSeats(false);
+    if (error) return toast.error('Placement non enregistré');
+    toast.success('Placement enregistré');
+    setSeatBooking(null);
+    if (selectedEvent) loadBookings(selectedEvent.id);
   };
 
   const openEdit = () => {
