@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy, UtensilsCrossed, Printer } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Sparkles, Download, Share2, Image as ImageIcon, Loader2, QrCode, Pencil, MessageSquare, Copy, UtensilsCrossed, Printer, Armchair } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -145,8 +145,10 @@ const SpecialEvents = () => {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [persons, setPersons] = useState('1');
-  const [seatRows, setSeatRows] = useState('');
-  const [seatNumbers, setSeatNumbers] = useState('');
+  const [seatBooking, setSeatBooking] = useState<SpecialBooking | null>(null);
+  const [editSeatRows, setEditSeatRows] = useState('');
+  const [editSeatNumbers, setEditSeatNumbers] = useState('');
+  const [savingSeats, setSavingSeats] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newMeals, setNewMeals] = useState<GuestMeal[]>([emptyMeal(1)]);
 
@@ -557,8 +559,8 @@ const SpecialEvents = () => {
       last_name: lastName.trim(),
       phone: phone.trim() || null,
       number_of_persons: personCount,
-      seat_rows: seatRows.trim().toUpperCase() || null,
-      seat_numbers: seatNumbers.trim() || null,
+      seat_rows: null,
+      seat_numbers: null,
       price: personCount * MENU_PRICE_PER_PERSON,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
     }).select('id').single();
@@ -581,8 +583,6 @@ const SpecialEvents = () => {
     setLastName('');
     setPhone('');
     setPersons('1');
-    setSeatRows('');
-    setSeatNumbers('');
     setNewMeals([emptyMeal(1)]);
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
@@ -622,6 +622,29 @@ const SpecialEvents = () => {
     toast.success('Menus enregistrés');
     setMealBooking(null);
     loadMeals(bookings.map((b) => b.id));
+  };
+
+  const openSeats = (booking: SpecialBooking) => {
+    setEditSeatRows(booking.seat_rows || '');
+    setEditSeatNumbers(booking.seat_numbers || '');
+    setSeatBooking(booking);
+  };
+
+  const saveSeats = async () => {
+    if (!seatBooking) return;
+    setSavingSeats(true);
+    const { error } = await supabase
+      .from('special_bookings')
+      .update({
+        seat_rows: editSeatRows.trim().toUpperCase() || null,
+        seat_numbers: editSeatNumbers.trim() || null,
+      })
+      .eq('id', seatBooking.id);
+    setSavingSeats(false);
+    if (error) return toast.error('Placement non enregistré');
+    toast.success('Placement enregistré');
+    setSeatBooking(null);
+    if (selectedEvent) loadBookings(selectedEvent.id);
   };
 
   const openEdit = () => {
@@ -897,14 +920,6 @@ const SpecialEvents = () => {
                     <Input id="persons" type="number" min="1" step="1" value={persons} onChange={(e) => setPersons(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="rows">Rangée(s)</Label>
-                    <Input id="rows" value={seatRows} onChange={(e) => setSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="seats">Chaise(s)</Label>
-                    <Input id="seats" value={seatNumbers} onChange={(e) => setSeatNumbers(e.target.value)} placeholder="1, 2, 3" maxLength={60} />
-                  </div>
-                  <div className="space-y-1.5">
                     <Label>Total menus</Label>
                     <div className="h-10 flex items-center rounded-md border border-border px-3 text-sm text-foreground">
                       {(Math.max(1, Number(persons) || 1) * MENU_PRICE_PER_PERSON).toFixed(0)} € ({MENU_PRICE_PER_PERSON} € / pers.)
@@ -962,6 +977,9 @@ const SpecialEvents = () => {
                           onClick={() => openMeals(b)}
                         >
                           <UtensilsCrossed className="w-4 h-4" /> Menus
+                        </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openSeats(b)}>
+                          <Armchair className="w-4 h-4" /> Placement
                         </Button>
                         <Button variant="outline" size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handlePreview(b)}>
                           <QrCode className="w-4 h-4" /> Aperçu
@@ -1136,6 +1154,29 @@ const SpecialEvents = () => {
                 </Button>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!seatBooking} onOpenChange={(open) => { if (!open) setSeatBooking(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Placement — {seatBooking?.guest_names}</DialogTitle>
+              <DialogDescription>Assignez la rangée et les chaises pour cette réservation.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="editRows">Rangée(s)</Label>
+                <Input id="editRows" value={editSeatRows} onChange={(e) => setEditSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="editSeats">Chaise(s)</Label>
+                <Input id="editSeats" value={editSeatNumbers} onChange={(e) => setEditSeatNumbers(e.target.value)} placeholder="1, 2, 3" maxLength={60} />
+              </div>
+            </div>
+            <Button onClick={saveSeats} disabled={savingSeats} className="gap-2 w-full">
+              {savingSeats ? <Loader2 className="w-4 h-4 animate-spin" /> : <Armchair className="w-4 h-4" />}
+              Enregistrer le placement
+            </Button>
           </DialogContent>
         </Dialog>
 
