@@ -57,7 +57,22 @@ export const useOfflineCache = () => {
             const { error } = await supabase
               .from('flyer_scans')
               .insert({ flyer_invitation_id: item.targetId, scanned_at: item.scannedAt });
-            if (error) remaining.push(item);
+            if (error) {
+              remaining.push(item);
+            } else {
+              // Incrémente le compteur de scans du flyer (comme le chemin en ligne)
+              const { data: flyer } = await supabase
+                .from('flyer_invitations')
+                .select('scan_count')
+                .eq('id', item.targetId)
+                .single();
+              if (flyer) {
+                await supabase
+                  .from('flyer_invitations')
+                  .update({ scan_count: (flyer.scan_count || 0) + 1 })
+                  .eq('id', item.targetId);
+              }
+            }
           }
         } catch {
           remaining.push(item);
