@@ -978,6 +978,9 @@ const SpecialEvents = () => {
                         >
                           <UtensilsCrossed className="w-4 h-4" /> Menus
                         </Button>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openSeats(b)}>
+                          <Armchair className="w-4 h-4" /> Placement
+                        </Button>
                         <Button variant="outline" size="sm" className="gap-1.5" disabled={busyTicket === b.id} onClick={() => handlePreview(b)}>
                           <QrCode className="w-4 h-4" /> Aperçu
                         </Button>
@@ -1151,6 +1154,29 @@ const SpecialEvents = () => {
                 </Button>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!seatBooking} onOpenChange={(open) => { if (!open) setSeatBooking(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Placement — {seatBooking?.guest_names}</DialogTitle>
+              <DialogDescription>Assignez la rangée et les chaises pour cette réservation.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="editRows">Rangée(s)</Label>
+                <Input id="editRows" value={editSeatRows} onChange={(e) => setEditSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="editSeats">Chaise(s)</Label>
+                <Input id="editSeats" value={editSeatNumbers} onChange={(e) => setEditSeatNumbers(e.target.value)} placeholder="1, 2, 3" maxLength={60} />
+              </div>
+            </div>
+            <Button onClick={saveSeats} disabled={savingSeats} className="gap-2 w-full">
+              {savingSeats ? <Loader2 className="w-4 h-4 animate-spin" /> : <Armchair className="w-4 h-4" />}
+              Enregistrer le placement
+            </Button>
           </DialogContent>
         </Dialog>
 
