@@ -111,8 +111,8 @@ const MealFields = ({
   </div>
 );
 
-const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows'>) =>
-  b.seat_rows ? `Rangée ${b.seat_rows}` : '';
+const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows' | 'seat_numbers'>) =>
+  [b.seat_rows ? `Rangée ${b.seat_rows}` : '', b.seat_numbers ? `Chaise ${b.seat_numbers}` : ''].filter(Boolean).join(' · ');
 
 const personsLabel = (b: Pick<SpecialBooking, 'number_of_persons'>) =>
   `${b.number_of_persons} ${b.number_of_persons > 1 ? 'personnes' : 'personne'}`;
@@ -146,6 +146,7 @@ const SpecialEvents = () => {
   const [phone, setPhone] = useState('');
   const [persons, setPersons] = useState('1');
   const [seatRows, setSeatRows] = useState('');
+  const [seatNumbers, setSeatNumbers] = useState('');
   const [adding, setAdding] = useState(false);
   const [newMeals, setNewMeals] = useState<GuestMeal[]>([emptyMeal(1)]);
 
@@ -557,7 +558,7 @@ const SpecialEvents = () => {
       phone: phone.trim() || null,
       number_of_persons: personCount,
       seat_rows: seatRows.trim().toUpperCase() || null,
-      seat_numbers: null,
+      seat_numbers: seatNumbers.trim() || null,
       price: personCount * MENU_PRICE_PER_PERSON,
       qr_code: `SOIREE-${crypto.randomUUID()}`,
     }).select('id').single();
@@ -581,6 +582,7 @@ const SpecialEvents = () => {
     setPhone('');
     setPersons('1');
     setSeatRows('');
+    setSeatNumbers('');
     setNewMeals([emptyMeal(1)]);
     toast.success('Invitation créée');
     loadBookings(selectedEvent.id);
@@ -897,6 +899,10 @@ const SpecialEvents = () => {
                   <div className="space-y-1.5">
                     <Label htmlFor="rows">Rangée(s)</Label>
                     <Input id="rows" value={seatRows} onChange={(e) => setSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="seats">Chaise(s)</Label>
+                    <Input id="seats" value={seatNumbers} onChange={(e) => setSeatNumbers(e.target.value)} placeholder="1, 2, 3" maxLength={60} />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Total menus</Label>
