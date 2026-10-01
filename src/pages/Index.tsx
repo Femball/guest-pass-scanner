@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { QrCode, Users, LogOut, UserCheck, IdCard, UserCog, ShieldCheck } from 'lucide-react';
+import { QrCode, Users, LogOut, UserCheck, IdCard, UserCog, ShieldCheck, Armchair } from 'lucide-react';
+import SeatFinderDialog from '@/components/SeatFinderDialog';
 import QRScanner from '@/components/QRScanner';
 import ValidationResult from '@/components/ValidationResult';
 import OccupancyGauge from '@/components/OccupancyGauge';
@@ -31,6 +32,7 @@ const Index = () => {
   const [isScanning, setIsScanning] = useState(true);
   const [manualOpen, setManualOpen] = useState(false);
   const [staffManagerOpen, setStaffManagerOpen] = useState(false);
+  const [seatFinderOpen, setSeatFinderOpen] = useState(false);
   const { hasAdminPrivileges, signOut } = useAuth();
   const { validated, expected, refresh: refreshOccupancy } = useOccupancy();
   const { isOnline, syncedAt, reservationsCount, pendingCount } = useOfflineCache();
@@ -196,6 +198,15 @@ const Index = () => {
                 <UserCheck className="w-4 h-4" />
                 {isOnline ? 'Valider sans QR (téléphone cassé, etc.)' : 'Validation manuelle indisponible hors-ligne'}
               </Button>
+              <Button
+                variant="outline"
+                className="w-full gap-2 mt-2 bg-background/80 backdrop-blur-sm"
+                onClick={() => setSeatFinderOpen(true)}
+                disabled={!isOnline}
+              >
+                <Armchair className="w-4 h-4" />
+                Retrouver la place d'un client (IA)
+              </Button>
             </motion.div>
 
             <motion.p className="mt-4 md:mt-6 text-xs md:text-sm text-muted-foreground text-center" initial={{
@@ -224,6 +235,7 @@ const Index = () => {
 
       {/* Gestion du personnel */}
       <StaffManager open={staffManagerOpen} onOpenChange={setStaffManagerOpen} />
+      <SeatFinderDialog open={seatFinderOpen} onOpenChange={setSeatFinderOpen} />
 
       {/* Validation overlay */}
       <ValidationResult isValid={isValid} clientName={clientName} message={message} amount={amount} paymentMethod={paymentMethod} paymentStatus={paymentStatus} seat={seat} onConfirmSeat={async () => {

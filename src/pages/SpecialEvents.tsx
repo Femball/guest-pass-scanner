@@ -53,7 +53,16 @@ interface SpecialBooking {
   number_of_persons: number;
   seat_rows: string | null;
   seat_numbers: string | null;
+  validated_at?: string | null;
+  seated_at?: string | null;
 }
+
+/** Liste des places "RANGÉE-CHAISE" d'une réservation (produit rangées × chaises). */
+const seatKeys = (rows: string | null | undefined, nums: string | null | undefined) => {
+  const r = (rows ?? '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+  const n = (nums ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  return r.flatMap((a) => n.map((b) => `${a}-${b}`));
+};
 
 const VENUE_ADDRESS = 'Le Français, Place Napoléon, 31800 Saint-Gaudens';
 
@@ -275,6 +284,7 @@ const SpecialEvents = () => {
           return list.map((m) => ({
             reservation: b.guest_names,
             phone: b.phone ?? '',
+            seat: seatsLabel(b),
             index: m.guest_index,
             name: m.guest_name || `${b.guest_names} (convive ${m.guest_index})`,
             starter: m.starter || '—',
@@ -298,10 +308,11 @@ const SpecialEvents = () => {
       ),
       [],
       ['Détail par convive', ''],
-      ['Réservation', 'Téléphone', 'Convive', 'Nom', 'Entrée', 'Plat', 'Dessert', 'Remarques'],
+      ['Réservation', 'Téléphone', 'Place', 'Convive', 'Nom', 'Entrée', 'Plat', 'Dessert', 'Remarques'],
       ...guestRows.map((g) => [
         g.reservation,
         g.phone,
+        g.seat,
         String(g.index),
         g.name,
         g.starter,
@@ -345,6 +356,7 @@ const SpecialEvents = () => {
       guests: guestRows.map((g) => ({
         reservation: g.reservation,
         phone: g.phone,
+        seat: g.seat,
         guest_index: g.index,
         name: g.name,
         starter: g.starter,
@@ -441,7 +453,7 @@ const SpecialEvents = () => {
       doc.setFont('helvetica', 'normal');
       guestRows.forEach((g) => {
         ensureSpace(10);
-        const name = doc.splitTextToSize(g.name, 52)[0];
+        const name = doc.splitTextToSize(g.seat ? `${g.name} (${g.seat.replace('Rangée ', 'R').replace('Chaise ', 'Ch')})` : g.name, 52)[0];
         doc.text(String(name), M, y);
         doc.text(doc.splitTextToSize(g.starter, 43)[0], M + 55, y);
         doc.text(doc.splitTextToSize(g.main, 38)[0], M + 100, y);
@@ -632,6 +644,12 @@ const SpecialEvents = () => {
 
   const saveSeats = async () => {
     if (!seatBooking) return;
+    const keys = seatKeys(editSeatRows, editSeatNumbers);
+    const clash = bookings.find((o) => o.id !== seatBooking.id && seatKeys(o.seat_rows, o.seat_numbers).some((k) => keys.includes(k)));
+    if (clash) {
+      const k = seatKeys(clash.seat_rows, clash.seat_numbers).find((x) => keys.includes(x));
+      return toast.error(`Place ${k} déjà attribuée à ${clash.guest_names}`);
+    }
     setSavingSeats(true);
     const { error } = await supabase
       .from('special_bookings')
@@ -641,7 +659,10 @@ const SpecialEvents = () => {
       })
       .eq('id', seatBooking.id);
     setSavingSeats(false);
-    if (error) return toast.error('Placement non enregistré');
+    if (error) {
+      const m = error.message?.match(/SEAT_TAKEN:(\S+)/);
+      return toast.error(m ? `Place ${m[1]} déjà attribuée à une autre réservation` : 'Placement non enregistré');
+    }
     toast.success('Placement enregistré');
     setSeatBooking(null);
     if (selectedEvent) loadBookings(selectedEvent.id);
@@ -955,7 +976,20 @@ const SpecialEvents = () => {
                     bookings.map((b) => (
                       <div key={b.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
                         <div className="flex-1 min-w-[160px]">
-                          <p className="font-medium text-sm text-foreground">{b.guest_names}</p>
+                          <p className="font-medium text-sm text-foreground flex flex-wrap items-center gap-1.5">
+                            {b.guest_names}
+                            {(b.seat_rows || b.seat_numbers) && (
+                              b.seated_at ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[11px] font-semibold">
+                                  <Armchair className="w-3 h-3" /> Placé {new Date(b.seated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              ) : b.validated_at ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-accent text-accent-foreground px-2 py-0.5 text-[11px] font-semibold">Entré · placement à valider</span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[11px]">Non placé</span>
+                              )
+                            )}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             {b.number_of_persons} pers.{seatsLabel(b) ? ` · ${seatsLabel(b)}` : ''} · {b.price != null ? `${b.price} €` : 'Prix non renseigné'}
                             {b.phone ? ` · ${b.phone}` : ''}
