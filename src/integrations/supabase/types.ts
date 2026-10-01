@@ -954,6 +954,10 @@ export type Database = {
         }[]
       }
       seat_special_booking: { Args: { p_id: string }; Returns: string }
+      special_booking_seat_keys: {
+        Args: { _nums: string; _rows: string }
+        Returns: string[]
+      }
       submit_feedback_by_token: {
         Args: { p_comment: string; p_rating: number; p_token: string }
         Returns: boolean
