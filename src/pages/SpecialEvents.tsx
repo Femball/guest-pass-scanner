@@ -53,7 +53,16 @@ interface SpecialBooking {
   number_of_persons: number;
   seat_rows: string | null;
   seat_numbers: string | null;
+  validated_at?: string | null;
+  seated_at?: string | null;
 }
+
+/** Liste des places "RANGÉE-CHAISE" d'une réservation (produit rangées × chaises). */
+const seatKeys = (rows: string | null | undefined, nums: string | null | undefined) => {
+  const r = (rows ?? '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+  const n = (nums ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  return r.flatMap((a) => n.map((b) => `${a}-${b}`));
+};
 
 const VENUE_ADDRESS = 'Le Français, Place Napoléon, 31800 Saint-Gaudens';
 
