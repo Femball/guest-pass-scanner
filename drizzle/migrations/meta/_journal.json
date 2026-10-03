@@ -29,6 +29,13 @@
       "when": 1790876215556,
       "tag": "0003_special_booking_unique_seats",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791041292336,
+      "tag": "0004_allow_duplicate_special_seats",
+      "breakpoints": true
     }
   ]
 }
