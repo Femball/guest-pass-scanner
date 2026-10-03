@@ -2,7 +2,7 @@ import { get, set, del } from 'idb-keyval';
 
 export interface PendingValidation {
   id: string;
-  type: 'ticket' | 'flyer';
+  type: 'ticket' | 'flyer' | 'special_checkin' | 'special_seat';
   targetId: string;
   qrCode: string;
   clientName: string;
@@ -31,9 +31,26 @@ export interface CachedFlyer {
   scan_count: number;
 }
 
+export interface CachedSpecialBooking {
+  id: string;
+  qr_code: string;
+  guest_names: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  number_of_persons: number;
+  seat_rows: string | null;
+  seat_numbers: string | null;
+  validated_at: string | null;
+  seated_at: string | null;
+  event_title: string;
+  event_date: string;
+}
+
 interface CachePayload {
   reservations: CachedReservation[];
   flyers: CachedFlyer[];
+  specials?: CachedSpecialBooking[];
   syncedAt: string;
   eventDate: string;
 }
@@ -68,6 +85,29 @@ export const findFlyerByQr = (
   if (!cache) return undefined;
   const upper = qrCode.toUpperCase();
   return cache.flyers.find((f) => f.qr_code.toUpperCase() === upper);
+};
+
+export const findSpecialByQr = (cache: CachePayload | undefined, qrCode: string) =>
+  cache?.specials?.find((b) => b.qr_code.toUpperCase() === qrCode.toUpperCase());
+
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+/** Recherche locale (hors-ligne) : chaque mot saisi doit apparaître dans le nom, le téléphone ou le code. */
+export const searchSpecials = (cache: CachePayload | undefined, query: string) => {
+  const words = norm(query).split(/\s+/).filter((w) => w.length > 1);
+  if (!words.length) return [];
+  return (cache?.specials ?? []).filter((b) => {
+    const hay = norm([b.guest_names, b.first_name, b.last_name, b.qr_code].filter(Boolean).join(' '));
+    const tel = (b.phone ?? '').replace(/\D/g, '');
+    return words.every((w) => hay.includes(w) || (/^\d+$/.test(w) && tel.includes(w)));
+  }).slice(0, 5);
+};
+
+/** Met à jour localement une réservation cabaret (entrée / placement hors-ligne). */
+export const patchCachedSpecial = async (id: string, patch: Partial<CachedSpecialBooking>) => {
+  const cache = await loadCache();
+  if (!cache?.specials) return;
+  await saveCache({ ...cache, specials: cache.specials.map((b) => (b.id === id ? { ...b, ...patch } : b)) });
 };
 
 const QUEUE_KEY = 'laccess:offline-queue:v1';

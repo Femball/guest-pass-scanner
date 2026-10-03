@@ -9,6 +9,7 @@ import {
   saveQueue,
   type CachedFlyer,
   type CachedReservation,
+  type CachedSpecialBooking,
 } from '@/lib/offlineCache';
 
 const SYNC_INTERVAL_MS = 30000;
@@ -45,7 +46,13 @@ export const useOfflineCache = () => {
 
       for (const item of queue) {
         try {
-          if (item.type === 'ticket') {
+          if (item.type === 'special_checkin') {
+            const { error } = await supabase.rpc('check_in_special_booking', { p_qr: item.qrCode });
+            if (error) remaining.push(item);
+          } else if (item.type === 'special_seat') {
+            const { error } = await supabase.rpc('seat_special_booking', { p_id: item.targetId });
+            if (error) remaining.push(item);
+          } else if (item.type === 'ticket') {
             const { error } = await supabase
               .from('reservations')
               .update({ is_validated: true, validated_at: item.scannedAt })
@@ -108,9 +115,34 @@ export const useOfflineCache = () => {
 
     if (reservationsRes.error || flyersRes.error) return;
 
+    // Réservations cabaret du jour (heure de Paris)
+    const parisToday = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+    let specials: CachedSpecialBooking[] = [];
+    const { data: evs } = await supabase.from('special_events').select('id, title, event_date').eq('event_date', parisToday);
+    if (evs?.length) {
+      const { data: sb } = await supabase
+        .from('special_bookings')
+        .select('id, event_id, qr_code, guest_names, first_name, last_name, phone, number_of_persons, seat_rows, seat_numbers, validated_at, seated_at')
+        .in('event_id', evs.map((e) => e.id));
+      // Ne pas écraser les actions encore en attente de synchronisation
+      const queue = await loadQueue();
+      specials = (sb ?? []).map(({ event_id, ...b }) => {
+        const ev = evs.find((e) => e.id === event_id)!;
+        const q = queue.filter((x) => x.targetId === b.id);
+        return {
+          ...b,
+          validated_at: b.validated_at ?? q.find((x) => x.type === 'special_checkin')?.scannedAt ?? null,
+          seated_at: b.seated_at ?? q.find((x) => x.type === 'special_seat')?.scannedAt ?? null,
+          event_title: ev.title,
+          event_date: ev.event_date,
+        };
+      });
+    }
+
     const payload = {
       reservations: (reservationsRes.data ?? []) as CachedReservation[],
       flyers: (flyersRes.data ?? []) as CachedFlyer[],
+      specials,
       syncedAt: new Date().toISOString(),
       eventDate: today,
     };

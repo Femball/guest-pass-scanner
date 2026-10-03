@@ -57,7 +57,7 @@ interface SpecialBooking {
   seated_at?: string | null;
 }
 
-/** Liste des places "RANGÉE-CHAISE" d'une réservation (produit rangées × chaises). */
+/** Liste des places "RANGÉE-TABLE" d'une réservation (produit rangées × tables). */
 const seatKeys = (rows: string | null | undefined, nums: string | null | undefined) => {
   const r = (rows ?? '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
   const n = (nums ?? '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -121,7 +121,7 @@ const MealFields = ({
 );
 
 const seatsLabel = (b: Pick<SpecialBooking, 'seat_rows' | 'seat_numbers'>) =>
-  [b.seat_rows ? `Rangée ${b.seat_rows}` : '', b.seat_numbers ? `Chaise ${b.seat_numbers}` : ''].filter(Boolean).join(' · ');
+  [b.seat_rows ? `Rangée ${b.seat_rows}` : '', b.seat_numbers ? `Table ${b.seat_numbers}` : ''].filter(Boolean).join(' · ');
 
 const personsLabel = (b: Pick<SpecialBooking, 'number_of_persons'>) =>
   `${b.number_of_persons} ${b.number_of_persons > 1 ? 'personnes' : 'personne'}`;
@@ -453,7 +453,7 @@ const SpecialEvents = () => {
       doc.setFont('helvetica', 'normal');
       guestRows.forEach((g) => {
         ensureSpace(10);
-        const name = doc.splitTextToSize(g.seat ? `${g.name} (${g.seat.replace('Rangée ', 'R').replace('Chaise ', 'Ch')})` : g.name, 52)[0];
+        const name = doc.splitTextToSize(g.seat ? `${g.name} (${g.seat.replace('Rangée ', 'R').replace('Table ', 'T')})` : g.name, 52)[0];
         doc.text(String(name), M, y);
         doc.text(doc.splitTextToSize(g.starter, 43)[0], M + 55, y);
         doc.text(doc.splitTextToSize(g.main, 38)[0], M + 100, y);
@@ -1195,7 +1195,7 @@ const SpecialEvents = () => {
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle>Placement — {seatBooking?.guest_names}</DialogTitle>
-              <DialogDescription>Assignez la rangée et les chaises pour cette réservation.</DialogDescription>
+              <DialogDescription>Assignez la rangée et les tables pour cette réservation.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
@@ -1203,7 +1203,7 @@ const SpecialEvents = () => {
                 <Input id="editRows" value={editSeatRows} onChange={(e) => setEditSeatRows(e.target.value)} placeholder="A, B" maxLength={40} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="editSeats">Chaise(s)</Label>
+                <Label htmlFor="editSeats">Table(s)</Label>
                 <Input id="editSeats" value={editSeatNumbers} onChange={(e) => setEditSeatNumbers(e.target.value)} placeholder="1, 2, 3" maxLength={60} />
               </div>
             </div>

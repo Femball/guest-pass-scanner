@@ -202,10 +202,9 @@ const Index = () => {
                 variant="outline"
                 className="w-full gap-2 mt-2 bg-background/80 backdrop-blur-sm"
                 onClick={() => setSeatFinderOpen(true)}
-                disabled={!isOnline}
               >
                 <Armchair className="w-4 h-4" />
-                Retrouver la place d'un client (IA)
+                {isOnline ? "Retrouver la place d'un client (IA)" : 'Retrouver une place (hors-ligne)'}
               </Button>
             </motion.div>
 

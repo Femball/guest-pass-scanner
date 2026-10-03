@@ -124,7 +124,7 @@ const ValidationResult = ({ isValid, clientName, message, amount, paymentMethod,
               )}
               {seat.numbers && (
                 <div>
-                  <div className="text-xs opacity-80">Chaise(s)</div>
+                  <div className="text-xs opacity-80">Table(s)</div>
                   <div className="text-3xl md:text-4xl font-extrabold">{seat.numbers}</div>
                 </div>
               )}
