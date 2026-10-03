@@ -6,6 +6,8 @@ import {
   enqueueValidation,
   findFlyerByQr,
   findReservationByQr,
+  findSpecialByQr,
+  patchCachedSpecial,
   isQueued,
   loadCache,
   loadQueue,
@@ -61,6 +63,17 @@ interface ValidationState {
   seat?: SeatInfo;
 }
 
+/** Enregistre un placement hors-ligne (file + cache). Renvoie l'horodatage. */
+export const queueOfflineSeat = async (bookingId: string, clientName: string) => {
+  const now = new Date().toISOString();
+  await enqueueValidation({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type: 'special_seat', targetId: bookingId, qrCode: `SEAT-${bookingId}`, clientName, scannedAt: now,
+  });
+  await patchCachedSpecial(bookingId, { seated_at: now });
+  return now;
+};
+
 export const useReservationValidator = () => {
   const lastResultRef = useRef<ValidationState | null>(null);
   const [state, _setState] = useState<ValidationState>({
@@ -102,8 +115,43 @@ export const useReservationValidator = () => {
     const validatedQrCode = validationResult.data;
 
     if (!navigator.onLine && validatedQrCode.toUpperCase().startsWith('SOIREE-')) {
-      playErrorSound();
-      setState({ isValid: false, message: '📵 Hors-ligne — les invitations de soirée spéciale nécessitent le réseau.', isLoading: false });
+      const cache = await loadCache();
+      const queue = await loadQueue();
+      const b = findSpecialByQr(cache, validatedQrCode);
+      if (!b) {
+        playErrorSound();
+        setState({ isValid: false, message: '📵 Hors-ligne — invitation introuvable dans le cache.', isLoading: false });
+        return;
+      }
+      const seat = { bookingId: b.id, rows: b.seat_rows, numbers: b.seat_numbers, seatedAt: b.seated_at };
+      const parisToday = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+      if (b.event_date !== parisToday) {
+        playErrorSound();
+        setState({ isValid: false, clientName: b.guest_names, message: '📵 Hors-ligne — invitation non valable aujourd\'hui.', isLoading: false });
+        return;
+      }
+      const queuedCheckin = queue.some((q) => q.type === 'special_checkin' && q.targetId === b.id);
+      if (b.validated_at || queuedCheckin) {
+        playErrorSound();
+        setState({
+          isValid: false, clientName: b.guest_names, numberOfPersons: b.number_of_persons, seat,
+          message: `Déjà entré${b.validated_at ? ` le ${new Date(b.validated_at).toLocaleString('fr-FR')}` : ''}`,
+          isLoading: false,
+        });
+        return;
+      }
+      const now = new Date().toISOString();
+      await enqueueValidation({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type: 'special_checkin', targetId: b.id, qrCode: validatedQrCode, clientName: b.guest_names, scannedAt: now,
+      });
+      await patchCachedSpecial(b.id, { validated_at: now });
+      playSuccessSound();
+      setState({
+        isValid: true, clientName: b.guest_names, numberOfPersons: b.number_of_persons, seat,
+        message: `📵 Hors-ligne — ${b.event_title}, ${b.number_of_persons} pers. Synchronisation au retour du réseau.`,
+        isLoading: false,
+      });
       return;
     }
 
@@ -451,6 +499,11 @@ export const useReservationValidator = () => {
   const confirmSeat = useCallback(async () => {
     const id = lastResultRef.current?.seat?.bookingId;
     if (!id) return false;
+    if (!navigator.onLine) {
+      const now = await queueOfflineSeat(id, lastResultRef.current?.clientName ?? '');
+      setState((prev) => (prev.seat ? { ...prev, seat: { ...prev.seat, seatedAt: now } } : prev));
+      return true;
+    }
     const { data, error } = await supabase.rpc('seat_special_booking', { p_id: id });
     if (error) return false;
     setState((prev) => (prev.seat ? { ...prev, seat: { ...prev.seat, seatedAt: data as string } } : prev));

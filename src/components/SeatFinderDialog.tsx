@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { loadCache, searchSpecials } from '@/lib/offlineCache';
+import { queueOfflineSeat } from '@/hooks/useReservationValidator';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 interface SeatResult {
   id: string;
@@ -23,12 +26,21 @@ const SeatFinderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange:
   const [results, setResults] = useState<SeatResult[] | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [seating, setSeating] = useState<string | null>(null);
+  const isOnline = useNetworkStatus();
 
   const search = async () => {
     if (query.trim().length < 2) return;
     setLoading(true);
     setResults(null);
     setInfo(null);
+    if (!navigator.onLine) {
+      const found = searchSpecials(await loadCache(), query);
+      setLoading(false);
+      if (!found.length) { setInfo('📵 Hors-ligne — aucune réservation correspondante dans le cache.'); return; }
+      setResults(found.map((b) => ({ ...b })));
+      setInfo('📵 Hors-ligne — recherche locale. Vérifiez l’identité du client.');
+      return;
+    }
     const { data, error } = await supabase.functions.invoke('find-seat', { body: { query } });
     setLoading(false);
     if (error || data?.error) {
@@ -44,6 +56,14 @@ const SeatFinderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange:
 
   const seat = async (id: string) => {
     setSeating(id);
+    if (!navigator.onLine) {
+      const r = results?.find((x) => x.id === id);
+      const now = await queueOfflineSeat(id, r?.guest_names ?? '');
+      setSeating(null);
+      toast.success('Placement enregistré hors-ligne — synchronisé au retour du réseau');
+      setResults((prev) => prev?.map((x) => (x.id === id ? { ...x, seated_at: now } : x)) ?? null);
+      return;
+    }
     const { data, error } = await supabase.rpc('seat_special_booking', { p_id: id });
     setSeating(null);
     if (error) return toast.error('Placement non enregistré');
@@ -57,7 +77,7 @@ const SeatFinderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Armchair className="w-5 h-5" /> Retrouver une place</DialogTitle>
           <DialogDescription>
-            Saisissez ce que vous savez (nom, prénom, téléphone, code…). L’IA retrouve la réservation de ce soir.
+            Saisissez ce que vous savez (nom, prénom, téléphone, code…). {isOnline ? 'L’IA retrouve la réservation de ce soir.' : 'Hors-ligne : recherche dans les réservations mises en cache.'}
           </DialogDescription>
         </DialogHeader>
         <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); search(); }}>
