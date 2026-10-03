@@ -57,13 +57,6 @@ interface SpecialBooking {
   seated_at?: string | null;
 }
 
-/** Liste des places "RANGÉE-TABLE" d'une réservation (produit rangées × tables). */
-const seatKeys = (rows: string | null | undefined, nums: string | null | undefined) => {
-  const r = (rows ?? '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
-  const n = (nums ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  return r.flatMap((a) => n.map((b) => `${a}-${b}`));
-};
-
 const VENUE_ADDRESS = 'Le Français, Place Napoléon, 31800 Saint-Gaudens';
 
 const MealFields = ({
@@ -644,12 +637,6 @@ const SpecialEvents = () => {
 
   const saveSeats = async () => {
     if (!seatBooking) return;
-    const keys = seatKeys(editSeatRows, editSeatNumbers);
-    const clash = bookings.find((o) => o.id !== seatBooking.id && seatKeys(o.seat_rows, o.seat_numbers).some((k) => keys.includes(k)));
-    if (clash) {
-      const k = seatKeys(clash.seat_rows, clash.seat_numbers).find((x) => keys.includes(x));
-      return toast.error(`Place ${k} déjà attribuée à ${clash.guest_names}`);
-    }
     setSavingSeats(true);
     const { error } = await supabase
       .from('special_bookings')
@@ -660,8 +647,7 @@ const SpecialEvents = () => {
       .eq('id', seatBooking.id);
     setSavingSeats(false);
     if (error) {
-      const m = error.message?.match(/SEAT_TAKEN:(\S+)/);
-      return toast.error(m ? `Place ${m[1]} déjà attribuée à une autre réservation` : 'Placement non enregistré');
+      return toast.error('Placement non enregistré');
     }
     toast.success('Placement enregistré');
     setSeatBooking(null);
