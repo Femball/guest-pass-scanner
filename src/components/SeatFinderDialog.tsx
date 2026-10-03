@@ -76,7 +76,7 @@ const SeatFinderDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange:
               {r.seat_rows || r.seat_numbers ? (
                 <div className="flex justify-center gap-8 mb-3">
                   <div className="text-center"><div className="text-xs text-muted-foreground">Rangée</div><div className="text-3xl font-extrabold text-primary">{r.seat_rows || '—'}</div></div>
-                  <div className="text-center"><div className="text-xs text-muted-foreground">Chaise(s)</div><div className="text-3xl font-extrabold text-primary">{r.seat_numbers || '—'}</div></div>
+                  <div className="text-center"><div className="text-xs text-muted-foreground">Table(s)</div><div className="text-3xl font-extrabold text-primary">{r.seat_numbers || '—'}</div></div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground mb-3">Aucune place attribuée.</p>
